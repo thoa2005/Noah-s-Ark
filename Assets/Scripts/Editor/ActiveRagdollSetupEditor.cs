@@ -13,8 +13,8 @@ public class ActiveRagdollSetupEditor : EditorWindow
         if (initialiser == null) initialiser = player.AddComponent<ActiveRagdollInitialiser>();
 
         // Find the rigs
-        Transform physicsRig = player.transform.Find("panda/metarig");
-        Transform masterRig = player.transform.Find("panda/MasterMetarig");
+        Transform physicsRig = player.transform.Find("panda/physicRig");
+        Transform masterRig = player.transform.Find("panda/metarig");
 
         if (physicsRig && masterRig)
         {

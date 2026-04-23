@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-04-23
+
+### Added
+- **Active Ragdoll System**: Full physics-driven character rig using `physicRig` with Rigidbody + ConfigurableJoint on each bone.
+- **Dual-Rig Architecture**: `metarig` (animation driver) + `physicRig` (physics puppet) working in tandem.
+- **ActiveRagdollBalance**: Virtual spring joint that tethers the physics spine to the Player capsule, keeping the character upright with tunable balance strength.
+- **ActiveRagdollBone**: Per-bone script that reads `metarig` rotation and applies it to `physicRig` via SlerpDrive. Exposes `slerpDriveSpring` and `slerpDriveDamper` fields for per-bone Inspector tuning.
+- **SkinTransferTool**: Editor utility (`Tools → Transfer Skin to Physics Rig`) that rebinds the character's `SkinnedMeshRenderer` from `metarig` to `physicRig` so all mesh deformation is physics-driven.
+- **ActiveRagdollInitialiser**: Editor utility that automates setup — removes physics components from `metarig`, attaches `ActiveRagdollBalance`, and assigns the pelvis reference.
+- **RagdollJointLimitTool**: Editor utility (`Tools → Set Ragdoll Joint Limits`) that sets angular joint limits on all `physicRig` bones based on their type (thigh, forearm, spine, head, etc.).
+- **RagdollMirrorTool**: Editor utility that mirrors CapsuleCollider parameters from `.L` bones to corresponding `.R` bones.
+- **Self-Collision Ignore**: `ActiveRagdollBalance` automatically disables collisions between the Player capsule and all `physicRig` bone colliders to prevent jitter.
+
+### Changed
+- **Jump Force**: `PlayerMovement` now dynamically calculates jump force based on the total mass of all `physicRig` Rigidbodies, ensuring consistent jump height regardless of ragdoll weight.
+- **Physics Architecture**: Transitioned from single-capsule hitbox to full ragdoll physics simulation.
+
+### Fixed
+- **Bones Disappearing on Play**: Removed `pelvis.parent = null` from `ActiveRagdollBalance.Start()` which was unparenting the spine and causing all child bones to vanish from the `physicRig` hierarchy during play mode.
+- **Physics Explosion**: Reduced `angularDrive.positionSpring` from 15,000 to a stable range to prevent NaN errors and bones flying to infinity on the first physics frame.
+
+## [0.2.0] - 2026-04-22
+
+### Added
+- **Ragdoll Converter**: `RagdollConverter.cs` tool to convert Unity's auto-generated `CharacterJoint` components to `ConfigurableJoint` for finer control.
+- **Collider Mirror Tool**: Programmatic mirroring of left-side collider sizes and offsets to right-side bones.
+
+### Changed
+- **Collider Setup**: Replaced auto-generated ragdoll colliders with manually tuned CapsuleColliders fitted to the panda model's actual geometry.
+
 ## [0.1.2] - 2026-04-21
 
 ### Added

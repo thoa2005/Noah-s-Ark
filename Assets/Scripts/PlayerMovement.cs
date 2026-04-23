@@ -8,6 +8,8 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed         = 8f;
     public float jumpForce         = 10f; // Increased slightly for safety if mass is high
     public float groundCheckDistance = 1.3f; // Shoots a ray down from root
+    public Transform leftFoot;
+    public Transform rightFoot;
 
     [Header("Punch (Chuot phai)")]
     public float punchForce    = 15f;
@@ -53,13 +55,33 @@ public class PlayerMovement : MonoBehaviour
         if (!isGrounded) return;
 
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        
+        // Tính tổng khối lượng của Player và cả bộ xương Ragdoll đang cõng
+        float totalMass = rb.mass;
+        Rigidbody[] allRbs = GetComponentsInChildren<Rigidbody>();
+        foreach (var r in allRbs) 
+        {
+            if (r != rb) totalMass += r.mass;
+        }
+
+        // Nhân lực nhảy với tổng khối lượng (chia đôi một chút cho đỡ bay lên cung trăng)
+        float finalJumpForce = jumpForce * (totalMass * 0.8f);
+        rb.AddForce(Vector3.up * finalJumpForce, ForceMode.Impulse);
+        
+        Debug.Log($"[Nhảy!] Tổng cân nặng: {totalMass}. Lực nhảy thực tế: {finalJumpForce}");
     }
 
     void Update()
     {
-        // Phóng 1 tia từ tâm nhân vật xuống dưới để tìm mặt đất (bỏ qua bản thân player)
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, ~LayerMask.GetMask("Player"));
+        RaycastHit hit;
+        bool leftGrounded  = leftFoot  != null && Physics.SphereCast(leftFoot.position,  0.1f, Vector3.down, out hit, 0.15f);
+        bool rightGrounded = rightFoot != null && Physics.SphereCast(rightFoot.position, 0.1f, Vector3.down, out hit, 0.15f);
+        
+        // Tia dự phòng bắn từ rốn xuống phòng khi chân bị lệch
+        bool centerGrounded = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out hit, groundCheckDistance);
+        
+        isGrounded = leftGrounded || rightGrounded || centerGrounded;
+
         punchTimer -= Time.deltaTime;
 
         var mouse    = Mouse.current;
