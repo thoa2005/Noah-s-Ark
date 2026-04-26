@@ -16,40 +16,29 @@ public class ActiveRagdollBalance : MonoBehaviour
         {
             rb = pelvis.GetComponent<Rigidbody>();
             
-            // TÌM TRỰC TIẾP PLAYER THAY VÌ GETCOMPONENT (tránh lỗi script gắn sai chỗ)
-            GameObject playerObj = GameObject.Find("Player");
-            if (playerObj != null)
-            {
-                playerRb = playerObj.GetComponent<Rigidbody>();
-            }
+            // BẬT INTERPOLATE ĐỂ HẾT GIẬT
+            if (rb != null) rb.interpolation = RigidbodyInterpolation.Interpolate;
 
+            playerRb = GetComponentInParent<Rigidbody>();
+            if (playerRb != null) playerRb.interpolation = RigidbodyInterpolation.Interpolate;
+            
             if (playerRb == null) 
             {
-                Debug.LogError("KHÔNG TÌM THẤY PLAYER RIGIDBODY! Xích tàng hình bị lỗi!");
+                Debug.LogError("KHÔNG TÌM THẤY PLAYER RIGIDBODY TRÊN CHA! Hãy đảm bảo script gắn dưới object Player.");
                 return;
             }
 
-            // KHÔNG tách xương ra khỏi physicRig - giữ nguyên cây hierarchy
-            // pelvis.parent = null; // ĐÃ XÓA - đây là nguyên nhân gây mất xương khi Play
-
-            // 2. Tạo một 'sợi dây xích tàng hình' kéo xương chậu bám sát theo cái vỏ bọc Player
+            // Tạo tracker joint để kéo xương chậu theo Player
             ConfigurableJoint tracker = pelvis.gameObject.AddComponent<ConfigurableJoint>();
             tracker.connectedBody = playerRb;
             
-            // Cho phép di chuyển tự do nhưng sẽ bị xích kéo lại
-            tracker.xMotion = ConfigurableJointMotion.Free;
-            tracker.yMotion = ConfigurableJointMotion.Free;
-            tracker.zMotion = ConfigurableJointMotion.Free;
+            // Tự động tính toán khoảng cách để cái bụng không bị hút về tâm Player
+            tracker.autoConfigureConnectedAnchor = true;
             
-            // Xoay tự do nhưng sẽ bị xích kéo xoay thẳng lại (giữ thăng bằng)
-            tracker.angularXMotion = ConfigurableJointMotion.Free;
-            tracker.angularYMotion = ConfigurableJointMotion.Free;
-            tracker.angularZMotion = ConfigurableJointMotion.Free;
-
-            // Cài đặt độ cứng của dây xích kéo vị trí
+            // Tăng mạnh lực kéo vị trí để con Gấu bám sát cái lồng Player
             JointDrive drive = new JointDrive();
-            drive.positionSpring = 1000f; // Lực kéo CỰC MẠNH
-            drive.positionDamper = 200f;  
+            drive.positionSpring = 500f; // Tăng từ 1500 lên 5000
+            drive.positionDamper = 100f; 
             drive.maximumForce = float.MaxValue;
             
             tracker.xDrive = drive;
@@ -59,12 +48,12 @@ public class ActiveRagdollBalance : MonoBehaviour
             // Cài đặt lực giữ thăng bằng (không cho úp mặt xuống đất)
             tracker.rotationDriveMode = RotationDriveMode.Slerp;
             JointDrive angularDrive = new JointDrive();
-            angularDrive.positionSpring = 100f; // Giữ thẳng đứng cực khỏe
-            angularDrive.positionDamper = 500f;
+            angularDrive.positionSpring = 10000f; 
+            angularDrive.positionDamper = 100f;
             angularDrive.maximumForce = float.MaxValue;
             
             tracker.slerpDrive = angularDrive;
-            // Xoay đúng hướng với vỏ bọc Player
+            // Trả về identity để nó đứng thẳng theo hướng của lồng Player
             tracker.targetRotation = Quaternion.identity;
         }
     }

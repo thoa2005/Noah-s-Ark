@@ -18,11 +18,12 @@ A physics-based action game prototype inspired by the mechanics of *Party Animal
 - **Active Ragdoll System**: The character's physical body (`physicRig`) is fully driven by Unity physics (Rigidbody + ConfigurableJoint). The character mesh deforms based on real physics forces, not keyframe animation.
 - **Dual-Rig Architecture**: Two skeletons exist simultaneously — `metarig` (animation driver) and `physicRig` (physics puppet). The `physicRig` follows the `metarig` via spring forces, creating naturally "soft" movement.
 - **Physics Balance**: A virtual spring joint (`ActiveRagdollBalance`) tethers the physics rig to the player capsule, keeping the character upright. Balance strength is tunable — high values give stiff, upright posture; low values allow natural falling.
-- **Skin Transfer System**: The character mesh is rebound from the animation rig to the physics rig via `SkinTransferTool`, so all visual deformation is driven by physics.
+- **Automatic Skin Mapping**: The character mesh is automatically rebound from the animation rig to the physics rig at runtime by `ActiveRagdollInitialiser`, ensuring the visual mesh follows the physical puppet perfectly.
+- **Interpolation & Smoothness**: Root and bone rigidbodies are set to `Interpolate` mode, eliminating physics jitter during movement.
 - **Per-Bone Spring Tuning**: Each ragdoll bone has an `ActiveRagdollBone` component with exposed `slerpDriveSpring` and `slerpDriveDamper` values, allowing precise per-limb tuning in the Inspector.
 - **Physics-Based Combat**: All punches and interactions use Unity Physics (`AddForce`/`Impulse`) for dynamic behavior.
 - **Grab & Throw System**: Context-sensitive grabbing that allows players to pick up objects or opponents and throw them with variable force.
-- **AI Bots**: Basic AI opponents that navigate and interact with the player using the same physics rules.
+
 - **Automated Testing**: Built-in test runner (`GameplayTest.cs`) to verify physics stability and input responsiveness.
 
 ## 🏗 Architecture

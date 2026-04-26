@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-04-25
+
+### Fixed
+- **Animation Stalling**: Removed incorrect `LateUpdate` snapping in `ActiveRagdollBone.cs` that was preventing the Animator from moving the master rig.
+- **Movement Jitter**: Forced `RigidbodyInterpolation.Interpolate` on both the root Player capsule and physics rigidbodies to ensure smooth camera and character movement.
+- **Physics Stability**: Tuned `ActiveRagdollBalance` tracker joint with higher damping (100) and spring (1500) to reduce balance oscillations.
+
+### Improved
+- **Automatic Slerp Configuration**: `ActiveRagdollBone` now automatically sets `RotationDriveMode.Slerp` and configures `JointDrive` parameters on `Start()`, reducing manual setup errors in the Inspector.
+- **Auto Skin Re-mapping**: `ActiveRagdollInitialiser` now automatically rebinds the `SkinnedMeshRenderer` bones to the `physicRig` at runtime, ensuring the visual mesh follows the physical ragdoll.
+- **Code Cleanup**: Simplified `ActiveRagdollBone` logic to focus purely on delta rotation following.
+
+
 ## [0.3.0] - 2026-04-23
 
 ### Added
