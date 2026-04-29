@@ -26,6 +26,7 @@ public class PlayerMovement : MonoBehaviour
     public float grabBreakForce = 800f;
 
     // --- Runtime state ---
+    private ActiveRagdollController ragdoll; // <-- THÊM DÒNG NÀY
     Rigidbody  rb;
     bool       isGrounded;
     float      punchTimer;
@@ -45,6 +46,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
+        ragdoll = GetComponent<ActiveRagdollController>(); // <-- THÊM DÒNG NÀY
         rb             = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         mainCam        = Camera.main;
@@ -69,6 +71,8 @@ public class PlayerMovement : MonoBehaviour
 
     void OnJump(InputValue v)
     {
+         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm nhảy
+        if (ragdoll != null && (ragdoll.isKnockedOut )) return;
         if (!v.isPressed || !isGrounded) return;
 
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -87,6 +91,8 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
+        if (ragdoll != null && (ragdoll.isKnockedOut)) return;
         CheckGround();
         punchTimer -= Time.deltaTime;
 
@@ -124,6 +130,8 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
+           // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Liệt chân, cấm chạy
+        if (ragdoll != null && (ragdoll.isKnockedOut)) return;
         Vector3 camF = mainCam != null ? mainCam.transform.forward : Vector3.forward;
         camF.y = 0f; camF.Normalize();
         Vector3 camR = mainCam != null ? mainCam.transform.right : Vector3.right;

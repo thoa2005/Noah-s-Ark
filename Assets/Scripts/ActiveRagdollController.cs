@@ -24,11 +24,18 @@ public class ActiveRagdollController : MonoBehaviour
 
     [Header("State")]
     public bool isKnockedOut = false;
+      private bool isWakingUp = false; // <-- THÊM DÒNG NÀY VÀO
+    [Header("Stability Settings")]
+    public float stability = 100f;       // Điểm hiện tại
+    public float maxStability = 100f;    // Điểm tối đa
+    public float recoveryTime = 3f;      // Thời gian nằm xỉu (giây)
 
     private ActiveRagdollBone[] bones;
     private ActiveRagdollBalancer balancer;
     private Rigidbody playerRb;
     private Rigidbody hipRb;
+    private Transform realHip;
+    
 
     private float lastMuscleSpring, lastMuscleDamper;
     private float lastBalanceSpring, lastBalanceDamper;
@@ -60,6 +67,8 @@ public class ActiveRagdollController : MonoBehaviour
         balancer.Setup(playerRb);
         hipRb = physicRig.GetComponent<Rigidbody>();
         if (hipRb != null) hipRb.mass = 20f; // Hong phai nang de lam neo
+        
+        realHip = physicRig.GetChild(0); // Lấy xương spine
 
         // 2. Nap TAT CA cac xuong co Rigidbody vao danh sach dieu khien
         ConfigurableJoint[] joints = physicRig.GetComponentsInChildren<ConfigurableJoint>();
@@ -75,7 +84,7 @@ public class ActiveRagdollController : MonoBehaviour
                 ActiveRagdollBone bone = joint.gameObject.GetComponent<ActiveRagdollBone>();
                 if (bone == null) bone = joint.gameObject.AddComponent<ActiveRagdollBone>();
                 
-                bone.Setup(aBone, joint);
+                bone.Setup(aBone, joint, this);
                 bone.targetBone = tBone;
                 boneList.Add(bone);
 
@@ -116,11 +125,22 @@ public class ActiveRagdollController : MonoBehaviour
         float currentBalanceSpring = balanceSpring;
         float currentMuscleSpring = muscleSpring;
         
-        float tiltAngle = Vector3.Angle(hipRb.transform.up, Vector3.up);
-        if (tiltAngle > 45f)
+        // float tiltAngle = Vector3.Angle(hipRb.transform.forward, Vector3.up);
+        float tiltAngle = Vector3.Angle(realHip.up, Vector3.up); 
+
+        if (tiltAngle > 30f)
         {
+         
+            // Duy trì trạng thái gồng (x3 lực kéo thẳng, x2 độ cứng cơ bắp)
             currentBalanceSpring *= 3f;
             currentMuscleSpring *= 2f; 
+            
+            // Bạn có thể nhét thêm Debug.Log ở đây nếu muốn kiểm tra
+        }
+       
+        if (!isKnockedOut && stability > 50f && tiltAngle > 45f && !isWakingUp) // Nếu bị nghiêng quá 75 độ mà không gượng dậy được
+        {
+            ApplyDamage(100f); // Tự gây "sát thương thăng bằng" để xỉu luôn
         }
 
         // 3. Cap nhat Thang bang
@@ -220,4 +240,44 @@ public class ActiveRagdollController : MonoBehaviour
         }
         return null;
     }
+    public void ApplyDamage(float force)
+{
+    if (isKnockedOut) return;
+
+    stability -= force;
+    if (stability <= 0)
+    {
+        StartCoroutine(KnockoutRoutine());
+    }
+}
+
+private System.Collections.IEnumerator KnockoutRoutine()
+{
+    isKnockedOut = true;
+    stability = 0;
+
+    // THÁO XÍCH HÔNG: Cho phép hông rơi xuống chạm đất (Rất quan trọng)
+    var joint = hipRb.GetComponent<ConfigurableJoint>();
+    joint.yMotion = ConfigurableJointMotion.Free;
+
+    yield return new WaitForSeconds(recoveryTime);
+
+    // TỈNH DẬY
+    
+    // BẮT ĐẦU QUÁ TRÌNH TỈNH DẬY
+    isWakingUp = true;     // Bật biển báo "Tôi đang thức dậy, đừng quét!"
+    isKnockedOut = false;  // Cấp điện lại cho cơ bắp hoạt động
+    
+    // Kéo người đứng lên
+    joint.yMotion = ConfigurableJointMotion.Locked;
+    
+    // Chờ 2 giây để kéo thẳng lưng lên (< 45 độ)
+    yield return new WaitForSeconds(2f);
+    
+    // ĐỨNG LÊN HOÀN TẤT
+    stability = maxStability;  // Hồi đầy 100 máu
+    isWakingUp = false;        // Cất biển báo đi, cho máy quét hoạt động bình thường
+     
+}
+
 }

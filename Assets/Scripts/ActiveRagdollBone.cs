@@ -5,19 +5,22 @@ using UnityEngine;
 /// </summary>
 public class ActiveRagdollBone : MonoBehaviour
 {
+    // Thêm dòng này vào phần khai báo biến ở đầu class
+    private ActiveRagdollController controller;
+
     public Transform animBone;
     public ConfigurableJoint joint;
     public Transform targetBone;
     
     private Quaternion initialLocalRotation;
 
-
-    public void Setup(Transform animBone, ConfigurableJoint joint)
+// Sửa hàm Setup thành 3 tham số như sau:
+    public void Setup(Transform animBone, ConfigurableJoint joint, ActiveRagdollController controller)
     {
         this.animBone = animBone;
         this.joint = joint;
-        
-        // Luu lai rotation goc de lam moc tinh toan targetRotation
+        this.controller = controller; // Lưu sếp lại để báo cáo va chạm
+
         initialLocalRotation = transform.localRotation;
     }
 
@@ -55,4 +58,20 @@ public class ActiveRagdollBone : MonoBehaviour
             joint.angularYZDrive = drive;
         }
     }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (controller == null) return;
+        // Tính lực va chạm dựa trên xung lực (Impulse)
+        float force = collision.impulse.magnitude / Time.fixedDeltaTime;
+
+        
+        Debug.Log("Bi dap boi: " + collision.gameObject.name + " - Muc do luc: " + force);
+
+        // Nếu lực đủ mạnh và KHÔNG phải va chạm với sàn nhà (Ground) thì mới báo xỉu
+        if (force > 1000f && !collision.gameObject.CompareTag("Ground"))
+        {
+            controller.ApplyDamage(force*0.002f);
+        }
+    }
+
 }
