@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-04-28
+
+### Added
+- **Re-Setup Ragdoll Tool**: Added a Context Menu item to `ActiveRagdollController` for one-click physics rig initialization and repair.
+- **Programmatic IgnoreCollision**: Implemented `SetupIgnoreCollisions` to allow limbs to pass through the torso and player capsule without using `Is Trigger` or layer changes.
+- **Posture Offset**: Added `balanceOffset` to `ActiveRagdollBalancer` for manual correction of the character's standing angle.
+
+### Fixed
+- **Missing Script Error**: Renamed `ActiveRagdollBalance` back to `ActiveRagdollBalancer` to restore broken object references in the scene.
+- **Floating Character**: Locked the root bone's linear movement to the Player capsule, ensuring the character moves consistently with player inputs.
+- **Collapsed Posture**: Fixed an issue where the character would capture a "lying down" pose as its target; now defaults to an upright orientation.
+
+### Changed
+- **Balance Strength**: Increased default `balanceSpring` to 10,000 for a more stable and responsive uprighting force.
+
 ## [0.4.0] - 2026-04-25
 
 ### Fixed

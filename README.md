@@ -17,14 +17,11 @@ A physics-based action game prototype inspired by the mechanics of *Party Animal
 
 - **Active Ragdoll System**: The character's physical body (`physicRig`) is fully driven by Unity physics (Rigidbody + ConfigurableJoint). The character mesh deforms based on real physics forces, not keyframe animation.
 - **Dual-Rig Architecture**: Two skeletons exist simultaneously — `metarig` (animation driver) and `physicRig` (physics puppet). The `physicRig` follows the `metarig` via spring forces, creating naturally "soft" movement.
-- **Physics Balance**: A virtual spring joint (`ActiveRagdollBalance`) tethers the physics rig to the player capsule, keeping the character upright. Balance strength is tunable — high values give stiff, upright posture; low values allow natural falling.
-- **Automatic Skin Mapping**: The character mesh is automatically rebound from the animation rig to the physics rig at runtime by `ActiveRagdollInitialiser`, ensuring the visual mesh follows the physical puppet perfectly.
+- **Physics Balance**: A virtual spring joint (`ActiveRagdollBalancer`) tethers the physics rig to the player capsule, keeping the character upright. Balance strength is tunable — high values give stiff, upright posture; low values allow natural falling.
+- **Re-Setup Tool**: Includes a "Re-Setup Ragdoll" context menu on the controller to quickly bind bones, apply muscle forces, and configure collision filters.
+- **Ignore Collision**: Automatically configures limbs to ignore collisions with the main body, preventing physical jitter and "self-entanglement" while maintaining solid collision with the environment.
+- **Automatic Skin Mapping**: The character mesh is automatically rebound from the animation rig to the physics rig at runtime, ensuring the visual mesh follows the physical puppet perfectly.
 - **Interpolation & Smoothness**: Root and bone rigidbodies are set to `Interpolate` mode, eliminating physics jitter during movement.
-- **Per-Bone Spring Tuning**: Each ragdoll bone has an `ActiveRagdollBone` component with exposed `slerpDriveSpring` and `slerpDriveDamper` values, allowing precise per-limb tuning in the Inspector.
-- **Physics-Based Combat**: All punches and interactions use Unity Physics (`AddForce`/`Impulse`) for dynamic behavior.
-- **Grab & Throw System**: Context-sensitive grabbing that allows players to pick up objects or opponents and throw them with variable force.
-
-- **Automated Testing**: Built-in test runner (`GameplayTest.cs`) to verify physics stability and input responsiveness.
 
 ## 🏗 Architecture
 
@@ -44,26 +41,25 @@ Player (Capsule Collider + Rigidbody + PlayerMovement)
 
 | Script | Location | Purpose |
 | :--- | :--- | :--- |
-| `ActiveRagdollBalance` | Scripts/ | Tethers physicRig spine to Player capsule via spring joint |
+| `ActiveRagdollBalancer` | Scripts/ | Tethers physicRig spine to Player capsule via spring joint |
 | `ActiveRagdollBone` | Scripts/ | Per-bone: copies metarig rotation to physicRig via SlerpDrive |
-| `ActiveRagdollInitialiser` | Scripts/ | One-time setup: removes metarig colliders, attaches balance script |
-| `SkinTransferTool` | Scripts/Editor/ | Editor tool: rebinds SkinnedMeshRenderer bones to physicRig |
-| `RagdollJointLimitTool` | Scripts/Editor/ | Editor tool: sets angular joint limits on all physicRig bones |
+| `ActiveRagdollController` | Scripts/ | Main controller managing the rig, bones, and balance lifecycle |
 | `PlayerMovement` | Scripts/ | Handles WASD movement and jumping; accounts for ragdoll total mass |
 
-### Balance Tuning (`ActiveRagdollBalance.cs`)
+### Balance Tuning (`ActiveRagdollBalancer.cs`)
 
 | Parameter | Effect |
 | :--- | :--- |
-| `positionSpring` (drive) | How tightly physicRig follows Player position. Lower = lags behind |
-| `angularDrive.positionSpring` | Uprighting force. 10000 = stiff, 200 = falls easily like Gang Beasts |
+| `balanceSpring` | Uprighting force. 10000 = very stiff, 1500 = more natural |
+| `balanceDamper` | Reduces oscillation/wobble. Usually 50–200 |
+| `balanceOffset` | Manual rotation offset to fix leaning issues |
 
 ### Per-Bone Tuning (`ActiveRagdollBone.cs`)
 
 | Parameter | Effect |
 | :--- | :--- |
-| `slerpDriveSpring` | Speed of following animation. 1000–3000 = natural, >5000 = snappy |
-| `slerpDriveDamper` | Reduces oscillation/wobble. Usually 100–200 |
+| `controller.muscleSpring` | Speed of following animation. 1000–3000 = natural, >5000 = snappy |
+| `controller.muscleDamper` | Reduces oscillation/wobble. Usually 10–50 |
 
 ## 🛠 Technical Details
 
@@ -77,3 +73,4 @@ Player (Capsule Collider + Rigidbody + PlayerMovement)
 2. Load the `SampleScene`.
 3. Press **Play**.
 4. Use **WASD** to move and **Left Mouse Button** to grab/throw!
+5. **Pro Tip**: If the character looks broken, Right-Click `ActiveRagdollController` and select **Re-Setup Ragdoll**.

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -8,7 +9,10 @@ public class GameManager : MonoBehaviour
     public float fallLimit = -5f;
     public int   maxLives  = 3;
 
-    int  playerLives;
+        List<GameObject> cachedPlayers = new List<GameObject>();
+    List<GameObject> cachedBots    = new List<GameObject>();
+
+int  playerLives;
     bool gameOver;
 
     void Awake()
@@ -17,45 +21,78 @@ public class GameManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    void Start()
+void Start()
     {
         playerLives = maxLives;
         gameOver    = false;
+        RefreshEntityLists();
     }
 
     void Update()
     {
         if (gameOver) return;
 
-        // Kiem tra Player bi roi
-        var players = GameObject.FindGameObjectsWithTag("Player");
-        foreach (var p in players)
+        // Kiểm tra Player bị rơi
+        for (int i = cachedPlayers.Count - 1; i >= 0; i--)
         {
-            if (p.transform.position.y >= fallLimit) continue;
-
-            playerLives--;
-            var prb = p.GetComponent<Rigidbody>();
-            if (prb != null) { prb.linearVelocity = Vector3.zero; prb.angularVelocity = Vector3.zero; }
-
-            if (playerLives <= 0)
+            var p = cachedPlayers[i];
+            if (p == null) { cachedPlayers.RemoveAt(i); continue; }
+            if (p.transform.position.y < fallLimit)
             {
-                gameOver = true;
-                Debug.Log("GAME OVER");
-                return;
+                HandlePlayerFall(p);
             }
-            p.transform.position = new Vector3(Random.Range(-3f, 3f), 2f, Random.Range(-3f, 3f));
         }
 
-        // Kiem tra Bot bi roi
-        var bots = GameObject.FindGameObjectsWithTag("Bot");
-        foreach (var b in bots)
+        // Kiểm tra Bot bị rơi
+        for (int i = cachedBots.Count - 1; i >= 0; i--)
         {
-            if (b.transform.position.y >= fallLimit) continue;
-            var brb = b.GetComponent<Rigidbody>();
-            if (brb != null) { brb.linearVelocity = Vector3.zero; brb.angularVelocity = Vector3.zero; }
-            b.transform.position = new Vector3(Random.Range(-5f, 5f), 2f, Random.Range(-5f, 5f));
+            var b = cachedBots[i];
+            if (b == null) { cachedBots.RemoveAt(i); continue; }
+            if (b.transform.position.y < fallLimit)
+            {
+                HandleBotFall(b);
+            }
         }
     }
 
+    void HandlePlayerFall(GameObject p)
+    {
+        playerLives--;
+        Debug.Log($"[GameManager] Player fell! Lives remaining: {playerLives}");
+
+        if (playerLives <= 0)
+        {
+            gameOver = true;
+            Debug.Log("GAME OVER");
+            return;
+        }
+
+        Respawn(p, new Vector3(Random.Range(-3f, 3f), 5f, Random.Range(-3f, 3f)));
+    }
+
+    void HandleBotFall(GameObject b)
+    {
+        Debug.Log($"[GameManager] Bot {b.name} fell!");
+        Respawn(b, new Vector3(Random.Range(-8f, 8f), 5f, Random.Range(-8f, 8f)));
+    }
+
+    void Respawn(GameObject go, Vector3 pos)
+    {
+        // Reset velocity for all rigidbodies in the hierarchy
+        foreach (var rb in go.GetComponentsInChildren<Rigidbody>())
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        go.transform.position = pos;
+    }
+
+        public void RefreshEntityLists()
+    {
+        cachedPlayers = new List<GameObject>(GameObject.FindGameObjectsWithTag("Player"));
+        cachedBots    = new List<GameObject>(GameObject.FindGameObjectsWithTag("Bot"));
+    }
+
     public bool IsGameOver() { return gameOver; }
+    public int GetLives() { return playerLives; }
 }
