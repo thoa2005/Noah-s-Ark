@@ -64,13 +64,10 @@ public class ActiveRagdollBone : MonoBehaviour
         // Tính lực va chạm dựa trên xung lực (Impulse)
         float force = collision.impulse.magnitude / Time.fixedDeltaTime;
 
-        
-        Debug.Log("Bi dap boi: " + collision.gameObject.name + " - Muc do luc: " + force);
-
         // Nếu lực đủ mạnh và KHÔNG phải va chạm với sàn nhà (Ground) thì mới báo xỉu
         if (force > 1000f && !collision.gameObject.CompareTag("Ground"))
         {
-            controller.ApplyDamage(force*0.002f);
+            controller.ApplyDamage(force*0.001f);
         }
     }
 

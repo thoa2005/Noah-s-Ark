@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
+
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
@@ -8,35 +10,53 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed           = 8f;
     public float jumpForce           = 10f;
     public float groundCheckDistance = 1.3f;
+    public LayerMask groundLayer;
+
     public Transform leftFoot;
     public Transform rightFoot;
 
     [Header("Punch (Chuot phai)")]
     public float punchForce    = 15f;
+    public float pushForce = 50f; // Lực đẩy vật lý (Chỉnh số này to để đối thủ bay xa)
     public float punchRadius   = 2f;
     public float punchCooldown = 0.5f;
 
     [Header("Grab+Throw (Chuot trai): Nhan=cam, Giu=charge, Nha=nem")]
     public float grabRadius    = 2.5f;
-    public float grabDistance  = 1.5f;
     public float minThrowForce = 5f;
     public float maxThrowForce = 20f;
     public float maxChargeTime = 1.0f;
     [Tooltip("Luc pha vo FixedJoint khi bi va cham manh")]
     public float grabBreakForce = 800f;
+    [Header("Stamina System")]
+    public float maxStamina = 100f;
+    public float currentStamina;
+    public float staminaDrainRate = 25f; // Mất 25 thể lực mỗi giây khi cầm
+    public float staminaRegenRate = 20f; // Hồi 20 thể lực mỗi giây khi nghỉ
 
     // --- Runtime state ---
+    public Animator anim;
     private ActiveRagdollController ragdoll; // <-- THÊM DÒNG NÀY
     Rigidbody  rb;
     bool       isGrounded;
+    Dictionary<GameObject, float> lastHitTime = new Dictionary<GameObject, float>();
+
+    public bool isPunching = false;
     float      punchTimer;
     Camera     mainCam;
     Vector2    moveInput;
 
     Rigidbody  grabbedRb;
-    FixedJoint grabJoint;
     float      chargeTimer;
     bool       isGrabbing;
+
+    [Header("Party Animals Grab Physics")]
+    public float grabOffset = 0.1f; // Độ lệch của vòng quét so với bàn tay
+    public float grabSpring = 15000f; // Độ mạnh của nam châm hút
+    public float grabDamper = 1000f;  // Độ êm (giảm rung lắc)
+    public Rigidbody leftPhysicsHand;
+    public Rigidbody rightPhysicsHand;
+    private List<Joint> activeGrabJoints = new List<Joint>();
 
     // Xuong tay de punch / grab chinh xac hon
     Transform  leftHandBone;
@@ -59,12 +79,13 @@ public class PlayerMovement : MonoBehaviour
             foreach (var t in allBones)
             {
                 string n = t.name.ToLower();
-                if (n.Contains("hand.l") || n.Contains("hand_l") || n == "handl")
+                if (n.Contains("hand.l") || n.Contains("hand_l"))
                     leftHandBone  = t;
-                if (n.Contains("hand.r") || n.Contains("hand_r") || n == "handr")
+                if (n.Contains("hand.r") || n.Contains("hand_r"))
                     rightHandBone = t;
             }
         }
+         currentStamina = maxStamina;
     }
 
     void OnMove(InputValue v) => moveInput = v.Get<Vector2>();
@@ -77,14 +98,19 @@ public class PlayerMovement : MonoBehaviour
 
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
-        // Tinh tong khoi luong ragdoll de jump cho dung
-        float totalMass = rb.mass;
-        foreach (var r in GetComponentsInChildren<Rigidbody>())
-            if (r != rb) totalMass += r.mass;
+        // // Tinh tong khoi luong ragdoll de jump cho dung
+        // float totalMass = rb.mass;
 
-        float finalJumpForce = jumpForce * (totalMass * 0.8f);
-        rb.AddForce(Vector3.up * finalJumpForce, ForceMode.Impulse);
-        Debug.Log($"[Jump] Mass={totalMass:F1}  Force={finalJumpForce:F1}");
+         // 1. Lấy tất cả Rigidbody (vỏ capsule + các khớp xương)
+        var allRbs = GetComponentsInChildren<Rigidbody>();
+        foreach (var r  in allRbs)
+        {
+            // if (r != rb) totalMass += r.mass;
+
+        float force = jumpForce * (r.mass * 0.8f);
+        r.AddForce(Vector3.up * force, ForceMode.Impulse);
+        }
+       Debug.Log($"[Jump] Distributed force to {allRbs.Length} body parts.");
     }
 
     // ------------------------------------------------------------------ //
@@ -92,7 +118,12 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
          // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
-        if (ragdoll != null && (ragdoll.isKnockedOut)) return;
+        if (ragdoll!=null &&ragdoll.isKnockedOut) 
+        {
+            
+            if (isGrabbing) ReleaseGrab();
+            return; // Ngất rồi thì không cho làm gì nữa
+        }
         CheckGround();
         punchTimer -= Time.deltaTime;
 
@@ -115,14 +146,40 @@ public class PlayerMovement : MonoBehaviour
             else if (mouse.leftButton.isPressed)            { chargeTimer = Mathf.Clamp(chargeTimer + Time.deltaTime, 0f, maxChargeTime); }
             else if (mouse.leftButton.wasReleasedThisFrame) { PerformThrow(); }
         }
+        // 1. Logic xử lý Thể lực
+        if (isGrabbing)
+        {
+            // Đang cầm thì trừ thể lực
+            currentStamina -= staminaDrainRate * Time.deltaTime;
+            
+            // Nếu hết thể lực thì tự động nhả đồ
+            if (currentStamina <= 0)
+            {
+                currentStamina = 0;
+                ReleaseGrab(); 
+                Debug.Log("[Stamina] Mệt quá! Đã tự buông tay.");
+            }
+        }
+        else
+        {
+            // Không cầm thì hồi thể lực
+            if (currentStamina < maxStamina)
+            {
+                currentStamina += staminaRegenRate * Time.deltaTime;
+            }
+        }
+        currentStamina = Mathf.Clamp(currentStamina, 0, maxStamina);
+        
     }
 
     void CheckGround()
     {
         RaycastHit hit;
-        bool leftG   = leftFoot  != null && Physics.SphereCast(leftFoot.position,  0.1f, Vector3.down, out hit, 0.15f);
-        bool rightG  = rightFoot != null && Physics.SphereCast(rightFoot.position, 0.1f, Vector3.down, out hit, 0.15f);
-        bool centerG = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out hit, groundCheckDistance);
+        // Bắn lade từ chân trái, chân phải và bụng xuống dưới, CHỈ chạm vào groundLayer
+        bool leftG   = leftFoot  != null && Physics.SphereCast(leftFoot.position,  0.1f, Vector3.down, out hit, 0.15f, groundLayer);
+        bool rightG  = rightFoot != null && Physics.SphereCast(rightFoot.position, 0.1f, Vector3.down, out hit, 0.15f, groundLayer);
+        bool centerG = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out hit, groundCheckDistance, groundLayer);
+        
         isGrounded = leftG || rightG || centerG;
     }
 
@@ -138,13 +195,20 @@ public class PlayerMovement : MonoBehaviour
         camR.y = 0f; camR.Normalize();
         Vector3 dir = (camF * moveInput.y + camR * moveInput.x).normalized;
 
+        if (anim != null) 
+        {
+            anim.SetFloat("Speed", dir.magnitude);
+        }
+        
         if (dir.magnitude > 0.1f)
         {
             Vector3 vel = dir * moveSpeed;
             vel.y = rb.linearVelocity.y;
             rb.linearVelocity = vel;
-            transform.rotation = Quaternion.Slerp(transform.rotation,
-                Quaternion.LookRotation(dir), 12f * Time.fixedDeltaTime);
+            // transform.rotation = Quaternion.Slerp(transform.rotation,
+            //     Quaternion.LookRotation(dir), 12f * Time.fixedDeltaTime);
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation,
+                Quaternion.LookRotation(dir), 12f * Time.fixedDeltaTime));
         }
         else
         {
@@ -152,7 +216,35 @@ public class PlayerMovement : MonoBehaviour
             vel.x = Mathf.Lerp(vel.x, 0f, 10f * Time.fixedDeltaTime);
             vel.z = Mathf.Lerp(vel.z, 0f, 10f * Time.fixedDeltaTime);
             rb.linearVelocity = vel;
+            // rb.AddForce(dir * moveSpeed, ForceMode.Acceleration);
+
         }
+        if (anim != null && anim.GetCurrentAnimatorStateInfo(0).IsName("Punch"))
+    {
+        Transform[] origins = { leftHandBone, rightHandBone };
+        foreach (var hand in origins)
+        {
+            if (hand == null) continue;
+            foreach (var h in Physics.OverlapSphere(hand.position, punchRadius))
+            {
+                if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
+                // KIỂM TRA: Nếu vừa đấm người này cách đây chưa đầy 0.1s thì bỏ qua
+                if (lastHitTime.ContainsKey(h.gameObject))
+                {
+                    if (Time.time - lastHitTime[h.gameObject] < 0.1f) continue;
+                }
+                var hrb = h.GetComponent<Rigidbody>();
+                if (hrb == null) continue;
+                // Thực hiện đẩy và gây sát thương
+                Vector3 punchDir = (h.transform.position - hand.position).normalized + Vector3.up * 0.2f;
+                hrb.AddForce(punchDir * pushForce, ForceMode.Impulse);
+                var targetController = h.GetComponentInParent<ActiveRagdollController>();
+                if (targetController != null) targetController.ApplyDamage(punchForce);
+                // Ghi nhớ thời gian vừa đấm trúng người này
+                lastHitTime[h.gameObject] = Time.time;
+            }
+        }
+    }
     }
 
     // ------------------------------------------------------------------ //
@@ -161,79 +253,127 @@ public class PlayerMovement : MonoBehaviour
 
     public void PerformPunch()
     {
+        // THÊM DÒNG NÀY ĐỂ KÍCH HOẠT ANIMATION ĐẤM:
+        if (anim != null) anim.SetTrigger("Punch");
+
         punchTimer = punchCooldown;
         ReleaseGrab();
-
-        // Dung vi tri tay phai de punch chinh xac hon
-        Vector3 origin = rightHandBone != null
-            ? rightHandBone.position
-            : transform.position + transform.forward * 0.5f + Vector3.up * 0.5f;
-
-        foreach (var h in Physics.OverlapSphere(origin, punchRadius))
-        {
-            if (h.gameObject == gameObject)       continue;
-            if (h.transform.IsChildOf(transform)) continue;
-            var hrb = h.GetComponent<Rigidbody>();
-            if (hrb == null) continue;
-            Vector3 punchDir = (h.transform.position - origin).normalized + Vector3.up * 0.3f;
-            hrb.AddForce(punchDir * punchForce, ForceMode.Impulse);
-            Debug.Log("[Punch] Hit: " + h.gameObject.name);
-        }
+        
+        // foreach (var h in Physics.OverlapSphere(hand.position, punchRadius))
+        // {
+        //     if (h.gameObject == gameObject)       continue;
+        //     if (h.transform.IsChildOf(transform)) continue;
+        //     // var hrb = h.GetComponent<Rigidbody>();
+        //     // if (hrb == null) continue;
+            
+        //     var hrb = h.GetComponent<Rigidbody>();
+        //     if (hrb == null) continue;
+        //     Vector3 punchDir = (h.transform.position - hand.position).normalized + Vector3.up * 0.2f;
+        //     hrb.AddForce(punchDir * pushForce, ForceMode.Impulse);
+        //       var targetController = h.GetComponentInParent<ActiveRagdollController>();
+        //     if (targetController != null)
+        //     {
+        //         targetController.ApplyDamage(punchForce); 
+        //     }
+        //     // hitObjects.Add(h.gameObject); 
+        //     Debug.Log("[Punch] Hit: " + h.gameObject.name);
+        // }
+        // }
     }
-
     public void PerformGrab()
     {
-        Vector3 origin = rightHandBone != null
-            ? rightHandBone.position
-            : transform.position + transform.forward * grabDistance;
-
-        float best     = Mathf.Infinity;
-        Rigidbody pick = null;
-        foreach (var h in Physics.OverlapSphere(origin, grabRadius))
+        if (currentStamina < 10f) return; // Thể lực dưới 10 thì không cho cầm
+         if (leftPhysicsHand == null || rightPhysicsHand == null) return;
+           Vector3 leftPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
+        Vector3 rightPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
+         // 1. Quét rada tay TRÁI
+        Rigidbody pickLeft = GetClosestRb(leftPos, grabRadius);
+        
+        // 2. Quét rada tay PHẢI
+        Rigidbody pickRight = GetClosestRb(rightPos, grabRadius);
+        // ĐIỀU KIỆN MỚI: Phải có cả 2 tay chạm vào và cả 2 tay phải cùng chạm vào MỘT vật duy nhất
+        if (pickLeft != null && pickRight != null && pickLeft == pickRight)
         {
-            if (h.gameObject == gameObject)       continue;
-            if (h.transform.IsChildOf(transform)) continue;
-            var hrb = h.GetComponent<Rigidbody>();
-            if (hrb == null) continue;
-            float d = Vector3.Distance(origin, h.transform.position);
-            if (d < best) { best = d; pick = hrb; }
-        }
-
-        if (pick != null)
-        {
-            ReleaseGrab();
-
-            grabbedRb   = pick;
-            isGrabbing  = true;
+            // Nếu thỏa mãn, gắn lò xo cho cả 2 tay vào vật đó
+            AttachHand(leftPhysicsHand, pickLeft);
+            AttachHand(rightPhysicsHand, pickRight);
+            
+            isGrabbing = true;
+            grabbedRb = pickLeft; // Ghi nhớ vật chung để ném
             chargeTimer = 0f;
-
-            // FixedJoint: vat bi giu chac, breakForce cho phep bi bung khi va manh
-            GameObject anchor = rightHandBone != null ? rightHandBone.gameObject : gameObject;
-            grabJoint = anchor.AddComponent<FixedJoint>();
-            grabJoint.connectedBody   = pick;
-            grabJoint.breakForce      = grabBreakForce;
-            grabJoint.breakTorque     = grabBreakForce;
-            grabJoint.enableCollision = false;
-
-            Debug.Log("[Grab] Caught: " + pick.name + " via FixedJoint");
+            
+            if (anim != null) anim.SetBool("IsGrabbing", true); 
+            Debug.Log("[Grab] Đã ôm vật bằng cả 2 tay!");
         }
+        else
+        {
+            Debug.Log("[Grab] Chưa đủ 2 tay hoặc chạm 2 vật khác nhau - Không cầm!");
+        }
+        
     }
 
     void ReleaseGrab()
-    {
-        if (grabJoint != null) { Destroy(grabJoint); grabJoint = null; }
-        isGrabbing  = false;
-        chargeTimer = 0f;
-        grabbedRb   = null;
-    }
-
-    // Goi khi FixedJoint bi break do luc manh
-    void OnJointBreak(float breakForce)
-    {
-        Debug.Log($"[Grab] Joint broke at force {breakForce:F1}");
-        grabJoint  = null;
+     {
+        // Chặt đứt tất cả lò xo nam châm ở 2 tay khi buông chuột
+        foreach (var j in activeGrabJoints)
+        {
+            if (j != null) Destroy(j);
+        }
+        activeGrabJoints.Clear();
+        
         isGrabbing = false;
-        grabbedRb  = null;
+        chargeTimer = 0f;
+        grabbedRb = null;
+        
+        // Tắt Anim, thả tay xuống
+        if (anim != null) anim.SetBool("IsGrabbing", false); 
+    }
+    // HÀM HỖ TRỢ 1: Tìm vật có Rigidbody gần tay nhất
+    Rigidbody GetClosestRb(Vector3 origin, float radius)
+    {
+        float best = Mathf.Infinity;
+        Rigidbody pick = null;
+        foreach (var h in Physics.OverlapSphere(origin, radius))
+        {
+            if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
+            var hrb = h.GetComponent<Rigidbody>();
+            if (hrb == null) continue;
+            
+            float d = Vector3.Distance(origin, h.transform.position);
+            if (d < best) { best = d; pick = hrb; }
+        }
+        return pick;
+    }
+    // HÀM HỖ TRỢ 2: Tạo kết nối lò xo nam châm giữa tay và vật
+    void AttachHand(Rigidbody handRb, Rigidbody targetRb)
+    {
+        SpringJoint joint = handRb.gameObject.AddComponent<SpringJoint>();
+        joint.connectedBody = targetRb;
+
+        joint.autoConfigureConnectedAnchor = false;
+        joint.anchor = Vector3.zero;
+
+        // --- TÌM ĐIỂM TRÊN BỀ MẶT ĐỂ HÚT VÀO ---
+        Collider targetCol = targetRb.GetComponentInChildren<Collider>();
+        if (targetCol != null)
+        {
+            // Tìm điểm trên bề mặt vật thể gần tay nhất
+            Vector3 worldClosestPoint = targetCol.ClosestPoint(handRb.position);
+            // Chuyển điểm đó về tọa độ Local của vật thể
+            joint.connectedAnchor = targetRb.transform.InverseTransformPoint(worldClosestPoint);
+        }
+        else
+        {
+            joint.connectedAnchor = Vector3.zero; // Fallback nếu không thấy Collider
+        }
+        joint.spring = grabSpring; 
+        joint.damper = grabDamper;
+
+        joint.minDistance = 0f;
+        joint.maxDistance = 0f;
+        joint.breakForce = grabBreakForce *100f;
+        joint.breakTorque = grabBreakForce *100f;
+        activeGrabJoints.Add(joint);
     }
 
     public bool IsCharging() { return isGrabbing && grabbedRb != null; }
@@ -262,16 +402,23 @@ public class PlayerMovement : MonoBehaviour
         Vector3 punchOrigin = rightHandBone != null
             ? rightHandBone.position
             : transform.position + transform.forward * 0.5f + Vector3.up * 0.5f;
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(punchOrigin, punchRadius);
-
-        Vector3 grabOrigin = rightHandBone != null
-            ? rightHandBone.position
-            : transform.position + transform.forward * grabDistance;
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(grabOrigin, grabRadius);
-
-        Gizmos.color = isGrounded ? Color.green : Color.gray;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundCheckDistance);
+        // Gizmos.color = Color.red;
+        // Gizmos.DrawWireSphere(punchOrigin, punchRadius);
+         Gizmos.color = Color.red;
+        if (leftHandBone != null) Gizmos.DrawWireSphere(leftHandBone.position, punchRadius);
+        if (rightHandBone != null) Gizmos.DrawWireSphere(rightHandBone.position, punchRadius);
+        
+    //     Gizmos.color = Color.yellow;
+    //    if (leftPhysicsHand != null) Gizmos.DrawWireSphere(leftPhysicsHand.position, grabRadius);
+    //     if (rightPhysicsHand != null) Gizmos.DrawWireSphere(rightPhysicsHand.position, grabRadius);
+      Gizmos.color = Color.yellow;
+        if (leftPhysicsHand != null) {
+            Vector3 lPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
+            Gizmos.DrawWireSphere(lPos, grabRadius);
+        }
+        if (rightPhysicsHand != null) {
+            Vector3 rPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
+            Gizmos.DrawWireSphere(rPos, grabRadius);
+        }
     }
 }

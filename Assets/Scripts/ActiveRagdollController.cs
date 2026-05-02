@@ -56,7 +56,6 @@ public class ActiveRagdollController : MonoBehaviour
         playerRb = GetComponent<Rigidbody>();
         if (playerRb == null) return;
 
-        playerRb.mass = 100f;
         playerRb.constraints = RigidbodyConstraints.FreezeRotation;
 
         List<ActiveRagdollBone> boneList = new List<ActiveRagdollBone>();
@@ -66,7 +65,7 @@ public class ActiveRagdollController : MonoBehaviour
         if (balancer == null) balancer = physicRig.gameObject.AddComponent<ActiveRagdollBalancer>();
         balancer.Setup(playerRb);
         hipRb = physicRig.GetComponent<Rigidbody>();
-        if (hipRb != null) hipRb.mass = 20f; // Hong phai nang de lam neo
+        // if (hipRb != null) hipRb.mass = 20f; // Hong phai nang de lam neo
         
         realHip = physicRig.GetChild(0); // Lấy xương spine
 
@@ -88,7 +87,8 @@ public class ActiveRagdollController : MonoBehaviour
                 bone.targetBone = tBone;
                 boneList.Add(bone);
 
-                joint.gameObject.layer = 8; 
+                // joint.gameObject.layer = 8; 
+                joint.gameObject.layer = gameObject.layer;
                 var rb = joint.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
@@ -97,7 +97,7 @@ public class ActiveRagdollController : MonoBehaviour
                     rb.interpolation = RigidbodyInterpolation.Interpolate;
                     
                     // Khối lượng các đốt sống nhẹ hơn để dễ nhấc
-                    if (joint.name.ToLower().Contains("spine")) rb.mass = 2f;
+                    // if (joint.name.ToLower().Contains("spine")) rb.mass = 2f;
                 }
             }
         }
@@ -124,7 +124,15 @@ public class ActiveRagdollController : MonoBehaviour
 
         float currentBalanceSpring = balanceSpring;
         float currentMuscleSpring = muscleSpring;
-        
+         // --- LOGIC MỚI: GỒNG CƠ BẮP KHI ĐẤM ---
+        PlayerMovement player = GetComponent<PlayerMovement>();
+        if (player != null && player.isPunching)
+        {
+            // Tăng độ cứng cơ bắp lên gấp 5 lần (để tay quạt cực nhanh và cứng như thép)
+            currentMuscleSpring *= 5f; 
+            // Tăng cả lực giữ thăng bằng để đấm không bị ngã
+            currentBalanceSpring *= 2f; 
+        }
         // float tiltAngle = Vector3.Angle(hipRb.transform.forward, Vector3.up);
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up); 
 
@@ -138,11 +146,13 @@ public class ActiveRagdollController : MonoBehaviour
             // Bạn có thể nhét thêm Debug.Log ở đây nếu muốn kiểm tra
         }
        
-        if (!isKnockedOut && stability > 50f && tiltAngle > 45f && !isWakingUp) // Nếu bị nghiêng quá 75 độ mà không gượng dậy được
+        if (!isKnockedOut && stability > 50f && tiltAngle > 65f && !isWakingUp) // Nếu bị nghiêng quá 75 độ mà không gượng dậy được
         {
             ApplyDamage(100f); // Tự gây "sát thương thăng bằng" để xỉu luôn
         }
-
+        if ( tiltAngle > 45f){
+        Debug.Log("[ActiveRagdoll] Tilt Angle: " + tiltAngle);
+        }
         // 3. Cap nhat Thang bang
         balancer.UpdateBalance(currentBalanceSpring, balanceDamper, Quaternion.identity);
         
@@ -156,7 +166,12 @@ public class ActiveRagdollController : MonoBehaviour
         {
             float forceMult = (tiltAngle > 45f) ? 2f : 1f;
             hipRb.AddForce(Vector3.up * standUpForce * diff * forceMult, ForceMode.Force);
-            hipRb.linearVelocity *= 0.95f; // Giam luc quan tinh
+            // hipRb.linearVelocity *= 0.95f; // Giam luc quan tinh
+             // CHỈ giảm quán tính trục Y (lên/xuống) để chống nảy, KHÔNG giảm trục X/Z 
+            // Nếu giảm cả X/Z, gấu sẽ bị mất đà khi đang chạy và gây ra hiện tượng giật cục (jitter)
+            Vector3 currentVel = hipRb.linearVelocity;
+            currentVel.y *= 0.95f;
+            hipRb.linearVelocity = currentVel;
         }
 
         foreach (var bone in bones)
@@ -255,7 +270,7 @@ private System.Collections.IEnumerator KnockoutRoutine()
 {
     isKnockedOut = true;
     stability = 0;
-
+    
     // THÁO XÍCH HÔNG: Cho phép hông rơi xuống chạm đất (Rất quan trọng)
     var joint = hipRb.GetComponent<ConfigurableJoint>();
     joint.yMotion = ConfigurableJointMotion.Free;

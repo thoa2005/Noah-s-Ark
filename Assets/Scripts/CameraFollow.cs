@@ -7,7 +7,7 @@ public class CameraFollow : MonoBehaviour
     public Transform target;
 
     [Header("Camera Settings")]
-    public float distance      = 12f;
+    public float distance      = 10f;
     public float fixedPitch    = 40f;   // Goc nhin tu tren xuong co dinh (nhu Party Animals)
     public float rotateSpeed   = 120f;
     public float smoothSpeed   = 6f;
