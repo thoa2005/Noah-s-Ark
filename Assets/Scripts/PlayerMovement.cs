@@ -170,6 +170,7 @@ public class PlayerMovement : MonoBehaviour
         }
         currentStamina = Mathf.Clamp(currentStamina, 0, maxStamina);
         
+        
     }
 
     void CheckGround()
@@ -286,28 +287,36 @@ public class PlayerMovement : MonoBehaviour
          if (leftPhysicsHand == null || rightPhysicsHand == null) return;
            Vector3 leftPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
         Vector3 rightPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
-         // 1. Quét rada tay TRÁI
-        Rigidbody pickLeft = GetClosestRb(leftPos, grabRadius);
         
-        // 2. Quét rada tay PHẢI
-        Rigidbody pickRight = GetClosestRb(rightPos, grabRadius);
-        // ĐIỀU KIỆN MỚI: Phải có cả 2 tay chạm vào và cả 2 tay phải cùng chạm vào MỘT vật duy nhất
-        if (pickLeft != null && pickRight != null && pickLeft == pickRight)
+        // Lấy TẤT CẢ Rb trong từng vùng quét
+        var leftSet  = GetClosestRb(leftPos,  grabRadius);
+        var rightSet = GetClosestRb(rightPos, grabRadius);
+        
+        // Tìm phần giao: Rb nào nằm trong CẢ 2 vòng?
+        Rigidbody commonTarget = null;
+        float bestDist = Mathf.Infinity;
+        foreach (var rb in leftSet)
         {
-            // Nếu thỏa mãn, gắn lò xo cho cả 2 tay vào vật đó
-            AttachHand(leftPhysicsHand, pickLeft);
-            AttachHand(rightPhysicsHand, pickRight);
-            
+            if (rightSet.Contains(rb))
+            {
+                float d = Vector3.Distance(transform.position, rb.position);
+                if (d < bestDist) { bestDist = d; commonTarget = rb; }
+            }
+        }
+        // Nếu tìm được vật chung thì cầm
+        if (commonTarget != null)
+        {
+            AttachHand(leftPhysicsHand,  commonTarget);
+            AttachHand(rightPhysicsHand, commonTarget);
             isGrabbing = true;
-            grabbedRb = pickLeft; // Ghi nhớ vật chung để ném
+            grabbedRb  = commonTarget;
             chargeTimer = 0f;
-            
-            if (anim != null) anim.SetBool("IsGrabbing", true); 
-            Debug.Log("[Grab] Đã ôm vật bằng cả 2 tay!");
+            if (anim != null) anim.SetBool("IsGrabbing", true);
+            Debug.Log("[Grab] Đã ôm vật bằng cả 2 tay: " + commonTarget.name);
         }
         else
         {
-            Debug.Log("[Grab] Chưa đủ 2 tay hoặc chạm 2 vật khác nhau - Không cầm!");
+            Debug.Log("[Grab] Không có vật nào nằm trong cả 2 vòng quét!");
         }
         
     }
@@ -329,20 +338,24 @@ public class PlayerMovement : MonoBehaviour
         if (anim != null) anim.SetBool("IsGrabbing", false); 
     }
     // HÀM HỖ TRỢ 1: Tìm vật có Rigidbody gần tay nhất
-    Rigidbody GetClosestRb(Vector3 origin, float radius)
+    HashSet<Rigidbody> GetClosestRb(Vector3 origin, float radius)
     {
-        float best = Mathf.Infinity;
-        Rigidbody pick = null;
-        foreach (var h in Physics.OverlapSphere(origin, radius))
-        {
-            if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
-            var hrb = h.GetComponent<Rigidbody>();
-            if (hrb == null) continue;
-            
-            float d = Vector3.Distance(origin, h.transform.position);
-            if (d < best) { best = d; pick = hrb; }
-        }
-        return pick;
+         // HashSet là một túi đựng, mỗi thứ chỉ được bỏ vào 1 lần (không trùng)
+    var result = new HashSet<Rigidbody>();
+    
+    foreach (var h in Physics.OverlapSphere(origin, radius))
+    {
+        // Bỏ qua chính mình và các xương của chính mình
+        if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
+        
+        // attachedRigidbody tự leo lên tìm Rigidbody ở parent nếu cần
+        // (khác với GetComponent chỉ tìm đúng trên GameObject đó thôi)
+        var hrb = h.attachedRigidbody;
+        
+        if (hrb != null) result.Add(hrb); // Bỏ vào túi
+    }
+    
+    return result; // Trả về cả túi, không chỉ 1 cái
     }
     // HÀM HỖ TRỢ 2: Tạo kết nối lò xo nam châm giữa tay và vật
     void AttachHand(Rigidbody handRb, Rigidbody targetRb)

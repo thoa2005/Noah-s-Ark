@@ -140,8 +140,8 @@ public class ActiveRagdollController : MonoBehaviour
         {
          
             // Duy trì trạng thái gồng (x3 lực kéo thẳng, x2 độ cứng cơ bắp)
-            currentBalanceSpring *= 3f;
-            currentMuscleSpring *= 2f; 
+            currentBalanceSpring *= 1f;
+            currentMuscleSpring *= 1f; 
             
             // Bạn có thể nhét thêm Debug.Log ở đây nếu muốn kiểm tra
         }
