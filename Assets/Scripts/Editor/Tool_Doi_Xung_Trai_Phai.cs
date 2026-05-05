@@ -38,7 +38,7 @@ public class Tool_Doi_Xung_Trai_Phai : EditorWindow
                     Transform left = pair.Value;
                     Transform right = bones[rightName];
 
-                    // Copy Rigidbody
+                    // 1. Copy Rigidbody
                     Rigidbody lRb = left.GetComponent<Rigidbody>();
                     if (lRb != null)
                     {
@@ -46,7 +46,7 @@ public class Tool_Doi_Xung_Trai_Phai : EditorWindow
                         EditorUtility.CopySerialized(lRb, rRb);
                     }
 
-                    // Copy Colliders
+                    // 2. Copy Colliders
                     foreach (var lCol in left.GetComponents<CapsuleCollider>())
                     {
                         CapsuleCollider rCol = right.gameObject.GetComponent<CapsuleCollider>() ?? right.gameObject.AddComponent<CapsuleCollider>();
@@ -54,16 +54,43 @@ public class Tool_Doi_Xung_Trai_Phai : EditorWindow
                         rCol.center = new Vector3(-lCol.center.x, lCol.center.y, lCol.center.z);
                     }
 
-                    // Copy Joint
+                    // 3. Copy Joint (Thông minh hơn)
                     ConfigurableJoint lJ = left.GetComponent<ConfigurableJoint>();
                     if (lJ != null)
                     {
                         ConfigurableJoint rJ = right.gameObject.GetComponent<ConfigurableJoint>() ?? right.gameObject.AddComponent<ConfigurableJoint>();
+                        
+                        // Lưu lại reference xương cha cũ để xử lý sau khi copy
+                        Rigidbody lConnectedBody = lJ.connectedBody;
+
                         EditorUtility.CopySerialized(lJ, rJ);
+
+                        // Đảo ngược Anchor theo trục X
+                        rJ.anchor = new Vector3(-lJ.anchor.x, lJ.anchor.y, lJ.anchor.z);
+                        rJ.connectedAnchor = new Vector3(-lJ.connectedAnchor.x, lJ.connectedAnchor.y, lJ.connectedAnchor.z);
+
+                        // Gán lại xương cha tương ứng bên phải
+                        if (lConnectedBody != null)
+                        {
+                            string lParentName = lConnectedBody.name;
+                            if (lParentName.EndsWith(".L"))
+                            {
+                                string rParentName = lParentName.Replace(".L", ".R");
+                                if (bones.ContainsKey(rParentName))
+                                {
+                                    rJ.connectedBody = bones[rParentName].GetComponent<Rigidbody>();
+                                }
+                            }
+                            else
+                            {
+                                // Nếu xương cha là xương trục giữa (như spine), giữ nguyên
+                                rJ.connectedBody = lConnectedBody;
+                            }
+                        }
                     }
                 }
             }
         }
-        EditorUtility.DisplayDialog("Xong", "Đã copy dữ liệu từ các xương .L sang .R", "OK");
+        EditorUtility.DisplayDialog("Xong", "Đã cập nhật đối xứng chuẩn (đã đảo trục X và nối lại xương cha).", "OK");
     }
 }

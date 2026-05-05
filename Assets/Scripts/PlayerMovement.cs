@@ -20,6 +20,8 @@ public class PlayerMovement : MonoBehaviour
     public float pushForce = 50f; // Lực đẩy vật lý (Chỉnh số này to để đối thủ bay xa)
     public float punchRadius   = 2f;
     public float punchCooldown = 0.5f;
+    public Vector3 punchOffset = new Vector3(0, 0, 0.2f); // Độ lệch của vòng đấm so với bàn tay
+
 
     [Header("Grab+Throw (Chuot trai): Nhan=cam, Giu=charge, Nha=nem")]
     public float grabRadius    = 2.5f;
@@ -225,6 +227,11 @@ public class PlayerMovement : MonoBehaviour
         Transform[] origins = { leftHandBone, rightHandBone };
         foreach (var hand in origins)
         {
+            // Tạo vị trí mới dựa trên Offset (xa tay hơn)
+    Vector3 pPos = hand.TransformPoint(punchOffset); 
+    
+    // Quét tại pPos thay vì hand.position
+    foreach (var h in Physics.OverlapSphere(pPos, punchRadius)) 
             if (hand == null) continue;
             foreach (var h in Physics.OverlapSphere(hand.position, punchRadius))
             {
@@ -410,28 +417,63 @@ public class PlayerMovement : MonoBehaviour
 
     // ------------------------------------------------------------------ //
 
-    void OnDrawGizmosSelected()
-    {
-        Vector3 punchOrigin = rightHandBone != null
-            ? rightHandBone.position
-            : transform.position + transform.forward * 0.5f + Vector3.up * 0.5f;
-        // Gizmos.color = Color.red;
-        // Gizmos.DrawWireSphere(punchOrigin, punchRadius);
-         Gizmos.color = Color.red;
-        if (leftHandBone != null) Gizmos.DrawWireSphere(leftHandBone.position, punchRadius);
-        if (rightHandBone != null) Gizmos.DrawWireSphere(rightHandBone.position, punchRadius);
+//     void OnDrawGizmosSelected()
+//     {
+//         Vector3 punchOrigin = rightHandBone != null
+//             ? rightHandBone.position
+//             : transform.position + transform.forward * 0.5f + Vector3.up * 0.5f;
+//         // Gizmos.color = Color.red;
+//         // Gizmos.DrawWireSphere(punchOrigin, punchRadius);
+//        Gizmos.color = Color.red;
+// if (leftHandBone != null) Gizmos.DrawWireSphere(leftHandBone.TransformPoint(punchOffset), punchRadius);
+// if (rightHandBone != null) Gizmos.DrawWireSphere(rightHandBone.TransformPoint(punchOffset), punchRadius);
         
-    //     Gizmos.color = Color.yellow;
-    //    if (leftPhysicsHand != null) Gizmos.DrawWireSphere(leftPhysicsHand.position, grabRadius);
-    //     if (rightPhysicsHand != null) Gizmos.DrawWireSphere(rightPhysicsHand.position, grabRadius);
-      Gizmos.color = Color.yellow;
-        if (leftPhysicsHand != null) {
-            Vector3 lPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
-            Gizmos.DrawWireSphere(lPos, grabRadius);
-        }
-        if (rightPhysicsHand != null) {
-            Vector3 rPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
-            Gizmos.DrawWireSphere(rPos, grabRadius);
+//     //     Gizmos.color = Color.yellow;
+//     //    if (leftPhysicsHand != null) Gizmos.DrawWireSphere(leftPhysicsHand.position, grabRadius);
+//     //     if (rightPhysicsHand != null) Gizmos.DrawWireSphere(rightPhysicsHand.position, grabRadius);
+//       Gizmos.color = Color.yellow;
+//         if (leftPhysicsHand != null) {
+//             Vector3 lPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
+//             Gizmos.DrawWireSphere(lPos, grabRadius);
+//         }
+//         if (rightPhysicsHand != null) {
+//             Vector3 rPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
+//             Gizmos.DrawWireSphere(rPos, grabRadius);
+//         }
+//     }
+void OnDrawGizmosSelected()
+{
+    // Nếu chưa Play, tự đi tìm xương tay để hiển thị vòng đỏ trong Scene
+    if (leftHandBone == null || rightHandBone == null)
+    {
+        var controller = GetComponent<ActiveRagdollController>();
+        if (controller != null && controller.physicRig != null)
+        {
+            Transform[] allBones = controller.physicRig.GetComponentsInChildren<Transform>();
+            foreach (var t in allBones)
+            {
+                string n = t.name.ToLower();
+                if (n.Contains("hand.l") || n.Contains("hand_l")) leftHandBone = t;
+                if (n.Contains("hand.r") || n.Contains("hand_r")) rightHandBone = t;
+            }
         }
     }
+
+    // Vẽ vòng đỏ cho đấm (Punch)
+    Gizmos.color = Color.red;
+    if (leftHandBone != null) Gizmos.DrawWireSphere(leftHandBone.TransformPoint(punchOffset), punchRadius);
+    if (rightHandBone != null) Gizmos.DrawWireSphere(rightHandBone.TransformPoint(punchOffset), punchRadius);
+
+    // Vẽ vòng vàng cho Grab (nếu bạn muốn xem luôn cả vòng Grab)
+    Gizmos.color = Color.yellow;
+    if (leftPhysicsHand != null) {
+        Vector3 lPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
+        Gizmos.DrawWireSphere(lPos, grabRadius);
+    }
+    if (rightPhysicsHand != null) {
+        Vector3 rPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
+        Gizmos.DrawWireSphere(rPos, grabRadius);
+    }
+}
+
 }
