@@ -239,7 +239,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Run
-  m_Speed: 2.05
+  m_Speed: 2.15
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 7701244177139676984}

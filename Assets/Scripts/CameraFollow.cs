@@ -11,23 +11,28 @@ public class CameraFollow : MonoBehaviour
     public float fixedPitch    = 40f;   // Goc nhin tu tren xuong co dinh (nhu Party Animals)
     public float rotateSpeed   = 120f;
     public float smoothSpeed   = 6f;
+    public float rotationSmoothSpeed = 5f; // Tốc độ xoay camera mượt
 
     [Header("Wall Collision")]
     public float minDistance        = 3f;   // Khoang cach toi thieu toi muc tieu
     public float collisionRadius    = 0.3f; // Ban kinh sphere cast tranh tuong
     public LayerMask collisionMask  = ~0;   // Mac dinh va cham tat ca layer
 
-    private float currentYaw   = 0f;
-    private float currentDist;             // Khoang cach thuc te sau khi tranh tuong
+    private float currentYaw    = 0f;
+    private Vector3 currentTargetPos;      // Vị trí mục tiêu ảo (đã làm mượt)
+    private Vector3 smoothVelocity;        // Biến phụ cho SmoothDamp
 
     void Start()
     {
-        currentDist = distance;
+        if (target != null) currentTargetPos = target.position;
     }
 
     void LateUpdate()
     {
         if (target == null) return;
+
+        // 1. LÀM MƯỢT VỊ TRÍ MỤC TIÊU: Triệt tiêu rung lắc từ Ragdoll
+        currentTargetPos = Vector3.SmoothDamp(currentTargetPos, target.position, ref smoothVelocity, 0.2f);
 
         // Xoay ngang bang Middle Mouse
         var mouse = Mouse.current;
@@ -35,24 +40,16 @@ public class CameraFollow : MonoBehaviour
             currentYaw += mouse.delta.x.ReadValue() * rotateSpeed * Time.deltaTime;
 
         // Tinh huong camera
-        Quaternion rotation   = Quaternion.Euler(fixedPitch, currentYaw, 0f);
-        Vector3    targetPos  = target.position + Vector3.up * 1f;
-        Vector3    camDir     = rotation * Vector3.back; // Huong tu muc tieu den camera
+        Quaternion rotation     = Quaternion.Euler(fixedPitch, currentYaw, 0f);
+        Vector3    targetViewPos = currentTargetPos + Vector3.up * 0.5f; // Điểm nhìn cao hơn chân một chút
+        Vector3    camDir        = rotation * Vector3.back;
 
-        // --- Wall Collision Avoidance ---
-        float targetDist = distance;
-        RaycastHit hit;
-        if (Physics.SphereCast(targetPos, collisionRadius, camDir, out hit, distance, collisionMask))
-        {
-            // Dat camera truoc vat can voi mot chut offset
-            targetDist = Mathf.Max(hit.distance - 0.3f, minDistance);
-        }
-
-        // Smooth khoang cach de khong giat
-        currentDist = Mathf.Lerp(currentDist, targetDist, smoothSpeed * 2f * Time.deltaTime);
-
-        Vector3 desiredPos = targetPos + camDir * currentDist;
+        // 2. DI CHUYỂN CAMERA MƯỢT MÀ
+        Vector3 desiredPos = targetViewPos + camDir * distance;
         transform.position = Vector3.Lerp(transform.position, desiredPos, smoothSpeed * Time.deltaTime);
-        transform.LookAt(targetPos);
+
+        // 3. XOAY CAMERA MƯỢT MÀ
+        Quaternion targetRotation = Quaternion.LookRotation(targetViewPos - transform.position);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSmoothSpeed * Time.deltaTime);
     }
 }

@@ -208,10 +208,9 @@ public class PlayerMovement : MonoBehaviour
             Vector3 vel = dir * moveSpeed;
             vel.y = rb.linearVelocity.y;
             rb.linearVelocity = vel;
-            // transform.rotation = Quaternion.Slerp(transform.rotation,
-            //     Quaternion.LookRotation(dir), 12f * Time.fixedDeltaTime);
+
             rb.MoveRotation(Quaternion.Slerp(rb.rotation,
-                Quaternion.LookRotation(dir), 12f * Time.fixedDeltaTime));
+                Quaternion.LookRotation(dir), 4f * Time.fixedDeltaTime));
         }
         else
         {
@@ -267,26 +266,6 @@ public class PlayerMovement : MonoBehaviour
         punchTimer = punchCooldown;
         ReleaseGrab();
         
-        // foreach (var h in Physics.OverlapSphere(hand.position, punchRadius))
-        // {
-        //     if (h.gameObject == gameObject)       continue;
-        //     if (h.transform.IsChildOf(transform)) continue;
-        //     // var hrb = h.GetComponent<Rigidbody>();
-        //     // if (hrb == null) continue;
-            
-        //     var hrb = h.GetComponent<Rigidbody>();
-        //     if (hrb == null) continue;
-        //     Vector3 punchDir = (h.transform.position - hand.position).normalized + Vector3.up * 0.2f;
-        //     hrb.AddForce(punchDir * pushForce, ForceMode.Impulse);
-        //       var targetController = h.GetComponentInParent<ActiveRagdollController>();
-        //     if (targetController != null)
-        //     {
-        //         targetController.ApplyDamage(punchForce); 
-        //     }
-        //     // hitObjects.Add(h.gameObject); 
-        //     Debug.Log("[Punch] Hit: " + h.gameObject.name);
-        // }
-        // }
     }
     public void PerformGrab()
     {
@@ -415,32 +394,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    // ------------------------------------------------------------------ //
-
-//     void OnDrawGizmosSelected()
-//     {
-//         Vector3 punchOrigin = rightHandBone != null
-//             ? rightHandBone.position
-//             : transform.position + transform.forward * 0.5f + Vector3.up * 0.5f;
-//         // Gizmos.color = Color.red;
-//         // Gizmos.DrawWireSphere(punchOrigin, punchRadius);
-//        Gizmos.color = Color.red;
-// if (leftHandBone != null) Gizmos.DrawWireSphere(leftHandBone.TransformPoint(punchOffset), punchRadius);
-// if (rightHandBone != null) Gizmos.DrawWireSphere(rightHandBone.TransformPoint(punchOffset), punchRadius);
-        
-//     //     Gizmos.color = Color.yellow;
-//     //    if (leftPhysicsHand != null) Gizmos.DrawWireSphere(leftPhysicsHand.position, grabRadius);
-//     //     if (rightPhysicsHand != null) Gizmos.DrawWireSphere(rightPhysicsHand.position, grabRadius);
-//       Gizmos.color = Color.yellow;
-//         if (leftPhysicsHand != null) {
-//             Vector3 lPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
-//             Gizmos.DrawWireSphere(lPos, grabRadius);
-//         }
-//         if (rightPhysicsHand != null) {
-//             Vector3 rPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
-//             Gizmos.DrawWireSphere(rPos, grabRadius);
-//         }
-//     }
+   
 void OnDrawGizmosSelected()
 {
     // Nếu chưa Play, tự đi tìm xương tay để hiển thị vòng đỏ trong Scene
