@@ -389,11 +389,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3995493702570494473, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: balanceDamper
-      value: 100
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3995493702570494473, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: balanceSpring
-      value: 20
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4042540654427430908, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Layer
@@ -1048,7 +1048,7 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 493616958}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 879b83b602bfac34bbad86bf4a1d61f9, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -2550,11 +2550,11 @@ PrefabInstance:
       objectReference: {fileID: 1387136338}
     - target: {fileID: 1898332633073650566, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: moveSpeed
-      value: 7
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 1898332633073650566, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: pushForce
-      value: 250
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 1898332633073650566, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: grabDamper
@@ -2674,7 +2674,7 @@ PrefabInstance:
       objectReference: {fileID: 853130377}
     - target: {fileID: 3995493702570494473, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: muscleDamper
-      value: 150
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3995493702570494473, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: balanceDamper

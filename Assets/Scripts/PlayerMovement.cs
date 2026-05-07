@@ -231,10 +231,8 @@ public class PlayerMovement : MonoBehaviour
     
     // Quét tại pPos thay vì hand.position
     foreach (var h in Physics.OverlapSphere(pPos, punchRadius)) 
-            if (hand == null) continue;
-            foreach (var h in Physics.OverlapSphere(hand.position, punchRadius))
             {
-                if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
+    if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
                 // KIỂM TRA: Nếu vừa đấm người này cách đây chưa đầy 0.1s thì bỏ qua
                 if (lastHitTime.ContainsKey(h.gameObject))
                 {
