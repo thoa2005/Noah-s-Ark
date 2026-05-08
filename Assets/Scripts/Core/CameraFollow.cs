@@ -18,6 +18,9 @@ public class CameraFollow : MonoBehaviour
     public float collisionRadius    = 0.3f; // Ban kinh sphere cast tranh tuong
     public LayerMask collisionMask  = ~0;   // Mac dinh va cham tat ca layer
 
+    [Header("Input")]
+    public CharacterInput _input;
+
     private float currentYaw    = 0f;
     private Vector3 currentTargetPos;      // Vị trí mục tiêu ảo (đã làm mượt)
     private Vector3 smoothVelocity;        // Biến phụ cho SmoothDamp
@@ -25,6 +28,8 @@ public class CameraFollow : MonoBehaviour
     void Start()
     {
         if (target != null) currentTargetPos = target.position;
+        // Nếu chưa gán input, tự tìm trên player
+        if (_input == null) _input = FindFirstObjectByType<CharacterInput>();
     }
 
     void LateUpdate()
@@ -34,10 +39,11 @@ public class CameraFollow : MonoBehaviour
         // 1. LÀM MƯỢT VỊ TRÍ MỤC TIÊU: Triệt tiêu rung lắc từ Ragdoll
         currentTargetPos = Vector3.SmoothDamp(currentTargetPos, target.position, ref smoothVelocity, 0.2f);
 
-        // Xoay ngang bang Middle Mouse
-        var mouse = Mouse.current;
-        if (mouse != null && mouse.middleButton.isPressed)
-            currentYaw += mouse.delta.x.ReadValue() * rotateSpeed * Time.deltaTime;
+        // Xoay ngang bằng Input System mới
+        if (_input != null && _input.isCameraRotatePressed)
+        {
+            currentYaw += _input.lookInput.x * rotateSpeed * Time.deltaTime;
+        }
 
         // Tinh huong camera
         Quaternion rotation     = Quaternion.Euler(fixedPitch, currentYaw, 0f);

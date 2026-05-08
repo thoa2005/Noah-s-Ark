@@ -8,7 +8,7 @@ public class ActiveRagdollController : MonoBehaviour
 {
     [Header("Connected Rigs")]
     public Transform animationRig;
-    public Transform targetRig;    
+    public Transform targetRig;
     public Transform physicRig;
 
     [Header("Muscle Settings")]
@@ -17,14 +17,14 @@ public class ActiveRagdollController : MonoBehaviour
     public float spineMuscleMultiplier = 5f; // Luc cho toan bo cot song khi dung day
 
     [Header("Balance Physics")]
-    public float balanceSpring = 60000f; 
+    public float balanceSpring = 60000f;
     public float balanceDamper = 1500f;
     public float standUpForce = 150f; // Giam xuong de khong bi bay len troi
-    public float targetHeight = 0.9f; 
+    public float targetHeight = 0.9f;
 
     [Header("State")]
     public bool isKnockedOut = false;
-      private bool isWakingUp = false; // <-- THÊM DÒNG NÀY VÀO
+    private bool isWakingUp = false; // <-- THÊM DÒNG NÀY VÀO
     [Header("Stability Settings")]
     public float stability = 100f;       // Điểm hiện tại
     public float maxStability = 100f;    // Điểm tối đa
@@ -35,7 +35,8 @@ public class ActiveRagdollController : MonoBehaviour
     private Rigidbody playerRb;
     private Rigidbody hipRb;
     private Transform realHip;
-    
+    private CharacterInput playerInput; // <--- INPUT SYSTEM MỚI
+
 
     private float lastMuscleSpring, lastMuscleDamper;
     private float lastBalanceSpring, lastBalanceDamper;
@@ -47,6 +48,7 @@ public class ActiveRagdollController : MonoBehaviour
 
     void Start()
     {
+        playerInput = GetComponent<CharacterInput>(); // <--- CACHE INPUT
         UpdateAllMuscleDrives();
     }
 
@@ -59,13 +61,14 @@ public class ActiveRagdollController : MonoBehaviour
         playerRb.constraints = RigidbodyConstraints.FreezeRotation;
 
         List<ActiveRagdollBone> boneList = new List<ActiveRagdollBone>();
-        
+
         // 1. Setup Balancer
         balancer = physicRig.GetComponent<ActiveRagdollBalancer>();
         if (balancer == null) balancer = physicRig.gameObject.AddComponent<ActiveRagdollBalancer>();
         balancer.Setup(playerRb);
         hipRb = physicRig.GetComponent<Rigidbody>();
         // if (hipRb != null) hipRb.mass = 20f; // Hong phai nang de lam neo
+
         
         realHip = physicRig.GetChild(0); // Lấy xương spine
 
@@ -124,15 +127,16 @@ public class ActiveRagdollController : MonoBehaviour
 
         float currentBalanceSpring = balanceSpring;
         float currentMuscleSpring = muscleSpring;
-         // --- LOGIC MỚI: GỒNG CƠ BẮP KHI ĐẤM ---
-        PlayerMovement player = GetComponent<PlayerMovement>();
-        if (player != null && player.isPunching)
+
+        // --- LOGIC MỚI: GỒNG CƠ BẮP KHI ĐẤM (Dùng CharacterInput thay vì PlayerMovement) ---
+        if (playerInput != null && playerInput.isPunching)
         {
             // Tăng độ cứng cơ bắp lên gấp 5 lần (để tay quạt cực nhanh và cứng như thép)
             currentMuscleSpring *= 5f; 
             // Tăng cả lực giữ thăng bằng để đấm không bị ngã
             currentBalanceSpring *= 2f; 
         }
+
         // float tiltAngle = Vector3.Angle(hipRb.transform.forward, Vector3.up);
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up); 
 

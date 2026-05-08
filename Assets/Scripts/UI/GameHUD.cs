@@ -29,7 +29,9 @@ public class GameHUD : MonoBehaviour
 
     // Tham chieu den PlayerMovement de lay charge
     PlayerMovement playerMovement;
+    CharacterInput _input;
     bool           wasGameOver = false;
+
 
     // ------------------------------------------------------------------ //
 
@@ -40,7 +42,11 @@ public class GameHUD : MonoBehaviour
 
         var playerGo = GameObject.FindGameObjectWithTag("Player");
         if (playerGo != null)
+        {
             playerMovement = playerGo.GetComponent<PlayerMovement>();
+            _input = playerGo.GetComponent<CharacterInput>();
+        }
+
 
         if (gameOverPanel   != null) gameOverPanel.SetActive(false);
         if (chargeBarRoot   != null) chargeBarRoot.SetActive(false);
@@ -55,9 +61,12 @@ public class GameHUD : MonoBehaviour
         UpdateChargeBar();
         CheckGameOver();
 
-        // Phim R de restart
-        if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame) 
+        // Phim R de restart (Dung Input System moi)
+        if (_input != null && _input.isRestartRequest) 
+        {
+            _input.UseRestartRequest();
             RestartGame();
+        }
     }
 
     // ------------------------------------------------------------------ //
