@@ -20,7 +20,7 @@ public class PlayerMovement : MonoBehaviour
     public float pushForce = 50f; // Lực đẩy vật lý (Chỉnh số này to để đối thủ bay xa)
     public float punchRadius   = 2f;
     public float punchCooldown = 0.5f;
-    public Vector3 punchOffset = new Vector3(0, 0, 0.2f); // Độ lệch của vòng đấm so với bàn tay
+    public Vector3 punchOffset = new Vector3(0, 0.0002f, 0f); // Độ lệch của vòng đấm so với bàn tay
 
 
     [Header("Grab+Throw (Chuot trai): Nhan=cam, Giu=charge, Nha=nem")]
@@ -343,33 +343,35 @@ public class PlayerMovement : MonoBehaviour
     }
     // HÀM HỖ TRỢ 2: Tạo kết nối lò xo nam châm giữa tay và vật
     void AttachHand(Rigidbody handRb, Rigidbody targetRb)
-    {
-        SpringJoint joint = handRb.gameObject.AddComponent<SpringJoint>();
+      {
+        // 1. Đổi sang ConfigurableJoint
+        ConfigurableJoint joint = handRb.gameObject.AddComponent<ConfigurableJoint>();
         joint.connectedBody = targetRb;
-
+        // 2. Thêm các dòng khóa Motion (Vị trí và Xoay)
+        joint.xMotion = joint.yMotion = joint.zMotion = ConfigurableJointMotion.Limited;
+        joint.angularXMotion = joint.angularYMotion = joint.angularZMotion = ConfigurableJointMotion.Locked;
+        // 3. Thiết lập giới hạn vị trí (thay cho spring/damper cũ)
+        joint.linearLimit = new SoftJointLimit { limit = 0.001f };
+        // 1. Thêm độ nhún cho giới hạn (giúp bớt giật)
+        joint.linearLimitSpring = new SoftJointLimitSpring { spring = 5000f, damper = 100f };
+        // 2. Kích hoạt chế độ Projection (giúp vật lý ổn định hơn khi bị nén)
+        joint.projectionMode = JointProjectionMode.PositionAndRotation;
+        joint.projectionDistance = 0.01f;
+        // 3. Tắt va chạm trực tiếp giữa tay và vật (CỰC KỲ QUAN TRỌNG để bớt giật)
+        joint.enableCollision = false;
+        // 4. Giữ nguyên phần thiết lập Anchor (Điểm neo)
         joint.autoConfigureConnectedAnchor = false;
         joint.anchor = Vector3.zero;
-
-        // --- TÌM ĐIỂM TRÊN BỀ MẶT ĐỂ HÚT VÀO ---
         Collider targetCol = targetRb.GetComponentInChildren<Collider>();
-        if (targetCol != null)
-        {
-            // Tìm điểm trên bề mặt vật thể gần tay nhất
+        if (targetCol != null) {
             Vector3 worldClosestPoint = targetCol.ClosestPoint(handRb.position);
-            // Chuyển điểm đó về tọa độ Local của vật thể
             joint.connectedAnchor = targetRb.transform.InverseTransformPoint(worldClosestPoint);
+        } else {
+            joint.connectedAnchor = Vector3.zero;
         }
-        else
-        {
-            joint.connectedAnchor = Vector3.zero; // Fallback nếu không thấy Collider
-        }
-        joint.spring = grabSpring; 
-        joint.damper = grabDamper;
-
-        joint.minDistance = 0f;
-        joint.maxDistance = 0f;
-        joint.breakForce = grabBreakForce *100f;
-        joint.breakTorque = grabBreakForce *100f;
+        // 5. Giữ nguyên phần độ bền
+        joint.breakForce = grabBreakForce * 100f;
+        joint.breakTorque = grabBreakForce * 100f;
         activeGrabJoints.Add(joint);
     }
 

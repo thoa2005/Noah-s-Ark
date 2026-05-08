@@ -12,11 +12,11 @@ AvatarMask:
   - m_Path: 
     m_Weight: 1
   - m_Path: 'meshes[0]'
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: metarig
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: metarig/spine
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: metarig/spine/pelvis.L
     m_Weight: 1
   - m_Path: metarig/spine/pelvis.L/pelvis.L_end
