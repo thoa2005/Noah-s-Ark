@@ -24,7 +24,7 @@ public class ActiveRagdollController : MonoBehaviour
 
     [Header("State")]
     public bool isKnockedOut = false;
-    private bool isWakingUp = false; // <-- THÊM DÒNG NÀY VÀO
+    private bool isWakingUp = false;
     [Header("Stability Settings")]
     public float stability = 100f;       // Điểm hiện tại
     public float maxStability = 100f;    // Điểm tối đa
@@ -36,7 +36,6 @@ public class ActiveRagdollController : MonoBehaviour
     private Rigidbody hipRb;
     private Transform realHip;
     private CharacterInput playerInput; // <--- INPUT SYSTEM MỚI
-
 
     private float lastMuscleSpring, lastMuscleDamper;
     private float lastBalanceSpring, lastBalanceDamper;
@@ -67,9 +66,7 @@ public class ActiveRagdollController : MonoBehaviour
         if (balancer == null) balancer = physicRig.gameObject.AddComponent<ActiveRagdollBalancer>();
         balancer.Setup(playerRb);
         hipRb = physicRig.GetComponent<Rigidbody>();
-        // if (hipRb != null) hipRb.mass = 20f; // Hong phai nang de lam neo
 
-        
         realHip = physicRig.GetChild(0); // Lấy xương spine
 
         // 2. Nap TAT CA cac xuong co Rigidbody vao danh sach dieu khien
@@ -79,18 +76,19 @@ public class ActiveRagdollController : MonoBehaviour
             if (joint == null) continue;
 
             Transform aBone = FindRecursive(animationRig, joint.name);
-            Transform tBone = FindRecursive(targetRig, joint.name); 
+            Transform tBone = FindRecursive(targetRig, joint.name);
             if (aBone != null && tBone != null)
-
             {
                 ActiveRagdollBone bone = joint.gameObject.GetComponent<ActiveRagdollBone>();
                 if (bone == null) bone = joint.gameObject.AddComponent<ActiveRagdollBone>();
-                
+
+                // Dán nhãn xương sống 1 lần duy nhất để tối ưu hiệu năng
+                bone.isSpine = joint.name.ToLower().Contains("spine");
+
                 bone.Setup(aBone, joint, this);
                 bone.targetBone = tBone;
                 boneList.Add(bone);
 
-                // joint.gameObject.layer = 8; 
                 joint.gameObject.layer = gameObject.layer;
                 var rb = joint.GetComponent<Rigidbody>();
                 if (rb != null)
@@ -98,9 +96,6 @@ public class ActiveRagdollController : MonoBehaviour
                     rb.linearDamping = 1.0f;
                     rb.angularDamping = 10.0f;
                     rb.interpolation = RigidbodyInterpolation.Interpolate;
-                    
-                    // Khối lượng các đốt sống nhẹ hơn để dễ nhấc
-                    // if (joint.name.ToLower().Contains("spine")) rb.mass = 2f;
                 }
             }
         }
@@ -111,9 +106,8 @@ public class ActiveRagdollController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (bones == null || bones.Length == 0 || balancer == null || playerRb == null || hipRb == null) 
+        if (bones == null || bones.Length == 0 || balancer == null || playerRb == null || hipRb == null)
         {
-            // Neu bi NULL thi tu dong nap lai mot lan
             if (bones == null || bones.Length == 0) InitializeRig();
             return;
         }
@@ -128,39 +122,31 @@ public class ActiveRagdollController : MonoBehaviour
         float currentBalanceSpring = balanceSpring;
         float currentMuscleSpring = muscleSpring;
 
-        // --- LOGIC MỚI: GỒNG CƠ BẮP KHI ĐẤM (Dùng CharacterInput thay vì PlayerMovement) ---
+        // --- GỒNG CƠ BẮP KHI ĐẤM ---
         if (playerInput != null && playerInput.isPunching)
         {
-            // Tăng độ cứng cơ bắp lên gấp 5 lần (để tay quạt cực nhanh và cứng như thép)
-            currentMuscleSpring *= 5f; 
-            // Tăng cả lực giữ thăng bằng để đấm không bị ngã
-            currentBalanceSpring *= 2f; 
+            currentMuscleSpring *= 5f;
+            currentBalanceSpring *= 2f;
         }
 
-        // float tiltAngle = Vector3.Angle(hipRb.transform.forward, Vector3.up);
-        float tiltAngle = Vector3.Angle(realHip.up, Vector3.up); 
+        float tiltAngle = Vector3.Angle(realHip.up, Vector3.up);
 
         if (tiltAngle > 30f)
         {
-         
-            // Duy trì trạng thái gồng (x3 lực kéo thẳng, x2 độ cứng cơ bắp)
             currentBalanceSpring *= 1f;
-            currentMuscleSpring *= 1f; 
-            
-            // Bạn có thể nhét thêm Debug.Log ở đây nếu muốn kiểm tra
+            currentMuscleSpring *= 1f;
         }
-       
-        if (!isKnockedOut && stability > 50f && tiltAngle > 65f && !isWakingUp) // Nếu bị nghiêng quá 75 độ mà không gượng dậy được
+
+        // Kiểm tra điều kiện xỉu
+        if (!isKnockedOut && stability > 50f && tiltAngle > 65f && !isWakingUp)
         {
-            ApplyDamage(100f); // Tự gây "sát thương thăng bằng" để xỉu luôn
+            ApplyDamage(100f);
         }
-        if ( tiltAngle > 45f){
-        Debug.Log("[ActiveRagdoll] Tilt Angle: " + tiltAngle);
-        }
+
         // 3. Cap nhat Thang bang
         balancer.UpdateBalance(currentBalanceSpring, balanceDamper, Quaternion.identity);
-        
-        // 4. Cap nhat Co bap (Gong cot song)
+
+        // 4. Cap nhat Co bap (Dùng nhãn isSpine tối ưu)
         UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
 
         // 5. Luc day nhac mông (Stand Up)
@@ -170,9 +156,7 @@ public class ActiveRagdollController : MonoBehaviour
         {
             float forceMult = (tiltAngle > 45f) ? 2f : 1f;
             hipRb.AddForce(Vector3.up * standUpForce * diff * forceMult, ForceMode.Force);
-            // hipRb.linearVelocity *= 0.95f; // Giam luc quan tinh
-             // CHỈ giảm quán tính trục Y (lên/xuống) để chống nảy, KHÔNG giảm trục X/Z 
-            // Nếu giảm cả X/Z, gấu sẽ bị mất đà khi đang chạy và gây ra hiện tượng giật cục (jitter)
+
             Vector3 currentVel = hipRb.linearVelocity;
             currentVel.y *= 0.95f;
             hipRb.linearVelocity = currentVel;
@@ -196,8 +180,8 @@ public class ActiveRagdollController : MonoBehaviour
             float s = spring;
             float d = damper;
 
-            // GONG TOAN BO COT SONG: Tu spine den spine.006
-            if (bone.joint.name.ToLower().Contains("spine"))
+            // KIỂM TRA NHÃN SIÊU TỐC
+            if (bone.isSpine)
             {
                 s *= spineMuscleMultiplier;
                 d *= 2f;
@@ -240,7 +224,7 @@ public class ActiveRagdollController : MonoBehaviour
                 bone.animBone.rotation = bone.joint.transform.rotation;
             }
         }
-        
+
         if (animationRig != null && physicRig != null)
         {
             animationRig.position = physicRig.position;
@@ -259,44 +243,36 @@ public class ActiveRagdollController : MonoBehaviour
         }
         return null;
     }
+
     public void ApplyDamage(float force)
-{
-    if (isKnockedOut) return;
-
-    stability -= force;
-    if (stability <= 0)
     {
-        StartCoroutine(KnockoutRoutine());
+        if (isKnockedOut) return;
+
+        stability -= force;
+        if (stability <= 0)
+        {
+            StartCoroutine(KnockoutRoutine());
+        }
     }
-}
 
-private System.Collections.IEnumerator KnockoutRoutine()
-{
-    isKnockedOut = true;
-    stability = 0;
-    
-    // THÁO XÍCH HÔNG: Cho phép hông rơi xuống chạm đất (Rất quan trọng)
-    var joint = hipRb.GetComponent<ConfigurableJoint>();
-    joint.yMotion = ConfigurableJointMotion.Free;
+    private System.Collections.IEnumerator KnockoutRoutine()
+    {
+        isKnockedOut = true;
+        stability = 0;
 
-    yield return new WaitForSeconds(recoveryTime);
+        var joint = hipRb.GetComponent<ConfigurableJoint>();
+        if (joint != null) joint.yMotion = ConfigurableJointMotion.Free;
 
-    // TỈNH DẬY
-    
-    // BẮT ĐẦU QUÁ TRÌNH TỈNH DẬY
-    isWakingUp = true;     // Bật biển báo "Tôi đang thức dậy, đừng quét!"
-    isKnockedOut = false;  // Cấp điện lại cho cơ bắp hoạt động
-    
-    // Kéo người đứng lên
-    joint.yMotion = ConfigurableJointMotion.Locked;
-    
-    // Chờ 2 giây để kéo thẳng lưng lên (< 45 độ)
-    yield return new WaitForSeconds(2f);
-    
-    // ĐỨNG LÊN HOÀN TẤT
-    stability = maxStability;  // Hồi đầy 100 máu
-    isWakingUp = false;        // Cất biển báo đi, cho máy quét hoạt động bình thường
-     
-}
+        yield return new WaitForSeconds(recoveryTime);
 
+        isWakingUp = true;
+        isKnockedOut = false;
+
+        if (joint != null) joint.yMotion = ConfigurableJointMotion.Locked;
+
+        yield return new WaitForSeconds(2f);
+
+        stability = maxStability;
+        isWakingUp = false;
+    }
 }

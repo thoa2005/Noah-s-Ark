@@ -11,10 +11,11 @@ public class ActiveRagdollBone : MonoBehaviour
     public Transform animBone;
     public ConfigurableJoint joint;
     public Transform targetBone;
-    
+    public bool isSpine; // <--- NHÃN NHẬN DIỆN XƯƠNG SỐNG
+
     private Quaternion initialLocalRotation;
 
-// Sửa hàm Setup thành 3 tham số như sau:
+    // Sửa hàm Setup thành 3 tham số như sau:
     public void Setup(Transform animBone, ConfigurableJoint joint, ActiveRagdollController controller)
     {
         this.animBone = animBone;
@@ -33,9 +34,9 @@ public class ActiveRagdollBone : MonoBehaviour
         // Luu y: ConfigurableJoint su dung khong gian rotation nguoc (inverse)
         // joint.targetRotation = initialLocalRotation * Quaternion.Inverse(targetBone.localRotation);
         // joint.targetRotation = initialLocalRotation * Quaternion.Inverse(targetBone.localRotation);
-//         Quaternion deltaRotation = Quaternion.Inverse(targetBone.localRotation) * initialLocalRotation;
-// joint.targetRotation = deltaRotation;
-  joint.targetRotation = Quaternion.Inverse(targetBone.localRotation) * initialLocalRotation;
+        //         Quaternion deltaRotation = Quaternion.Inverse(targetBone.localRotation) * initialLocalRotation;
+        // joint.targetRotation = deltaRotation;
+        joint.targetRotation = Quaternion.Inverse(targetBone.localRotation) * initialLocalRotation;
 
     }
 
@@ -47,7 +48,7 @@ public class ActiveRagdollBone : MonoBehaviour
         {
             positionSpring = spring,
             positionDamper = damper,
-            maximumForce   = float.MaxValue
+            maximumForce = float.MaxValue
         };
 
         if (joint.rotationDriveMode == RotationDriveMode.Slerp)
@@ -67,7 +68,7 @@ public class ActiveRagdollBone : MonoBehaviour
         // Nếu lực đủ mạnh và KHÔNG phải va chạm với sàn nhà (Ground) thì mới báo xỉu
         if (force > 1000f && !collision.gameObject.CompareTag("Ground"))
         {
-            controller.ApplyDamage(force*0.001f);
+            controller.ApplyDamage(force * 0.001f);
         }
     }
 

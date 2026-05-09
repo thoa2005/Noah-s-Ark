@@ -27,8 +27,8 @@ public class GameHUD : MonoBehaviour
     [Header("Crosshair")]
     public Image crosshairImage;     // UI Image nho o giua man hinh
 
-    // Tham chieu den PlayerMovement de lay charge
-    PlayerMovement playerMovement;
+    // Tham chieu den PlayerCombat de lay charge
+    PlayerCombat playerCombat;
     CharacterInput _input;
     bool           wasGameOver = false;
 
@@ -43,7 +43,7 @@ public class GameHUD : MonoBehaviour
         var playerGo = GameObject.FindGameObjectWithTag("Player");
         if (playerGo != null)
         {
-            playerMovement = playerGo.GetComponent<PlayerMovement>();
+            playerCombat = playerGo.GetComponent<PlayerCombat>();
             _input = playerGo.GetComponent<CharacterInput>();
         }
 
@@ -79,11 +79,11 @@ public class GameHUD : MonoBehaviour
 
     void UpdateChargeBar()
     {
-        if (chargeBarRoot == null || chargeFill == null || playerMovement == null) return;
-        bool isCharging = playerMovement.IsCharging();
+        if (chargeBarRoot == null || chargeFill == null || playerCombat == null) return;
+        bool isCharging = playerCombat.IsCharging();
         chargeBarRoot.SetActive(isCharging);
         if (isCharging)
-            chargeFill.fillAmount = playerMovement.GetChargePct();
+            chargeFill.fillAmount = playerCombat.GetChargePct();
     }
 
     void CheckGameOver()
