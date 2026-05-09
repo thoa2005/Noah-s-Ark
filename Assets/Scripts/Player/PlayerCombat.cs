@@ -3,15 +3,15 @@ using System.Collections.Generic;
 
 public class PlayerCombat : MonoBehaviour
 {
+    [Header("Detectors")]
+    public CombatDetect combatDetect;
+
     [Header("Punch (Chuot phai)")]
     public float punchForce = 15f;
     public float pushForce = 50f; // Lực đẩy vật lý (Chỉnh số này to để đối thủ bay xa)
-    public float punchRadius = 2f;
     public float punchCooldown = 0.5f;
-    public Vector3 punchOffset = new Vector3(0, 0.0002f, 0f); // Độ lệch của vòng đấm so với bàn tay
 
     [Header("Grab+Throw (Chuot trai): Nhan=cam, Giu=charge, Nha=nem")]
-    public float grabRadius = 2.5f;
     public float minThrowForce = 5f;
     public float maxThrowForce = 20f;
     public float maxChargeTime = 1.0f;
@@ -19,7 +19,6 @@ public class PlayerCombat : MonoBehaviour
     public float grabBreakForce = 800f;
 
     [Header("Party Animals Grab Physics")]
-    public float grabOffset = 0.1f; // Độ lệch của vòng quét so với bàn tay
     public float grabSpring = 15000f; // Độ mạnh của nam châm hút
     public float grabDamper = 1000f;  // Độ êm (giảm rung lắc)
     public Rigidbody leftPhysicsHand;
@@ -155,32 +154,28 @@ public class PlayerCombat : MonoBehaviour
 
         if (anim != null && anim.GetCurrentAnimatorStateInfo(0).IsName("Punch"))
         {
+            if (combatDetect == null) return;
             Transform[] origins = { leftHandBone, rightHandBone };
             foreach (var hand in origins)
             {
                 if (hand == null) continue;
 
-                // Tạo vị trí mới dựa trên Offset (xa tay hơn)
-                Vector3 pPos = hand.TransformPoint(punchOffset);
-
-                // Quét tại pPos thay vì hand.position
-                foreach (var h in Physics.OverlapSphere(pPos, punchRadius))
+                var targets = combatDetect.GetPunchTargets(hand);
+                foreach (var hrb in targets)
                 {
-                    if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
                     // KIỂM TRA: Nếu vừa đấm người này cách đây chưa đầy 0.1s thì bỏ qua
-                    if (lastHitTime.ContainsKey(h.gameObject))
+                    if (lastHitTime.ContainsKey(hrb.gameObject))
                     {
-                        if (Time.time - lastHitTime[h.gameObject] < 0.1f) continue;
+                        if (Time.time - lastHitTime[hrb.gameObject] < 0.1f) continue;
                     }
-                    var hrb = h.GetComponent<Rigidbody>();
-                    if (hrb == null) continue;
+                    
                     // Thực hiện đẩy và gây sát thương
-                    Vector3 punchDir = (h.transform.position - hand.position).normalized + Vector3.up * 0.2f;
+                    Vector3 punchDir = (hrb.transform.position - hand.position).normalized + Vector3.up * 0.2f;
                     hrb.AddForce(punchDir * pushForce, ForceMode.Impulse);
-                    var targetController = h.GetComponentInParent<ActiveRagdollController>();
+                    var targetController = hrb.GetComponentInParent<ActiveRagdollController>();
                     if (targetController != null) targetController.ApplyDamage(punchForce);
                     // Ghi nhớ thời gian vừa đấm trúng người này
-                    lastHitTime[h.gameObject] = Time.time;
+                    lastHitTime[hrb.gameObject] = Time.time;
                 }
             }
         }
@@ -202,14 +197,11 @@ public class PlayerCombat : MonoBehaviour
     {
         if (currentStamina < 10f) return; // Thể lực dưới 10 thì không cho cầm
         
-        if (leftPhysicsHand == null || rightPhysicsHand == null) return;
+        if (leftPhysicsHand == null || rightPhysicsHand == null || combatDetect == null) return;
         
-        Vector3 leftPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
-        Vector3 rightPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
-
         // Lấy TẤT CẢ Rb trong từng vùng quét
-        var leftSet = GetClosestRb(leftPos, grabRadius);
-        var rightSet = GetClosestRb(rightPos, grabRadius);
+        var leftSet = combatDetect.GetGrabbableTargets(leftPhysicsHand);
+        var rightSet = combatDetect.GetGrabbableTargets(rightPhysicsHand);
 
         // Tìm phần giao: Rb nào nằm trong CẢ 2 vòng?
         Rigidbody commonTarget = null;
@@ -256,23 +248,7 @@ public class PlayerCombat : MonoBehaviour
         if (anim != null) anim.SetBool("IsGrabbing", false);
     }
 
-    // HÀM HỖ TRỢ 1: Tìm vật có Rigidbody gần tay nhất
-    HashSet<Rigidbody> GetClosestRb(Vector3 origin, float radius)
-    {
-        var result = new HashSet<Rigidbody>();
 
-        foreach (var h in Physics.OverlapSphere(origin, radius))
-        {
-            // Bỏ qua chính mình và các xương của chính mình
-            if (h.gameObject == gameObject || h.transform.IsChildOf(transform)) continue;
-
-            var hrb = h.attachedRigidbody;
-
-            if (hrb != null) result.Add(hrb); // Bỏ vào túi
-        }
-
-        return result; 
-    }
 
     // HÀM HỖ TRỢ 2: Tạo kết nối lò xo nam châm giữa tay và vật
     void AttachHand(Rigidbody handRb, Rigidbody targetRb)
@@ -337,22 +313,9 @@ public class PlayerCombat : MonoBehaviour
             FindHandBones();
         }
 
-        // Vẽ vòng đỏ cho đấm (Punch)
-        Gizmos.color = Color.red;
-        if (leftHandBone != null) Gizmos.DrawWireSphere(leftHandBone.TransformPoint(punchOffset), punchRadius);
-        if (rightHandBone != null) Gizmos.DrawWireSphere(rightHandBone.TransformPoint(punchOffset), punchRadius);
-
-        // Vẽ vòng vàng cho Grab
-        Gizmos.color = Color.yellow;
-        if (leftPhysicsHand != null)
+        if (combatDetect != null)
         {
-            Vector3 lPos = leftPhysicsHand.position + leftPhysicsHand.transform.forward * grabOffset;
-            Gizmos.DrawWireSphere(lPos, grabRadius);
-        }
-        if (rightPhysicsHand != null)
-        {
-            Vector3 rPos = rightPhysicsHand.position + rightPhysicsHand.transform.forward * grabOffset;
-            Gizmos.DrawWireSphere(rPos, grabRadius);
+            combatDetect.DrawDetectGizmos(leftHandBone, rightHandBone, leftPhysicsHand, rightPhysicsHand);
         }
     }
 }

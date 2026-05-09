@@ -8,14 +8,9 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 8f;
     public float jumpForce = 10f;
-    public float groundCheckDistance = 1.3f;
-    public float groundCheckRadius = 0.1f;
-    public LayerMask groundLayer;
-
-
-
-    public Transform leftFoot;
-    public Transform rightFoot;
+    
+    [Header("Detectors")]
+    public GroundDetect groundDetect;
 
 
     // --- Runtime state ---
@@ -23,7 +18,6 @@ public class PlayerMovement : MonoBehaviour
     private ActiveRagdollController ragdoll; // <-- THÊM DÒNG NÀY
     Rigidbody rb;
     private CharacterInput _input;
-    bool isGrounded;
     Camera mainCam;
 
 
@@ -49,7 +43,7 @@ public class PlayerMovement : MonoBehaviour
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm nhảy
         if (ragdoll != null && (ragdoll.isKnockedOut)) return;
-        if (!isGrounded) return;
+        if (groundDetect == null || !groundDetect.isGrounded) return;
 
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
@@ -78,25 +72,12 @@ public class PlayerMovement : MonoBehaviour
             return; // Ngất rồi thì không cho làm gì nữa
         }
 
-        CheckGround();
         // Thêm đoạn này để xử lý Nhảy
         if (_input.isJumpPressed)
         {
             Jump(); // Gọi hàm nhảy chúng ta vừa sửa ở trên
             _input.UseJumpRequest(); // Nhảy xong thì reset lệnh về false
         }
-    }
-
-    void CheckGround()
-    {
-        RaycastHit hit;
-        // Bắn lade từ chân trái, chân phải và bụng xuống dưới, CHỈ chạm vào groundLayer
-        bool leftG = leftFoot != null && Physics.SphereCast(leftFoot.position, groundCheckRadius, Vector3.down, out hit, groundCheckRadius * 1.5f, groundLayer);
-        bool rightG = rightFoot != null && Physics.SphereCast(rightFoot.position, groundCheckRadius, Vector3.down, out hit, groundCheckRadius * 1.5f, groundLayer);
-        bool centerG = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out hit, groundCheckDistance, groundLayer);
-
-        isGrounded = leftG || rightG || centerG;
-
     }
 
     // ------------------------------------------------------------------ //
