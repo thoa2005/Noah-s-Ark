@@ -12,8 +12,8 @@ public class ActiveRagdollController : MonoBehaviour
     public Transform physicRig;
 
     [Header("Muscle Settings")]
-    public float muscleSpring = 15000f;
-    public float muscleDamper = 1000f;
+    public float muscleSpring;
+    public float muscleDamper;
     public float spineMuscleMultiplier = 5f; // Luc cho toan bo cot song khi dung day
 
     [Header("Balance Physics")]
@@ -31,7 +31,12 @@ public class ActiveRagdollController : MonoBehaviour
     private Rigidbody playerRb;
     private Rigidbody hipRb;
     private Transform realHip;
-    private CharacterInput playerInput; // <--- INPUT SYSTEM MỚI
+    private CharacterInput playerInput;
+
+    private Dictionary<Rigidbody, float> originalMasses = new Dictionary<Rigidbody, float>();
+    private int grabberCount = 0;
+    public bool IsBeingGrabbed => grabberCount > 0;
+    private float originalMuscleSpring;
 
     private float lastMuscleSpring, lastMuscleDamper;
     private float lastBalanceSpring, lastBalanceDamper;
@@ -46,13 +51,13 @@ public class ActiveRagdollController : MonoBehaviour
         playerInput = GetComponent<CharacterInput>(); // <--- CACHE INPUT
         if (stats == null) stats = GetComponent<PlayerStats>();
 
-        // Đăng ký nhận sự kiện từ Stats
         if (stats != null)
         {
             stats.OnKnockout += OnKnockoutReceived;
             stats.OnWakeUp += OnWakeUpReceived;
         }
 
+        originalMuscleSpring = muscleSpring;
         UpdateAllMuscleDrives();
     }
 
@@ -126,7 +131,25 @@ public class ActiveRagdollController : MonoBehaviour
         }
 
         bones = boneList.ToArray();
-        Debug.Log($"[ActiveRagdoll] Da nap thanh cong {bones.Length} xuong vao bo nao.");
+
+        // CHỈ LƯU MASS GỐC KHI KHÔNG BỊ TÓM (Để tránh lưu nhầm Mass = 1 là gốc)
+        if (!IsBeingGrabbed)
+        {
+            originalMasses.Clear();
+            // 1. Lưu Mass của Rigidbody gốc (Quan trọng để nhấc bổng cả người)
+            if (playerRb != null && !originalMasses.ContainsKey(playerRb))
+                originalMasses.Add(playerRb, playerRb.mass);
+
+            // 2. Lưu Mass của toàn bộ xương
+            Rigidbody[] allRbs = physicRig.GetComponentsInChildren<Rigidbody>();
+            foreach (var rb in allRbs)
+            {
+                if (!originalMasses.ContainsKey(rb))
+                    originalMasses.Add(rb, rb.mass);
+            }
+        }
+
+        Debug.Log($"[ActiveRagdoll] Da nap thanh cong {bones.Length} xuong va {originalMasses.Count} Rigidbody vao danh sach can nang.");
     }
 
     void FixedUpdate()
@@ -144,11 +167,11 @@ public class ActiveRagdollController : MonoBehaviour
             return;
         }
 
-        float currentBalanceSpring = balanceSpring;
-        float currentMuscleSpring = muscleSpring;
+        float currentBalanceSpring = IsBeingGrabbed ? 0 : balanceSpring;
+        float currentMuscleSpring = GetTargetMuscleSpring();
 
         // --- GỒNG CƠ BẮP KHI ĐẤM ---
-        if (playerInput != null && playerInput.isPunching)
+        if (playerInput != null && playerInput.isPunching && !IsBeingGrabbed)
         {
             currentMuscleSpring *= 5f;
             currentBalanceSpring *= 2f;
@@ -158,8 +181,7 @@ public class ActiveRagdollController : MonoBehaviour
 
         if (tiltAngle > 30f)
         {
-            currentBalanceSpring *= 1f;
-            currentMuscleSpring *= 1f;
+            // Giữ nguyên hoặc điều chỉnh tùy ý
         }
 
         // Kiểm tra điều kiện xỉu (Nghiêng quá 65 độ)
@@ -235,7 +257,62 @@ public class ActiveRagdollController : MonoBehaviour
 
     public void UpdateAllMuscleDrives()
     {
-        UpdateAllMuscleDrives(muscleSpring, muscleDamper);
+        UpdateAllMuscleDrives(GetTargetMuscleSpring(), muscleDamper);
+    }
+
+    public float GetTargetMuscleSpring()
+    {
+        if (stats != null && stats.isKnockedOut) return 0f;
+        if (IsBeingGrabbed) return 1000f;
+        return muscleSpring;
+    }
+
+    public void SetGrabbedState(bool state)
+    {
+        if (state)
+        {
+            grabberCount++;
+            if (grabberCount == 1) // Người đầu tiên tóm
+            {
+                foreach (var rb in originalMasses.Keys)
+                {
+                    if (rb != null) rb.mass = 2.0f;
+                }
+            }
+        }
+        else
+        {
+            grabberCount--;
+            if (grabberCount <= 0) // Người cuối cùng thả
+            {
+                grabberCount = 0;
+                foreach (var kvp in originalMasses)
+                {
+                    if (kvp.Key != null) kvp.Key.mass = kvp.Value;
+                }
+            }
+        }
+
+        UpdateAllMuscleDrives();
+        DebugGrabStatus(); // 1 log bao quát duy nhất
+    }
+
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void DebugGrabStatus()
+    {
+        float curMuscle = GetTargetMuscleSpring();
+        float curMass = playerRb != null ? playerRb.mass : 0f;
+        string speedStr = IsBeingGrabbed ? "x0.1" : "Normal";
+        string jumpStr = IsBeingGrabbed ? "NO" : "YES";
+        string grabStr = IsBeingGrabbed ? "NO" : "YES";
+        string koStr = (stats != null && stats.isKnockedOut) ? "YES" : "NO";
+
+        Debug.Log(
+            $"[GRAB STATUS] {gameObject.name} | " +
+            $"Grabbed:{IsBeingGrabbed} | Grabbers:{grabberCount} | " +
+            $"Muscle:{curMuscle} | Mass:{curMass:F1} | " +
+            $"Speed:{speedStr} | CanJump:{jumpStr} | CanGrab:{grabStr} | KO:{koStr}"
+        );
     }
 
     private void LateUpdate()

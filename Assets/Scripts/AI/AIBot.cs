@@ -4,40 +4,77 @@ using UnityEngine;
 public class AIBot : MonoBehaviour
 {
     [Header("AI Settings")]
-    public float moveSpeed     = 4f;
-    public float chaseRange    = 10f;
-    public float punchRange    = 1.5f;
-    public float punchCooldown = 2f;
-    public string targetTag    = "Player";
+    public float moveSpeed = 4f;
+    public float chaseRange = 10f;
+    public float grabRange = 1.8f;
+    public float grabCooldown = 0.5f; // Spam grab moi 0.5 giay de test
+    public string targetTag = "Player";
 
     [Header("References")]
-    public Animator anim; // Kéo Animator của bản metarig vào đây
+    public Animator anim;
 
-    Rigidbody rb;
-    Transform target;
-    float     punchTimer;
-    float     scanTimer;
+    private Rigidbody rb;
+    private Transform target;
+    private float scanTimer;
+
+    // Giu grab bang cach override input thay vi goi PerformGrab truc tiep
+    private CharacterInput input;
+    private PlayerCombat combat;
+    private float punchTimer;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        
-        // Đảm bảo AI không bị ngã lăn quay khi di chuyển (giống PlayerMovement)
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         if (anim == null)
             anim = GetComponentInChildren<Animator>();
+
+        // Lay CharacterInput de override isGrabPressed
+        input = GetComponent<CharacterInput>();
+        combat = GetComponent<PlayerCombat>();
+        if (input == null)
+            Debug.LogWarning("[AIBot] Khong tim thay CharacterInput!");
+        if (combat == null)
+            Debug.LogWarning("[AIBot] Khong tim thay PlayerCombat!");
+
+        punchTimer = 1.0f; // Đấm chậm lại một chút để hồi Stamina
     }
 
     void FixedUpdate()
     {
-        scanTimer -= Time.fixedDeltaTime;
+        // NHỊP ĐẤM: 1 giây 1 phát
         punchTimer -= Time.fixedDeltaTime;
+        if (punchTimer <= 0f)
+        {
+            if (input != null)
+            {
+                input.isPunching = true; // Bấm nút
+                punchTimer = 1.0f;
 
-        // 1. Tìm mục tiêu gần nhất
+                // ÉP ANIMATOR PHẢI CHẠY (Bỏ qua các lỗi kẹt Transition)
+                if (anim != null)
+                {
+                    anim.Play("Punch", 0, 0f);
+                }
+
+                if (combat != null && combat.stats != null)
+                {
+                    Debug.Log($"[AIBot] Force Punch! Stamina: {combat.stats.currentStamina}");
+                }
+            }
+        }
+        else if (punchTimer < 0.9f) // Nhả nút cực nhanh sau 0.1s
+        {
+            if (input != null) input.isPunching = false; // Nhả nút để hết "Gồng"
+        }
+
+        scanTimer -= Time.fixedDeltaTime;
+
+        // Tim muc tieu moi giay
         if (scanTimer <= 0f || target == null)
         {
-            scanTimer = 1f; // Quét mỗi giây cho đỡ nặng máy
+            scanTimer = 1f;
             FindTarget();
         }
 
@@ -49,23 +86,18 @@ public class AIBot : MonoBehaviour
 
         float distance = Vector3.Distance(transform.position, target.position);
 
-        // 2. Xử lý hành động dựa trên khoảng cách
-        if (distance <= punchRange)
+        if (distance <= grabRange)
         {
-            // Ở đủ gần -> Dừng lại và Đấm
             StopMoving();
             LookAtTarget();
-            TryPunch();
         }
         else if (distance <= chaseRange)
         {
-            // Ở xa -> Đuổi theo
             MoveToTarget();
             LookAtTarget();
         }
         else
         {
-            // Quá xa -> Đứng chơi
             StopMoving();
             target = null;
         }
@@ -93,30 +125,22 @@ public class AIBot : MonoBehaviour
         direction.y = 0;
         direction.Normalize();
 
-        // Di chuyển Rigidbody gốc
         Vector3 vel = direction * moveSpeed;
         vel.y = rb.linearVelocity.y;
         rb.linearVelocity = vel;
 
-        // Cập nhật Animator để đôi chân Ragdoll bước đi
         if (anim != null)
-        {
             anim.SetFloat("Forward", 1f, 0.1f, Time.fixedDeltaTime);
-        }
     }
 
     void StopMoving()
     {
-        // Giảm dần vận tốc về 0
         Vector3 vel = rb.linearVelocity;
         vel.x *= 0.5f;
         vel.z *= 0.5f;
         rb.linearVelocity = vel;
 
-        if (anim != null)
-        {
-            anim.SetFloat("Forward", 0f, 0.1f, Time.fixedDeltaTime);
-        }
+        // Animation bo qua - tranh warning spam neu bot khong co parameter "Forward"
     }
 
     void LookAtTarget()
@@ -130,16 +154,4 @@ public class AIBot : MonoBehaviour
         }
     }
 
-    void TryPunch()
-    {
-        if (punchTimer <= 0f)
-        {
-            punchTimer = punchCooldown;
-            if (anim != null)
-            {
-                anim.SetTrigger("Punch");
-                Debug.Log("[AIBot] PUNCHING target!");
-            }
-        }
-    }
 }

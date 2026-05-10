@@ -18,6 +18,7 @@ public class PlayerCombat : MonoBehaviour
     // Xuong tay de punch / grab chinh xac hon
     Transform leftHandBone;
     Transform rightHandBone;
+    private Rigidbody spineAnchorRb; // Xuong spine_3 lam diem neo nguc
 
     // --- Runtime state ---
     public Animator anim;
@@ -30,6 +31,7 @@ public class PlayerCombat : MonoBehaviour
     Rigidbody grabbedRb;
     float chargeTimer;
     bool isGrabbing;
+    private ActiveRagdollController grabbedTargetController;
 
     void Start()
     {
@@ -53,6 +55,9 @@ public class PlayerCombat : MonoBehaviour
                     leftHandBone = t;
                 if (n.Contains("hand.r") || n.Contains("hand_r"))
                     rightHandBone = t;
+                // Tu dong tim xuong spine_3 lam diem neo nguc
+                if (n.Contains("spine.003"))
+                    spineAnchorRb = t.GetComponent<Rigidbody>();
             }
         }
     }
@@ -79,7 +84,6 @@ public class PlayerCombat : MonoBehaviour
         if (!isGrabbing)
         {
             // Cho phép "hút" đồ liên tục khi giữ chuột, miễn là còn thể lực
-            // Cho phép "hút" đồ liên tục khi giữ chuột, miễn là còn đủ thể lực
             if (_input.isGrabPressed && stats.currentStamina > 10f)
             {
                 PerformGrab();
@@ -103,7 +107,15 @@ public class PlayerCombat : MonoBehaviour
         // Logic tiêu tốn thể lực khi đang ôm đồ
         if (isGrabbing)
         {
-            if (!stats.UseStamina(stats.grabStaminaDrainRate * Time.deltaTime))
+            // TỰ ĐỘNG THẢ NẾU ĐỨT JOINT VẬT LÝ
+            bool anyJointAlive = false;
+            foreach (var j in activeGrabJoints) { if (j != null) anyJointAlive = true; }
+
+            if (!anyJointAlive || grabbedRb == null)
+            {
+                ReleaseGrab();
+            }
+            else if (!stats.UseStamina(stats.grabStaminaDrainRate * Time.deltaTime))
             {
                 ReleaseGrab(); // Hết thể lực tự buông
             }
@@ -182,22 +194,37 @@ public class PlayerCombat : MonoBehaviour
         // Nếu tìm được vật chung thì cầm
         if (commonTarget != null)
         {
+            // Tìm Controller của nạn nhân để báo hiệu
+            grabbedTargetController = commonTarget.GetComponentInParent<ActiveRagdollController>();
+            if (grabbedTargetController != null)
+            {
+                // KHÔNG CHO TÓM NẾU MÌNH ĐANG BỊ TÓM (Chống đệ quy vật lý)
+                if (grabbedTargetController == ragdoll || ragdoll.IsBeingGrabbed) return;
+
+                grabbedTargetController.SetGrabbedState(true);
+            }
+
             AttachHand(leftPhysicsHand, commonTarget);
             AttachHand(rightPhysicsHand, commonTarget);
+            // Joint thu 3: spine_3 keo doi phuong ap sat vao nguc
+            if (spineAnchorRb != null)
+                AttachBody(spineAnchorRb, commonTarget);
             isGrabbing = true;
             grabbedRb = commonTarget;
             chargeTimer = 0f;
             if (anim != null) anim.SetBool("IsGrabbing", true);
-            Debug.Log("[Grab] Đã ôm vật bằng cả 2 tay: " + commonTarget.name);
-        }
-        else
-        {
-            Debug.Log("[Grab] Không có vật nào nằm trong cả 2 vòng quét!");
         }
     }
 
     public void ReleaseGrab()
     {
+        // Báo cho nạn nhân biết mình đã thả
+        if (grabbedTargetController != null)
+        {
+            grabbedTargetController.SetGrabbedState(false);
+            grabbedTargetController = null;
+        }
+
         // Chặt đứt tất cả lò xo nam châm ở 2 tay khi buông chuột
         foreach (var j in activeGrabJoints)
         {
@@ -251,6 +278,37 @@ public class PlayerCombat : MonoBehaviour
         activeGrabJoints.Add(joint);
     }
 
+    // Ham ho tro 3: Joint nguc - keo doi phuong ap sat vao nguoi (nhe hon tay)
+    void AttachBody(Rigidbody bodyRb, Rigidbody targetRb)
+    {
+        ConfigurableJoint joint = bodyRb.gameObject.AddComponent<ConfigurableJoint>();
+        joint.connectedBody = targetRb;
+
+        // Chi gioi han vi tri, de goc xoay tu do (doi phuong van xoay tu nhien)
+        joint.xMotion = joint.yMotion = joint.zMotion = ConfigurableJointMotion.Limited;
+        joint.angularXMotion = joint.angularYMotion = joint.angularZMotion = ConfigurableJointMotion.Free;
+
+        // Limit lon hon tay: cho phep doi phuong lay la mot chut, khong ap chat
+        joint.linearLimit = new SoftJointLimit { limit = 0.03f };
+        // Spring yeu hon (40%), damper manh hon (200%) de dan vao nguoi khong giat
+        joint.linearLimitSpring = new SoftJointLimitSpring
+        {
+            spring = stats.grabSpring * 0.8f,
+            damper = stats.grabDamper * 2f
+        };
+
+        joint.enableCollision = false;
+        joint.autoConfigureConnectedAnchor = false;
+
+        // Neo vao chinh tam xuong (khong offset - tranh bi day ra do truc xuong sai huong)
+        joint.anchor = Vector3.zero;
+        joint.connectedAnchor = Vector3.zero;
+
+        joint.breakForce = stats.grabBreakForce * 200f;
+        joint.breakTorque = stats.grabBreakForce * 200f;
+        activeGrabJoints.Add(joint);
+    }
+
     public bool IsCharging() { return isGrabbing && grabbedRb != null; }
     public float GetChargePct() { return stats != null ? chargeTimer / stats.maxChargeTime : 0; }
 
@@ -267,7 +325,6 @@ public class PlayerCombat : MonoBehaviour
         if (tgt != null)
         {
             tgt.AddForce(td * frc, ForceMode.Impulse);
-            Debug.Log($"[Throw] Force={frc:F1} Dir={td}");
         }
     }
 

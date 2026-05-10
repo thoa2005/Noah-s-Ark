@@ -40,6 +40,7 @@ public class PlayerMovement : MonoBehaviour
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm nhảy
         if (stats != null && stats.isKnockedOut) return;
+        if (ragdoll != null && ragdoll.IsBeingGrabbed) return; // KHÓA: Đang bị tóm thì không cho nhảy
         if (groundDetect == null || !groundDetect.isGrounded) return;
 
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -93,7 +94,7 @@ public class PlayerMovement : MonoBehaviour
         if (dir.magnitude > 0.1f)
         {
             float dot = Vector3.Dot(transform.forward, dir);
-            isMovingBackwards = dot < -0.65f;
+            isMovingBackwards = dot < -0.7f;
         }
 
         if (anim != null)
@@ -107,7 +108,10 @@ public class PlayerMovement : MonoBehaviour
 
         if (dir.magnitude > 0.1f)
         {
-            Vector3 vel = dir * stats.moveSpeed;
+            float finalMoveSpeed = stats.moveSpeed;
+            if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f; // Giảm 90% tốc độ khi bị tóm
+
+            Vector3 vel = dir * finalMoveSpeed;
             vel.y = rb.linearVelocity.y;
             rb.linearVelocity = vel;
 

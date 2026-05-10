@@ -31,6 +31,7 @@ public class CharacterInput : MonoBehaviour
     }
     public void OnInteract(InputValue v)
     {
+        Debug.Log($"[Input] {gameObject.name} nhan lenh Grab: {v.isPressed}");
         isGrabPressed = v.isPressed;
     }
     // Hàm để tầng Logic reset lại lệnh nhảy sau khi nhảy xong
