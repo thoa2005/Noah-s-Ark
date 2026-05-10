@@ -57,14 +57,24 @@ void Start()
 
     void HandlePlayerFall(GameObject p)
     {
-        playerLives--;
-        Debug.Log($"[GameManager] Player fell! Lives remaining: {playerLives}");
-
-        if (playerLives <= 0)
+        var stats = p.GetComponent<PlayerStats>();
+        if (stats != null)
         {
-            gameOver = true;
-            Debug.Log("GAME OVER");
-            return;
+            stats.lives--;
+            Debug.Log($"[GameManager] Player {p.name} fell! Lives remaining: {stats.lives}");
+
+            if (stats.lives <= 0)
+            {
+                gameOver = true;
+                Debug.Log("GAME OVER");
+                return;
+            }
+        }
+        else
+        {
+            // Fallback nếu không có stats
+            playerLives--;
+            if (playerLives <= 0) { gameOver = true; return; }
         }
 
         Respawn(p, new Vector3(Random.Range(-3f, 3f), 5f, Random.Range(-3f, 3f)));
@@ -94,5 +104,13 @@ void Start()
     }
 
     public bool IsGameOver() { return gameOver; }
-    public int GetLives() { return playerLives; }
+    public int GetLives() 
+    { 
+        if (cachedPlayers.Count > 0 && cachedPlayers[0] != null)
+        {
+            var stats = cachedPlayers[0].GetComponent<PlayerStats>();
+            if (stats != null) return stats.lives;
+        }
+        return playerLives; 
+    }
 }

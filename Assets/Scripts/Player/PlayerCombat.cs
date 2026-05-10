@@ -6,33 +6,14 @@ public class PlayerCombat : MonoBehaviour
     [Header("Detectors")]
     public CombatDetect combatDetect;
 
-    [Header("Punch (Chuot phai)")]
-    public float punchForce = 15f;
-    public float pushForce = 50f; // Lực đẩy vật lý (Chỉnh số này to để đối thủ bay xa)
-    public float punchCooldown = 0.5f;
+    public PlayerStats stats;
 
     [Header("Grab+Throw (Chuot trai): Nhan=cam, Giu=charge, Nha=nem")]
-    public float minThrowForce = 5f;
-    public float maxThrowForce = 20f;
-    public float maxChargeTime = 1.0f;
-    [Tooltip("Luc pha vo FixedJoint khi bi va cham manh")]
-    public float grabBreakForce = 800f;
 
-    [Header("Party Animals Grab Physics")]
-    public float grabSpring = 15000f; // Độ mạnh của nam châm hút
-    public float grabDamper = 1000f;  // Độ êm (giảm rung lắc)
     public Rigidbody leftPhysicsHand;
     public Rigidbody rightPhysicsHand;
     private List<Joint> activeGrabJoints = new List<Joint>();
 
-    [Header("Stamina System")]
-    public float maxStamina = 100f;
-    public float currentStamina;
-    public float staminaDrainRate = 20f;
-    public float staminaRegenRate = 15f;
-    public float staminaRecoveryDelay = 1.0f;
-
-    float staminaDelayTimer;
 
     // Xuong tay de punch / grab chinh xac hon
     Transform leftHandBone;
@@ -40,7 +21,7 @@ public class PlayerCombat : MonoBehaviour
 
     // --- Runtime state ---
     public Animator anim;
-    private ActiveRagdollController ragdoll; 
+    private ActiveRagdollController ragdoll;
     private CharacterInput _input;
 
     Dictionary<GameObject, float> lastHitTime = new Dictionary<GameObject, float>();
@@ -56,7 +37,6 @@ public class PlayerCombat : MonoBehaviour
         ragdoll = GetComponent<ActiveRagdollController>();
         _input = GetComponent<CharacterInput>();
 
-        currentStamina = maxStamina;
         FindHandBones();
     }
 
@@ -80,7 +60,7 @@ public class PlayerCombat : MonoBehaviour
     void Update()
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
-        if (ragdoll != null && ragdoll.isKnockedOut)
+        if (stats != null && stats.isKnockedOut)
         {
             if (isGrabbing) ReleaseGrab();
             return; // Ngất rồi thì không cho làm gì nữa
@@ -99,7 +79,8 @@ public class PlayerCombat : MonoBehaviour
         if (!isGrabbing)
         {
             // Cho phép "hút" đồ liên tục khi giữ chuột, miễn là còn thể lực
-            if (_input.isGrabPressed && currentStamina > (maxStamina * 0.1f))
+            // Cho phép "hút" đồ liên tục khi giữ chuột, miễn là còn đủ thể lực
+            if (_input.isGrabPressed && stats.currentStamina > 10f)
             {
                 PerformGrab();
             }
@@ -110,7 +91,7 @@ public class PlayerCombat : MonoBehaviour
             // Nếu vẫn đang giữ nút Grab thì sạc lực ném
             else if (_input.isGrabPressed)
             {
-                chargeTimer = Mathf.Clamp(chargeTimer + Time.deltaTime, 0f, maxChargeTime);
+                chargeTimer = Mathf.Clamp(chargeTimer + Time.deltaTime, 0f, stats.maxChargeTime);
             }
             // Nếu nhả nút Grab ra thì thực hiện ném
             else
@@ -119,30 +100,12 @@ public class PlayerCombat : MonoBehaviour
             }
         }
 
-        // 1. Logic xử lý Thể lực
+        // Logic tiêu tốn thể lực khi đang ôm đồ
         if (isGrabbing)
         {
-            // Đang cầm thì trừ thể lực
-            currentStamina -= staminaDrainRate * Time.deltaTime;
-            staminaDelayTimer = staminaRecoveryDelay; // Reset thời gian chờ
-
-            if (currentStamina <= 0)
+            if (!stats.UseStamina(stats.grabStaminaDrainRate * Time.deltaTime))
             {
-                currentStamina = 0;
                 ReleaseGrab(); // Hết thể lực tự buông
-            }
-        }
-        else
-        {
-            // Nếu không cầm, đếm lùi thời gian chờ rồi mới hồi
-            if (staminaDelayTimer > 0)
-            {
-                staminaDelayTimer -= Time.deltaTime;
-            }
-            else
-            {
-                currentStamina += staminaRegenRate * Time.deltaTime;
-                if (currentStamina > maxStamina) currentStamina = maxStamina;
             }
         }
     }
@@ -150,7 +113,7 @@ public class PlayerCombat : MonoBehaviour
     void FixedUpdate()
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm đánh đấm
-        if (ragdoll != null && ragdoll.isKnockedOut) return;
+        if (stats != null && stats.isKnockedOut) return;
 
         if (anim != null && anim.GetCurrentAnimatorStateInfo(0).IsName("Punch"))
         {
@@ -168,12 +131,12 @@ public class PlayerCombat : MonoBehaviour
                     {
                         if (Time.time - lastHitTime[hrb.gameObject] < 0.1f) continue;
                     }
-                    
+
                     // Thực hiện đẩy và gây sát thương
                     Vector3 punchDir = (hrb.transform.position - hand.position).normalized + Vector3.up * 0.2f;
-                    hrb.AddForce(punchDir * pushForce, ForceMode.Impulse);
+                    hrb.AddForce(punchDir * stats.pushForce, ForceMode.Impulse);
                     var targetController = hrb.GetComponentInParent<ActiveRagdollController>();
-                    if (targetController != null) targetController.ApplyDamage(punchForce);
+                    if (targetController != null) targetController.ApplyDamage(stats.punchForce);
                     // Ghi nhớ thời gian vừa đấm trúng người này
                     lastHitTime[hrb.gameObject] = Time.time;
                 }
@@ -187,18 +150,20 @@ public class PlayerCombat : MonoBehaviour
 
     public void PerformPunch()
     {
+        if (stats != null && !stats.UseStamina(stats.punchStaminaCost)) return;
+
         if (anim != null) anim.SetTrigger("Punch");
 
-        punchTimer = punchCooldown;
+        punchTimer = stats.punchCooldown;
         ReleaseGrab();
     }
 
     public void PerformGrab()
     {
-        if (currentStamina < 10f) return; // Thể lực dưới 10 thì không cho cầm
-        
+        if (stats != null && stats.currentStamina < stats.grabStaminaCost) return;
+
         if (leftPhysicsHand == null || rightPhysicsHand == null || combatDetect == null) return;
-        
+
         // Lấy TẤT CẢ Rb trong từng vùng quét
         var leftSet = combatDetect.GetGrabbableTargets(leftPhysicsHand);
         var rightSet = combatDetect.GetGrabbableTargets(rightPhysicsHand);
@@ -255,21 +220,21 @@ public class PlayerCombat : MonoBehaviour
     {
         ConfigurableJoint joint = handRb.gameObject.AddComponent<ConfigurableJoint>();
         joint.connectedBody = targetRb;
-        
+
         joint.xMotion = joint.yMotion = joint.zMotion = ConfigurableJointMotion.Limited;
         joint.angularXMotion = joint.angularYMotion = joint.angularZMotion = ConfigurableJointMotion.Locked;
-        
+
         joint.linearLimit = new SoftJointLimit { limit = 0.001f };
-        joint.linearLimitSpring = new SoftJointLimitSpring { spring = 5000f, damper = 100f };
-        
+        joint.linearLimitSpring = new SoftJointLimitSpring { spring = stats.grabSpring, damper = stats.grabDamper };
+
         joint.projectionMode = JointProjectionMode.PositionAndRotation;
         joint.projectionDistance = 0.01f;
-        
+
         joint.enableCollision = false;
-        
+
         joint.autoConfigureConnectedAnchor = false;
         joint.anchor = Vector3.zero;
-        
+
         Collider targetCol = targetRb.GetComponentInChildren<Collider>();
         if (targetCol != null)
         {
@@ -280,19 +245,20 @@ public class PlayerCombat : MonoBehaviour
         {
             joint.connectedAnchor = Vector3.zero;
         }
-        
-        joint.breakForce = grabBreakForce * 100f;
-        joint.breakTorque = grabBreakForce * 100f;
+
+        joint.breakForce = stats.grabBreakForce * 200f;
+        joint.breakTorque = stats.grabBreakForce * 200f;
         activeGrabJoints.Add(joint);
     }
 
     public bool IsCharging() { return isGrabbing && grabbedRb != null; }
-    public float GetChargePct() { return chargeTimer / maxChargeTime; }
+    public float GetChargePct() { return stats != null ? chargeTimer / stats.maxChargeTime : 0; }
 
     public void PerformThrow()
     {
-        float pw = chargeTimer / maxChargeTime;
-        float frc = Mathf.Lerp(minThrowForce, maxThrowForce, pw);
+        if (stats == null) return;
+        float pw = chargeTimer / stats.maxChargeTime;
+        float frc = Mathf.Lerp(stats.minThrowForce, stats.maxThrowForce, pw);
         Vector3 td = (transform.forward + Vector3.up * 0.15f).normalized;
         var tgt = grabbedRb;
 

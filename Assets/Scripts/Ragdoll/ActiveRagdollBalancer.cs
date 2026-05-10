@@ -17,29 +17,29 @@ public class ActiveRagdollBalancer : MonoBehaviour
         if (balanceJoint == null) balanceJoint = gameObject.AddComponent<ConfigurableJoint>();
 
         balanceJoint.connectedBody = playerRb;
-        
+
         // --- CHONG GIAN KHOP & BAO VE MASTER ---
-        balanceJoint.projectionMode = JointProjectionMode.PositionAndRotation;
-        balanceJoint.projectionDistance = 0.01f;
+        balanceJoint.projectionMode = JointProjectionMode.None;
+        balanceJoint.projectionDistance = 0.1f;
         balanceJoint.projectionAngle = 1f;
         balanceJoint.enablePreprocessing = false; // Giam rung lac khi va cham manh
 
         // Cho phep di chuyen tu do trong pham vi nho
-        balanceJoint.xMotion = ConfigurableJointMotion.Locked;
-        balanceJoint.yMotion = ConfigurableJointMotion.Locked;
-        balanceJoint.zMotion = ConfigurableJointMotion.Locked;
+        balanceJoint.xMotion = ConfigurableJointMotion.Free;
+        balanceJoint.yMotion = ConfigurableJointMotion.Free;
+        balanceJoint.zMotion = ConfigurableJointMotion.Free;
 
         balanceJoint.angularXMotion = ConfigurableJointMotion.Free;
         balanceJoint.angularYMotion = ConfigurableJointMotion.Free;
         balanceJoint.angularZMotion = ConfigurableJointMotion.Free;
 
         balanceJoint.rotationDriveMode = RotationDriveMode.Slerp;
-        
+
         // Drive giu vi tri (Position) - SIET CHAT DE KHONG BI GIAN DAY THUN
         JointDrive positionDrive = new JointDrive
         {
-            positionSpring = 100000f, // Tang gap 10 lan
-            positionDamper = 2000f,   // Tang damper de chong rung
+            positionSpring = 1000f, // Tang gap 10 lan
+            positionDamper = 100f,   // Tang damper de chong rung
             maximumForce = float.MaxValue
         };
         balanceJoint.xDrive = positionDrive;
@@ -55,7 +55,7 @@ public class ActiveRagdollBalancer : MonoBehaviour
         {
             positionSpring = spring,
             positionDamper = damper,
-            maximumForce   = float.MaxValue
+            maximumForce = float.MaxValue
         };
 
         balanceJoint.slerpDrive = rotationDrive;

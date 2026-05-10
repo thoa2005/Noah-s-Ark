@@ -5,12 +5,9 @@ using System.Collections.Generic;
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Movement")]
-    public float moveSpeed = 8f;
-    public float jumpForce = 10f;
-    
     [Header("Detectors")]
     public GroundDetect groundDetect;
+    public PlayerStats stats;
 
 
     // --- Runtime state ---
@@ -42,7 +39,7 @@ public class PlayerMovement : MonoBehaviour
     void Jump()
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm nhảy
-        if (ragdoll != null && (ragdoll.isKnockedOut)) return;
+        if (stats != null && stats.isKnockedOut) return;
         if (groundDetect == null || !groundDetect.isGrounded) return;
 
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -56,7 +53,7 @@ public class PlayerMovement : MonoBehaviour
         {
             // if (r != rb) totalMass += r.mass;
 
-            float force = jumpForce * (r.mass * 0.8f);
+            float force = stats.jumpForce * (r.mass * 0.8f);
             r.AddForce(Vector3.up * force, ForceMode.Impulse);
         }
 
@@ -67,7 +64,7 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
-        if (ragdoll != null && ragdoll.isKnockedOut)
+        if (stats != null && stats.isKnockedOut)
         {
             return; // Ngất rồi thì không cho làm gì nữa
         }
@@ -85,26 +82,40 @@ public class PlayerMovement : MonoBehaviour
     void FixedUpdate()
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Liệt chân, cấm chạy
-        if (ragdoll != null && (ragdoll.isKnockedOut)) return;
+        if (stats != null && stats.isKnockedOut) return;
         Vector3 camF = mainCam != null ? mainCam.transform.forward : Vector3.forward;
         camF.y = 0f; camF.Normalize();
         Vector3 camR = mainCam != null ? mainCam.transform.right : Vector3.right;
         camR.y = 0f; camR.Normalize();
         Vector3 dir = (camF * _input.moveInput.y + camR * _input.moveInput.x).normalized;
 
+        bool isMovingBackwards = false;
+        if (dir.magnitude > 0.1f)
+        {
+            float dot = Vector3.Dot(transform.forward, dir);
+            isMovingBackwards = dot < -0.65f;
+        }
+
         if (anim != null)
         {
             anim.SetFloat("Speed", dir.magnitude);
+            if (dir.magnitude > 0.1f)
+            {
+                anim.SetFloat("MotionDirection", isMovingBackwards ? -1f : 1f);
+            }
         }
 
         if (dir.magnitude > 0.1f)
         {
-            Vector3 vel = dir * moveSpeed;
+            Vector3 vel = dir * stats.moveSpeed;
             vel.y = rb.linearVelocity.y;
             rb.linearVelocity = vel;
 
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation,
-                Quaternion.LookRotation(dir), 4f * Time.fixedDeltaTime));
+            if (!isMovingBackwards)
+            {
+                rb.MoveRotation(Quaternion.Slerp(rb.rotation,
+                    Quaternion.LookRotation(dir), 4f * Time.fixedDeltaTime));
+            }
         }
         else
         {

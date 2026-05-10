@@ -27,8 +27,13 @@ public class GameHUD : MonoBehaviour
     [Header("Crosshair")]
     public Image crosshairImage;     // UI Image nho o giua man hinh
 
+    [Header("Stats UI")]
+    public Image hpFill;
+    public Image staminaFill;
+
     // Tham chieu den PlayerCombat de lay charge
     PlayerCombat playerCombat;
+    PlayerStats playerStats;
     CharacterInput _input;
     bool           wasGameOver = false;
 
@@ -44,6 +49,7 @@ public class GameHUD : MonoBehaviour
         if (playerGo != null)
         {
             playerCombat = playerGo.GetComponent<PlayerCombat>();
+            playerStats = playerGo.GetComponent<PlayerStats>();
             _input = playerGo.GetComponent<CharacterInput>();
         }
 
@@ -58,6 +64,7 @@ public class GameHUD : MonoBehaviour
     void Update()
     {
         UpdateLivesUI();
+        UpdateStatsUI();
         UpdateChargeBar();
         CheckGameOver();
 
@@ -73,8 +80,22 @@ public class GameHUD : MonoBehaviour
 
     void UpdateLivesUI()
     {
-        if (livesText == null || gameManager == null) return;
-        livesText.text = "LIVES: " + gameManager.GetLives();
+        if (livesText == null) return;
+        if (playerStats != null)
+            livesText.text = "LIVES: " + playerStats.lives;
+        else if (gameManager != null)
+            livesText.text = "LIVES: " + gameManager.GetLives();
+    }
+
+    void UpdateStatsUI()
+    {
+        if (playerStats == null) return;
+
+        if (hpFill != null)
+            hpFill.fillAmount = playerStats.currentStability / playerStats.maxStability;
+        
+        if (staminaFill != null)
+            staminaFill.fillAmount = playerStats.currentStamina / playerStats.maxStamina;
     }
 
     void UpdateChargeBar()

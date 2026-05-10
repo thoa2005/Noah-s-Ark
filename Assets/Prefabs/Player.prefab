@@ -529,6 +529,7 @@ MonoBehaviour:
   animBone: {fileID: 2309011483501341462}
   joint: {fileID: 1080310508308517084}
   targetBone: {fileID: 8825194537690907027}
+  isSpine: 0
 --- !u!1 &666002816188283299
 GameObject:
   m_ObjectHideFlags: 0
@@ -858,6 +859,7 @@ MonoBehaviour:
   animBone: {fileID: 8481087140679702467}
   joint: {fileID: 8996265745649908303}
   targetBone: {fileID: 3686879716411017544}
+  isSpine: 0
 --- !u!1 &1240827844565807992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1192,6 +1194,7 @@ MonoBehaviour:
   animBone: {fileID: 7426308746303230784}
   joint: {fileID: 1410217979144030047}
   targetBone: {fileID: 3448397971713883441}
+  isSpine: 0
 --- !u!1 &1435555925606464609
 GameObject:
   m_ObjectHideFlags: 0
@@ -1939,6 +1942,7 @@ MonoBehaviour:
   animBone: {fileID: 9077428025720064977}
   joint: {fileID: 1517855994975219540}
   targetBone: {fileID: 1512515999710469224}
+  isSpine: 0
 --- !u!1 &2530434495834009756
 GameObject:
   m_ObjectHideFlags: 0
@@ -2149,6 +2153,7 @@ MonoBehaviour:
   animBone: {fileID: 4732428369408921831}
   joint: {fileID: 233562946504600859}
   targetBone: {fileID: 400716518556186290}
+  isSpine: 0
 --- !u!1 &2693333220848317692
 GameObject:
   m_ObjectHideFlags: 0
@@ -2453,7 +2458,7 @@ GameObject:
   - component: {fileID: 5570471859887277510}
   - component: {fileID: 948129903056447725}
   m_Layer: 0
-  m_Name: 'panda '
+  m_Name: Character
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2957,6 +2962,7 @@ MonoBehaviour:
   animBone: {fileID: 8357496039621909133}
   joint: {fileID: 7843829093899313575}
   targetBone: {fileID: 4870183493998347159}
+  isSpine: 0
 --- !u!1 &3618671625489957198
 GameObject:
   m_ObjectHideFlags: 0
@@ -3391,6 +3397,7 @@ MonoBehaviour:
   animBone: {fileID: 2141324571185765372}
   joint: {fileID: 3473396578154778991}
   targetBone: {fileID: 2386769280674638060}
+  isSpine: 0
 --- !u!1 &4165913083090920190
 GameObject:
   m_ObjectHideFlags: 0
@@ -3657,6 +3664,7 @@ MonoBehaviour:
   animBone: {fileID: 8639747182759488186}
   joint: {fileID: 4357718321346310278}
   targetBone: {fileID: 3461092441705672964}
+  isSpine: 0
 --- !u!1 &4203441794943417225
 GameObject:
   m_ObjectHideFlags: 0
@@ -3947,6 +3955,7 @@ MonoBehaviour:
   animBone: {fileID: 4773201298505118727}
   joint: {fileID: 9082146861133793791}
   targetBone: {fileID: 6277390692258386221}
+  isSpine: 0
 --- !u!1 &4813495592453578792
 GameObject:
   m_ObjectHideFlags: 0
@@ -4464,6 +4473,7 @@ MonoBehaviour:
   animBone: {fileID: 7344916483274164306}
   joint: {fileID: 8196485738471477045}
   targetBone: {fileID: 7685033457808743286}
+  isSpine: 0
 --- !u!1 &5434410458818237779
 GameObject:
   m_ObjectHideFlags: 0
@@ -4698,6 +4708,7 @@ MonoBehaviour:
   animBone: {fileID: 390465335736854440}
   joint: {fileID: 404358503600478430}
   targetBone: {fileID: 1570282627835297654}
+  isSpine: 0
 --- !u!1 &5444120212931017434
 GameObject:
   m_ObjectHideFlags: 0
@@ -5225,6 +5236,7 @@ MonoBehaviour:
   animBone: {fileID: 8019236498237989685}
   joint: {fileID: 472461407496414770}
   targetBone: {fileID: 6000387255617306790}
+  isSpine: 0
 --- !u!1 &6856119675325333348
 GameObject:
   m_ObjectHideFlags: 0
@@ -5426,6 +5438,7 @@ MonoBehaviour:
   animBone: {fileID: 1817446747175755062}
   joint: {fileID: 4295007286585420414}
   targetBone: {fileID: 8334588290835236295}
+  isSpine: 0
 --- !u!1 &6867035247421504821
 GameObject:
   m_ObjectHideFlags: 0
@@ -5757,6 +5770,7 @@ MonoBehaviour:
   animBone: {fileID: 2541640098903317600}
   joint: {fileID: 4152968278918295764}
   targetBone: {fileID: 3710823638496247404}
+  isSpine: 0
 --- !u!1 &7582244787347870612
 GameObject:
   m_ObjectHideFlags: 0
@@ -6151,6 +6165,7 @@ MonoBehaviour:
   animBone: {fileID: 2377723318842410062}
   joint: {fileID: 6200738956513630396}
   targetBone: {fileID: 5744144964918703835}
+  isSpine: 0
 --- !u!1 &7974107435342889537
 GameObject:
   m_ObjectHideFlags: 0
@@ -6777,6 +6792,11 @@ GameObject:
   - component: {fileID: 1898332633073650566}
   - component: {fileID: 1491835629853130060}
   - component: {fileID: 3995493702570494473}
+  - component: {fileID: 1919387608882267368}
+  - component: {fileID: 9048197892152111401}
+  - component: {fileID: 2399636266419173693}
+  - component: {fileID: 193116604987329666}
+  - component: {fileID: 4051467310743205094}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -6921,35 +6941,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ac39b089603f5844baca55482b6f0bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  moveSpeed: 6
-  jumpForce: 4
-  groundCheckDistance: 1.3
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 1
-  leftFoot: {fileID: 4446341409350123046}
-  rightFoot: {fileID: 1989379579464173576}
-  punchForce: 3
-  pushForce: 200
-  punchRadius: 0.35
-  punchCooldown: 0.5
-  punchOffset: {x: 0, y: 0.002, z: 0}
-  grabRadius: 0.95
-  minThrowForce: 3
-  maxThrowForce: 10
-  maxChargeTime: 1.5
-  grabBreakForce: 800
-  maxStamina: 100
-  currentStamina: 0
-  staminaDrainRate: 15
-  staminaRegenRate: 5
+  groundDetect: {fileID: 193116604987329666}
+  stats: {fileID: 4051467310743205094}
   anim: {fileID: 948129903056447725}
-  isPunching: 0
-  grabOffset: 0.82
-  grabSpring: 100000
-  grabDamper: 10000
-  leftPhysicsHand: {fileID: 6499800433952915925}
-  rightPhysicsHand: {fileID: 6693889530656650351}
 --- !u!114 &1491835629853130060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7002,10 +6996,106 @@ MonoBehaviour:
   balanceDamper: 200
   standUpForce: 500
   targetHeight: 0.9
-  isKnockedOut: 0
-  stability: 100
+  stats: {fileID: 4051467310743205094}
+--- !u!114 &1919387608882267368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 206bf61a8f5f1714ba316fac2c4233c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterInput
+--- !u!114 &9048197892152111401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbd7286352e8b3042bd10b484a9e84e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
+  combatDetect: {fileID: 2399636266419173693}
+  stats: {fileID: 4051467310743205094}
+  leftPhysicsHand: {fileID: 6499800433952915925}
+  rightPhysicsHand: {fileID: 6693889530656650351}
+  anim: {fileID: 948129903056447725}
+--- !u!114 &2399636266419173693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16b2731afe43ccb419095745ae1a570b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatDetect
+  punchRadius: 0.35
+  punchOffset: {x: 0, y: 0.002, z: 0}
+  grabRadius: 0.95
+  grabOffset: 0.82
+--- !u!114 &193116604987329666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6cf933c815ad4d49a88806f6113eb95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GroundDetect
+  groundCheckDistance: 1.3
+  groundCheckRadius: 0.1
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 1
+  leftFoot: {fileID: 4446341409350123046}
+  rightFoot: {fileID: 1989379579464173576}
+--- !u!114 &4051467310743205094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed1f71c5b22a70c409a644f6a365ab8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  currentStability: 100
   maxStability: 100
-  recoveryTime: 3
+  recoveryTime: 1
+  isKnockedOut: 0
+  lives: 3
+  currentStamina: 100
+  maxStamina: 100
+  staminaRegenRate: 15
+  staminaRecoveryDelay: 1
+  moveSpeed: 6
+  jumpForce: 5
+  punchForce: 3
+  pushForce: 200
+  punchCooldown: 1
+  punchStaminaCost: 10
+  grabStaminaCost: 10
+  grabStaminaDrainRate: 10
+  grabSpring: 100000
+  grabDamper: 10000
+  grabBreakForce: 800
+  minThrowForce: 100
+  maxThrowForce: 1000
+  maxChargeTime: 5
 --- !u!1 &8920073147725819176
 GameObject:
   m_ObjectHideFlags: 0

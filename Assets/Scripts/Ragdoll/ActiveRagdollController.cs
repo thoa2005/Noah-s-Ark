@@ -17,18 +17,14 @@ public class ActiveRagdollController : MonoBehaviour
     public float spineMuscleMultiplier = 5f; // Luc cho toan bo cot song khi dung day
 
     [Header("Balance Physics")]
-    public float balanceSpring = 60000f;
-    public float balanceDamper = 1500f;
+    public float balanceSpring;
+    public float balanceDamper;
     public float standUpForce = 150f; // Giam xuong de khong bi bay len troi
     public float targetHeight = 0.9f;
 
     [Header("State")]
-    public bool isKnockedOut = false;
+    public PlayerStats stats;
     private bool isWakingUp = false;
-    [Header("Stability Settings")]
-    public float stability = 100f;       // Điểm hiện tại
-    public float maxStability = 100f;    // Điểm tối đa
-    public float recoveryTime = 3f;      // Thời gian nằm xỉu (giây)
 
     private ActiveRagdollBone[] bones;
     private ActiveRagdollBalancer balancer;
@@ -48,7 +44,36 @@ public class ActiveRagdollController : MonoBehaviour
     void Start()
     {
         playerInput = GetComponent<CharacterInput>(); // <--- CACHE INPUT
+        if (stats == null) stats = GetComponent<PlayerStats>();
+
+        // Đăng ký nhận sự kiện từ Stats
+        if (stats != null)
+        {
+            stats.OnKnockout += OnKnockoutReceived;
+            stats.OnWakeUp += OnWakeUpReceived;
+        }
+
         UpdateAllMuscleDrives();
+    }
+
+    void OnDestroy()
+    {
+        // Hủy đăng ký khi object bị xóa để tránh lỗi bộ nhớ
+        if (stats != null)
+        {
+            stats.OnKnockout -= OnKnockoutReceived;
+            stats.OnWakeUp -= OnWakeUpReceived;
+        }
+    }
+
+    void OnKnockoutReceived()
+    {
+        StartCoroutine(KnockoutRoutine());
+    }
+
+    void OnWakeUpReceived()
+    {
+        isWakingUp = false;
     }
 
     [ContextMenu("Re-Initialize Rig")]
@@ -112,7 +137,7 @@ public class ActiveRagdollController : MonoBehaviour
             return;
         }
 
-        if (isKnockedOut)
+        if (stats != null && stats.isKnockedOut)
         {
             UpdateAllMuscleDrives(0, 0);
             balancer.UpdateBalance(0, 0, Quaternion.identity);
@@ -137,8 +162,8 @@ public class ActiveRagdollController : MonoBehaviour
             currentMuscleSpring *= 1f;
         }
 
-        // Kiểm tra điều kiện xỉu
-        if (!isKnockedOut && stability > 50f && tiltAngle > 65f && !isWakingUp)
+        // Kiểm tra điều kiện xỉu (Nghiêng quá 65 độ)
+        if (stats != null && !stats.isKnockedOut && stats.currentStability > 50f && tiltAngle > 65f && !isWakingUp)
         {
             ApplyDamage(100f);
         }
@@ -246,33 +271,23 @@ public class ActiveRagdollController : MonoBehaviour
 
     public void ApplyDamage(float force)
     {
-        if (isKnockedOut) return;
-
-        stability -= force;
-        if (stability <= 0)
-        {
-            StartCoroutine(KnockoutRoutine());
-        }
+        if (stats == null || stats.isKnockedOut) return;
+        stats.TakeDamage(force);
     }
 
     private System.Collections.IEnumerator KnockoutRoutine()
     {
-        isKnockedOut = true;
-        stability = 0;
-
         var joint = hipRb.GetComponent<ConfigurableJoint>();
         if (joint != null) joint.yMotion = ConfigurableJointMotion.Free;
 
-        yield return new WaitForSeconds(recoveryTime);
+        yield return new WaitForSeconds(stats.recoveryTime);
 
         isWakingUp = true;
-        isKnockedOut = false;
 
         if (joint != null) joint.yMotion = ConfigurableJointMotion.Locked;
 
         yield return new WaitForSeconds(2f);
 
-        stability = maxStability;
-        isWakingUp = false;
+        stats.ResetAfterWakeUp();
     }
 }
