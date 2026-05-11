@@ -10,6 +10,7 @@ public class CharacterInput : MonoBehaviour
     public Vector2 lookInput { get; set; }
     public bool isRestartRequest { get; set; }
     public bool isCameraRotatePressed { get; set; }
+    public Vector2 zoomInput { get; set; }
 
 
     // --- Các hàm nhận tín hiệu từ Input System ---
@@ -31,7 +32,7 @@ public class CharacterInput : MonoBehaviour
     }
     public void OnInteract(InputValue v)
     {
-        Debug.Log($"[Input] {gameObject.name} nhan lenh Grab: {v.isPressed}");
+        Debug.Log($"[INPUT CHECK] Object: {gameObject.name} | InputValue: {v.isPressed} | Frame: {Time.frameCount}");
         isGrabPressed = v.isPressed;
     }
     // Hàm để tầng Logic reset lại lệnh nhảy sau khi nhảy xong
@@ -48,6 +49,10 @@ public class CharacterInput : MonoBehaviour
     public void OnCameraRotate(InputValue v)
     {
         isCameraRotatePressed = v.isPressed;
+    }
+    public void OnZoom(InputValue v)
+    {
+        zoomInput = v.Get<Vector2>();
     }
     public void UseRestartRequest() => isRestartRequest = false;
 }

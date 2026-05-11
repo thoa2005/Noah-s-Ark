@@ -206,7 +206,7 @@ PrefabInstance:
     - target: {fileID: 1441485886537501074, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Material
       value: 
-      objectReference: {fileID: 1313030347}
+      objectReference: {fileID: 1282344213}
     - target: {fileID: 1491835629853130060, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -404,8 +404,12 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: pushForce
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: recoveryTime
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4127495228676890688, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Layer
@@ -726,7 +730,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1429550524}
   m_SourcePrefab: {fileID: 100100000, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
 --- !u!1 &330585543
 GameObject:
@@ -1076,6 +1083,11 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1596961027812864782, guid: 9f603490f0bba9c47a49e07935da9018, type: 3}
+--- !u!95 &604897943 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 948129903056447725, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+  m_PrefabInstance: {fileID: 145655983}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &636316073 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9f603490f0bba9c47a49e07935da9018, type: 3}
@@ -1440,6 +1452,19 @@ MonoBehaviour:
   m_PointerBehavior: 0
   m_CursorLockBehavior: 0
   m_ScrollDeltaPerTick: 6
+--- !u!134 &1282344213
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ' (Instance) (Instance)'
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1001 &1285819931
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1522,19 +1547,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 493616960}
   m_SourcePrefab: {fileID: 100100000, guid: 9f603490f0bba9c47a49e07935da9018, type: 3}
---- !u!134 &1313030347
-PhysicsMaterial:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: ' (Instance)'
-  serializedVersion: 2
-  m_DynamicFriction: 0.6
-  m_StaticFriction: 0.6
-  m_Bounciness: 0
-  m_FrictionCombine: 0
-  m_BounceCombine: 0
 --- !u!1 &1420408026
 GameObject:
   m_ObjectHideFlags: 0
@@ -1614,6 +1626,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1420408026}
   m_CullTransparentMesh: 1
+--- !u!1 &1429550510 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+  m_PrefabInstance: {fileID: 145655983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1429550524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1429550510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbe3e6acadb210c49b906cb481154ee4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AIBot
+  moveSpeed: 4
+  chaseRange: 0
+  grabRange: 1.8
+  grabCooldown: 0.5
+  targetTag: Player
+  anim: {fileID: 604897943}
 --- !u!134 &1557469065
 PhysicsMaterial:
   m_ObjectHideFlags: 0
@@ -1719,10 +1754,30 @@ PrefabInstance:
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 1557469065}
+    - target: {fileID: 1953297190695340442, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: m_Constraints
+      value: 112
+      objectReference: {fileID: 0}
     - target: {fileID: 3910102854533458716, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 853130377}
+    - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: pushForce
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: grabDamper
+      value: 30000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: grabSpring
+      value: 200000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: recoveryTime
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5290964068162305169, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Material
       value: 

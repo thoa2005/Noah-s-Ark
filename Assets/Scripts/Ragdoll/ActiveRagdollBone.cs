@@ -66,9 +66,9 @@ public class ActiveRagdollBone : MonoBehaviour
         float force = collision.impulse.magnitude / Time.fixedDeltaTime;
 
         // Nếu lực đủ mạnh và KHÔNG phải va chạm với sàn nhà (Ground) thì mới báo xỉu
-        if (force > 1000f && !collision.gameObject.CompareTag("Ground"))
+        if (force > 100f && !collision.gameObject.CompareTag("Ground"))
         {
-            controller.ApplyDamage(force * 0.001f);
+            controller.ApplyDamage(force * 0.0001f);
         }
     }
 

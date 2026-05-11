@@ -39,6 +39,13 @@ public class PlayerCombat : MonoBehaviour
         ragdoll = GetComponent<ActiveRagdollController>();
         _input = GetComponent<CharacterInput>();
 
+        // RESET NGAY KHI VÀO GAME
+        if (_input != null)
+        {
+            _input.isGrabPressed = false;
+            Debug.Log($"[COMBAT START] {gameObject.name} initialized with Input: {_input.gameObject.name}");
+        }
+
         FindHandBones();
     }
 
@@ -141,7 +148,7 @@ public class PlayerCombat : MonoBehaviour
                     // KIỂM TRA: Nếu vừa đấm người này cách đây chưa đầy 0.1s thì bỏ qua
                     if (lastHitTime.ContainsKey(hrb.gameObject))
                     {
-                        if (Time.time - lastHitTime[hrb.gameObject] < 0.1f) continue;
+                        if (Time.time - lastHitTime[hrb.gameObject] < 0.3f) continue;
                     }
 
                     // Thực hiện đẩy và gây sát thương
@@ -167,11 +174,17 @@ public class PlayerCombat : MonoBehaviour
         if (anim != null) anim.SetTrigger("Punch");
 
         punchTimer = stats.punchCooldown;
+
+        // FIX AUTO-GRAB: Ép nút Grab về false mỗi khi đấm để xóa lệnh kẹt phím
+        if (_input != null) _input.isGrabPressed = false;
+
         ReleaseGrab();
     }
 
     public void PerformGrab()
     {
+        Debug.Log($"[GRAB ATTEMPT] {gameObject.name} | InputState: {(_input != null ? _input.isGrabPressed.ToString() : "NULL")} | Frame: {Time.frameCount}");
+
         if (stats != null && stats.currentStamina < stats.grabStaminaCost) return;
 
         if (leftPhysicsHand == null || rightPhysicsHand == null || combatDetect == null) return;
