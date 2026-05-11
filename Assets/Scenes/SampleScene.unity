@@ -892,6 +892,8 @@ MonoBehaviour:
   smoothSpeed: 6
   rotationSmoothSpeed: 5
   minDistance: 3
+  maxDistance: 10
+  zoomSpeed: 35
   collisionRadius: 0.3
   collisionMask:
     serializedVersion: 2
@@ -946,7 +948,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &410087040
 Light:
   m_ObjectHideFlags: 0
@@ -1638,7 +1640,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1429550510}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbe3e6acadb210c49b906cb481154ee4, type: 3}
   m_Name: 
@@ -1822,6 +1824,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6638056434018654202, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: -3215330397043717348, guid: 648b6608195bd264b9addec85e23d78b, type: 3}
+    - target: {fileID: 6638056434018654202, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3317dee851e19b049ba04cceaa761c88, type: 2}
     - target: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Name
       value: Player
