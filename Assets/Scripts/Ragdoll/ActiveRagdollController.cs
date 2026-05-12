@@ -21,6 +21,12 @@ public class ActiveRagdollController : MonoBehaviour
     public float balanceDamper;
     public float standUpForce = 150f; // Giam xuong de khong bi bay len troi
     public float targetHeight = 0.9f;
+    public float boneLerpSpeed = 15f; // Tốc độ mượt của xương ảo
+
+    [Header("Leaning (Nghiêng người)")]
+    public float leanAmount = 25f;    // Độ nghiêng tối đa
+    public float leanSpeed = 5f;     // Tốc độ nghiêng/hồi phục
+    private Quaternion currentLeanOffset = Quaternion.identity;
 
     [Header("State")]
     public PlayerStats stats;
@@ -196,7 +202,10 @@ public class ActiveRagdollController : MonoBehaviour
         // 4. Cap nhat Co bap (Dùng nhãn isSpine tối ưu)
         UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
 
-        // 5. Luc day nhac mông (Stand Up)
+        // 5. Tính toán nghiêng người dựa trên Input di chuyển
+        HandleProceduralLeaning();
+
+        // 6. Luc day nhac mông (Stand Up)
         float actualTargetY = playerRb.position.y + targetHeight;
         float diff = actualTargetY - hipRb.position.y;
         if (diff > 0)
@@ -211,10 +220,40 @@ public class ActiveRagdollController : MonoBehaviour
 
         foreach (var bone in bones)
         {
-            if (bone != null) bone.SyncRotation();
+            if (bone != null)
+            {
+                bone.lerpSpeed = boneLerpSpeed; // Đồng bộ tốc độ mượt
+
+                // Chỉ nghiêng các xương thuộc cột sống (Spine) để nhìn tự nhiên nhất
+                if (bone.isSpine) bone.externalOffset = currentLeanOffset;
+                else bone.externalOffset = Quaternion.identity;
+
+                bone.SyncRotation();
+            }
         }
 
         CheckParameterChanges();
+    }
+
+    private void HandleProceduralLeaning()
+    {
+        if (playerInput == null) return;
+
+        // Lấy hướng di chuyển từ Input
+        Vector3 moveInput = new Vector3(playerInput.moveInput.x, 0, playerInput.moveInput.y);
+        
+        Quaternion targetLean = Quaternion.identity;
+
+        if (moveInput.magnitude > 0.1f)
+        {
+            // Tính toán trục nghiêng (xoay vuông góc với hướng di chuyển)
+            Vector3 leanAxis = Vector3.Cross(Vector3.up, moveInput).normalized;
+            float angle = leanAmount * moveInput.magnitude;
+            targetLean = Quaternion.AngleAxis(angle, leanAxis);
+        }
+
+        // Làm mượt quá trình nghiêng và hồi phục
+        currentLeanOffset = Quaternion.Slerp(currentLeanOffset, targetLean, Time.deltaTime * leanSpeed);
     }
 
     private void UpdateAllMuscleDrives(float spring, float damper)

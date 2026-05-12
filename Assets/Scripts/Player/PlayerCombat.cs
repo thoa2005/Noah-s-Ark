@@ -28,6 +28,7 @@ public class PlayerCombat : MonoBehaviour
     Dictionary<GameObject, float> lastHitTime = new Dictionary<GameObject, float>();
 
     float punchTimer;
+    float grabTimer;
     Rigidbody grabbedRb;
     float chargeTimer;
     bool isGrabbing;
@@ -75,10 +76,12 @@ public class PlayerCombat : MonoBehaviour
         if (stats != null && stats.isKnockedOut)
         {
             if (isGrabbing) ReleaseGrab();
+            if (_input != null) _input.isGrabPressed = false; // Reset kẹt phím khi xỉu
             return; // Ngất rồi thì không cho làm gì nữa
         }
 
         punchTimer -= Time.deltaTime;
+        grabTimer -= Time.deltaTime;
 
         // Xử lý Đấm
         if (_input.isPunching && punchTimer <= 0)
@@ -90,10 +93,11 @@ public class PlayerCombat : MonoBehaviour
         // Xử lý Cầm/Ném
         if (!isGrabbing)
         {
-            // Cho phép "hút" đồ liên tục khi giữ chuột, miễn là còn thể lực
-            if (_input.isGrabPressed && stats.currentStamina > 10f)
+            // Thêm Grab Cooldown: Chỉ cho phép tìm đồ vật 5 lần/giây để tránh spam lag
+            if (_input.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
             {
                 PerformGrab();
+                grabTimer = 0.2f; // Nghỉ 0.2s mới cho tìm tiếp
             }
         }
         else
@@ -148,7 +152,7 @@ public class PlayerCombat : MonoBehaviour
                     // KIỂM TRA: Nếu vừa đấm người này cách đây chưa đầy 0.1s thì bỏ qua
                     if (lastHitTime.ContainsKey(hrb.gameObject))
                     {
-                        if (Time.time - lastHitTime[hrb.gameObject] < 0.3f) continue;
+                        if (Time.time - lastHitTime[hrb.gameObject] < 0.1f) continue;
                     }
 
                     // Thực hiện đẩy và gây sát thương
@@ -246,6 +250,7 @@ public class PlayerCombat : MonoBehaviour
         activeGrabJoints.Clear();
 
         isGrabbing = false;
+        if (_input != null) _input.isGrabPressed = false; // QUAN TRỌNG: Xóa lệnh kẹt phím khi chủ động nhả
         chargeTimer = 0f;
         grabbedRb = null;
 
@@ -286,8 +291,8 @@ public class PlayerCombat : MonoBehaviour
             joint.connectedAnchor = Vector3.zero;
         }
 
-        joint.breakForce = stats.grabBreakForce * 200f;
-        joint.breakTorque = stats.grabBreakForce * 200f;
+        joint.breakForce = stats.grabBreakForce * 100f;
+        joint.breakTorque = stats.grabBreakForce * 100f;
         activeGrabJoints.Add(joint);
     }
 
@@ -302,7 +307,7 @@ public class PlayerCombat : MonoBehaviour
         joint.angularXMotion = joint.angularYMotion = joint.angularZMotion = ConfigurableJointMotion.Free;
 
         // Limit lon hon tay: cho phep doi phuong lay la mot chut, khong ap chat
-        joint.linearLimit = new SoftJointLimit { limit = 0.03f };
+        joint.linearLimit = new SoftJointLimit { limit = 0.02f };
         // Spring yeu hon (40%), damper manh hon (200%) de dan vao nguoi khong giat
         joint.linearLimitSpring = new SoftJointLimitSpring
         {
@@ -339,6 +344,8 @@ public class PlayerCombat : MonoBehaviour
         {
             tgt.AddForce(td * frc, ForceMode.Impulse);
         }
+
+        if (_input != null) _input.isGrabPressed = false; // QUAN TRỌNG: Xóa lệnh kẹt phím sau khi ném
     }
 
     void OnDrawGizmosSelected()

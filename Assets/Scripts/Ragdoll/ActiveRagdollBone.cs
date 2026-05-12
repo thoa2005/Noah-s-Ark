@@ -14,30 +14,33 @@ public class ActiveRagdollBone : MonoBehaviour
     public bool isSpine; // <--- NHÃN NHẬN DIỆN XƯƠNG SỐNG
 
     private Quaternion initialLocalRotation;
+    private Quaternion currentTargetRotation;
+    public float lerpSpeed = 15f; // Tốc độ mượt (càng thấp càng dẻo/trễ)
+    [HideInInspector] public Quaternion externalOffset = Quaternion.identity; // Lực nghiêng từ Controller
 
-    // Sửa hàm Setup thành 3 tham số như sau:
     public void Setup(Transform animBone, ConfigurableJoint joint, ActiveRagdollController controller)
     {
         this.animBone = animBone;
         this.joint = joint;
-        this.controller = controller; // Lưu sếp lại để báo cáo va chạm
+        this.controller = controller; 
 
         initialLocalRotation = transform.localRotation;
+        currentTargetRotation = targetBone != null ? targetBone.localRotation : initialLocalRotation;
+        externalOffset = Quaternion.identity;
     }
 
     public void SyncRotation()
     {
         if (targetBone == null || joint == null) return;
 
-        // Tinh toan targetRotation cho ConfigurableJoint
-        // Cong thuc: Rotation hien tai cua Animation so voi Rotation ban dau
-        // Luu y: ConfigurableJoint su dung khong gian rotation nguoc (inverse)
-        // joint.targetRotation = initialLocalRotation * Quaternion.Inverse(targetBone.localRotation);
-        // joint.targetRotation = initialLocalRotation * Quaternion.Inverse(targetBone.localRotation);
-        //         Quaternion deltaRotation = Quaternion.Inverse(targetBone.localRotation) * initialLocalRotation;
-        // joint.targetRotation = deltaRotation;
-        joint.targetRotation = Quaternion.Inverse(targetBone.localRotation) * initialLocalRotation;
+        // Kết hợp Rotation của Animation với lực nghiêng bên ngoài (Offset)
+        Quaternion finalTarget = targetBone.localRotation * externalOffset;
 
+        // Làm mượt đích đến: cho phép xương ảo "trôi" theo Animation thay vì đứng khựng
+        currentTargetRotation = Quaternion.Slerp(currentTargetRotation, finalTarget, Time.deltaTime * lerpSpeed);
+
+        // Tính toán targetRotation cho ConfigurableJoint dựa trên giá trị đã làm mượt
+        joint.targetRotation = Quaternion.Inverse(currentTargetRotation) * initialLocalRotation;
     }
 
     public void UpdateJointDrive(float spring, float damper)

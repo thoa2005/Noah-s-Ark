@@ -12,8 +12,8 @@ public class PlayerStats : MonoBehaviour
 
 
     [Header("Stamina")]
-    public float currentStamina = 100f;
-    public float maxStamina = 100f;
+    public float currentStamina = 200f;
+    public float maxStamina = 200f;
     public float staminaRegenRate = 15f;
     public float staminaRecoveryDelay = 1.0f;
     private float staminaDelayTimer;

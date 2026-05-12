@@ -55,4 +55,22 @@ public class CharacterInput : MonoBehaviour
         zoomInput = v.Get<Vector2>();
     }
     public void UseRestartRequest() => isRestartRequest = false;
+
+    // --- CẦU CHÌ AN TOÀN: Reset toàn bộ phím khi mất tập trung hoặc lag ---
+    private void OnApplicationFocus(bool focus)
+    {
+        if (!focus) ClearAllInputs();
+    }
+
+    public void ClearAllInputs()
+    {
+        moveInput = Vector2.zero;
+        isPunching = false;
+        isJumpPressed = false;
+        isGrabPressed = false;
+        isRestartRequest = false;
+        isCameraRotatePressed = false;
+        zoomInput = Vector2.zero;
+        Debug.Log($"[INPUT SAFETY] All inputs cleared for {gameObject.name}");
+    }
 }
