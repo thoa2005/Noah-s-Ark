@@ -241,7 +241,7 @@ public class ActiveRagdollController : MonoBehaviour
 
         // Lấy hướng di chuyển từ Input
         Vector3 moveInput = new Vector3(playerInput.moveInput.x, 0, playerInput.moveInput.y);
-        
+
         Quaternion targetLean = Quaternion.identity;
 
         if (moveInput.magnitude > 0.1f)
@@ -315,7 +315,7 @@ public class ActiveRagdollController : MonoBehaviour
             {
                 foreach (var rb in originalMasses.Keys)
                 {
-                    if (rb != null) rb.mass = 2.0f;
+                    if (rb != null) rb.mass = 1.5f;
                 }
             }
         }
