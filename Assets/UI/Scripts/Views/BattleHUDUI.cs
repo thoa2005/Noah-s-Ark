@@ -1,0 +1,540 @@
+using UnityEngine;
+using UnityEngine.UIElements;
+using System.Collections.Generic;
+
+public class BattleHUDUI : MonoBehaviour
+{
+    public static BattleHUDUI Instance { get; private set; }
+
+    [Header("Player Reference")]
+    [SerializeField] private PlayerStats playerStats;
+    [SerializeField] private PlayerCombat playerCombat;
+
+    [Header("HUD Information")]
+    [SerializeField] private string mapName = "Typhoon Bay";
+    [SerializeField] private string playerName = "CaptainCute";
+
+    // UI Elements
+    private VisualElement root;
+    private VisualElement hpBarFill;
+    private VisualElement shieldBarFill;
+    private VisualElement koOverlay;
+    private VisualElement hotbarContainer;
+    private VisualElement skillR;
+    private VisualElement lockOverlayR;
+    private VisualElement killFeedContainer;
+    private Label mapTextLabel;
+    private Label aliveTextLabel;
+    private Label playerNameLabel;
+    private VisualElement nameTagsContainer;
+
+    // Game stats tracking
+    private int aliveCount = 4;
+    private int totalPlayers = 6;
+
+    // Track active UI components
+    private List<VisualElement> activeKillEntries = new List<VisualElement>();
+    private List<NameTag> activeNameTags = new List<NameTag>();
+    private Dictionary<NameTag, VisualElement> nameTagElements = new Dictionary<NameTag, VisualElement>();
+
+    void Awake()
+    {
+        // Setup Singleton
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
+
+    void Start()
+    {
+        // Backward-compatibility fallback for standalone testing without UIManager
+        if (root == null)
+        {
+            UIDocument localDoc = GetComponent<UIDocument>();
+            if (localDoc != null && localDoc.rootVisualElement != null)
+            {
+                Initialize(localDoc.rootVisualElement);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dynamically initializes the Battle HUD using a spawned UXML root visual element
+    /// </summary>
+    public void Initialize(VisualElement hudRoot)
+    {
+        root = hudRoot;
+        InitializeUI();
+        SubscribeToStatsEvents();
+
+        // Add a welcome kill feed entry just for fun and visual impact!
+        AddKillEntry("⚓ Battle started in Typhoon Bay!", "warning");
+    }
+
+    void OnDestroy()
+    {
+        UnsubscribeFromStatsEvents();
+    }
+
+    void Update()
+    {
+        UpdateStatsBars();
+        UpdateSkillSlots();
+    }
+
+    private void InitializeUI()
+    {
+        if (root == null)
+        {
+            Debug.LogError("[BattleHUDUI] rootVisualElement is null! Cannot initialize UI.", this);
+            return;
+        }
+
+        // Query all Elements
+        hpBarFill = root.Q<VisualElement>("hp-bar-fill");
+        shieldBarFill = root.Q<VisualElement>("shield-bar-fill");
+        koOverlay = root.Q<VisualElement>("ko-overlay");
+        hotbarContainer = root.Q<VisualElement>("hotbar-container");
+        skillR = root.Q<VisualElement>("skill-r");
+        lockOverlayR = root.Q<VisualElement>("lock-overlay");
+        killFeedContainer = root.Q<VisualElement>("kill-feed");
+        nameTagsContainer = root.Q<VisualElement>("name-tags-container");
+
+        mapTextLabel = root.Q<Label>("map-text");
+        aliveTextLabel = root.Q<Label>("alive-text");
+        playerNameLabel = root.Q<Label>("player-name");
+
+        // Clear mock items from UXML preview in actual game start
+        if (killFeedContainer != null)
+        {
+            killFeedContainer.Clear();
+        }
+
+        // Register any pre-existing name tags in the scene
+        if (nameTagsContainer != null)
+        {
+            nameTagsContainer.Clear();
+            NameTag[] preExistingTags = FindObjectsByType<NameTag>(FindObjectsSortMode.None);
+            foreach (var tag in preExistingTags)
+            {
+                RegisterNameTag(tag);
+            }
+        }
+
+        // Set static texts
+        if (playerNameLabel != null) playerNameLabel.text = playerName;
+        if (mapTextLabel != null) mapTextLabel.text = $"🌊 {mapName}";
+
+        UpdateAliveCount(aliveCount, totalPlayers);
+
+        // Reset KO screen overlay
+        if (koOverlay != null)
+        {
+            koOverlay.AddToClassList("visual-hidden");
+        }
+
+        // Register Reset Camera Button Listener
+        Button btnResetCamera = root.Q<Button>("btn-reset-camera");
+        if (btnResetCamera != null)
+        {
+            btnResetCamera.clicked += OnResetCameraClicked;
+        }
+    }
+
+    private void OnResetCameraClicked()
+    {
+        CameraFollow camFollow = FindFirstObjectByType<CameraFollow>();
+        if (camFollow != null)
+        {
+            camFollow.ResetDistance();
+            AddKillEntry("🎥 Camera distance reset to default", "normal");
+        }
+        else
+        {
+            Debug.LogWarning("[BattleHUDUI] CameraFollow script not found in scene!");
+        }
+    }
+
+    /// <summary>
+    /// Binds the HUD dynamically to a spawned player. Ideal for online multiplayer!
+    /// </summary>
+    /// <param name="stats">The spawned player's stats</param>
+    /// <param name="combat">The spawned player's combat system</param>
+    public void BindPlayer(PlayerStats stats, PlayerCombat combat)
+    {
+        // Unsubscribe from old player if any
+        UnsubscribeFromStatsEvents();
+
+        playerStats = stats;
+        playerCombat = combat;
+
+        // Subscribe to new player events
+        SubscribeToStatsEvents();
+
+        // Immediate visual update
+        UpdateStatsBars();
+        UpdateSkillSlots();
+
+        Debug.Log($"[BattleHUDUI] Successfully bound to player: {stats.gameObject.name} (Ready for Battle!)");
+    }
+
+    private void SubscribeToStatsEvents()
+    {
+        if (playerStats != null)
+        {
+            playerStats.OnKnockout += OnPlayerKnockedOut;
+            playerStats.OnWakeUp += OnPlayerWokeUp;
+        }
+        else
+        {
+            // Try auto-finding player stats on same object or visual parent (fallback for offline test)
+            playerStats = FindFirstObjectByType<PlayerStats>();
+            if (playerStats != null)
+            {
+                playerStats.OnKnockout += OnPlayerKnockedOut;
+                playerStats.OnWakeUp += OnPlayerWokeUp;
+            }
+        }
+
+        if (playerCombat == null)
+        {
+            playerCombat = FindFirstObjectByType<PlayerCombat>();
+        }
+    }
+
+    private void UnsubscribeFromStatsEvents()
+    {
+        if (playerStats != null)
+        {
+            playerStats.OnKnockout -= OnPlayerKnockedOut;
+            playerStats.OnWakeUp -= OnPlayerWokeUp;
+        }
+    }
+
+    private void UpdateStatsBars()
+    {
+        if (playerStats == null) return;
+
+        // 1. HP (currentStability / maxStability)
+        if (hpBarFill != null)
+        {
+            float hpPercent = Mathf.Clamp01(playerStats.currentStability / playerStats.maxStability) * 100f;
+            hpBarFill.style.width = Length.Percent(hpPercent);
+        }
+
+        // 2. Shield / Stamina (currentStamina / maxStamina)
+        if (shieldBarFill != null)
+        {
+            float shieldPercent = Mathf.Clamp01(playerStats.currentStamina / playerStats.maxStamina) * 100f;
+            shieldBarFill.style.width = Length.Percent(shieldPercent);
+        }
+    }
+
+    private void UpdateSkillSlots()
+    {
+        if (playerCombat == null || skillR == null) return;
+
+        // Skill [R] Special unlocks only when player is grabbing something!
+        bool isGrabbing = playerCombat.IsCharging();
+
+        if (isGrabbing)
+        {
+            if (skillR.ClassListContains("locked"))
+            {
+                skillR.RemoveFromClassList("locked");
+                skillR.AddToClassList("ready");
+                if (lockOverlayR != null)
+                {
+                    lockOverlayR.style.display = DisplayStyle.None;
+                }
+
+                // Add a notification when weapon is grabbed!
+                AddKillEntry("✨ Special Skill unlocked! Weapon grabbed!", "warning");
+            }
+        }
+        else
+        {
+            if (!skillR.ClassListContains("locked"))
+            {
+                skillR.RemoveFromClassList("ready");
+                skillR.AddToClassList("locked");
+                if (lockOverlayR != null)
+                {
+                    lockOverlayR.style.display = DisplayStyle.Flex;
+                }
+            }
+        }
+    }
+
+    private void OnPlayerKnockedOut()
+    {
+        Debug.Log("[BattleHUDUI] Player Knocked Out - Updating UI!");
+
+        // Show KO Screen overlay (red flash)
+        if (koOverlay != null)
+        {
+            koOverlay.RemoveFromClassList("visual-hidden");
+        }
+
+        // Dim the hotbar to show disabled state
+        if (hotbarContainer != null)
+        {
+            hotbarContainer.style.opacity = 0.45f;
+        }
+
+        AddKillEntry("❌ You were knocked out!", "danger");
+    }
+
+    private void OnPlayerWokeUp()
+    {
+        Debug.Log("[BattleHUDUI] Player Woke Up - Updating UI!");
+
+        // Hide KO Screen overlay
+        if (koOverlay != null)
+        {
+            koOverlay.AddToClassList("visual-hidden");
+        }
+
+        // Restore hotbar opacity
+        if (hotbarContainer != null)
+        {
+            hotbarContainer.style.opacity = 1.0f;
+        }
+
+        AddKillEntry("💪 You recovered and stood up!", "normal");
+    }
+
+    /// <summary>
+    /// Adds a dynamic kill feed entry to the right side of the screen.
+    /// </summary>
+    /// <param name="text">The message to display</param>
+    /// <param name="type">The type of display: "normal", "danger", or "warning"</param>
+    public void AddKillEntry(string text, string type = "normal")
+    {
+        if (killFeedContainer == null) return;
+
+        // Create Container VisualElement
+        VisualElement entry = new VisualElement();
+        entry.AddToClassList("kill-entry");
+
+        // Apply background/border class based on type
+        switch (type.ToLower())
+        {
+            case "danger":
+                entry.AddToClassList("kill-entry-danger");
+                break;
+            case "warning":
+                entry.AddToClassList("kill-entry-warning");
+                break;
+            default:
+                entry.AddToClassList("kill-entry-normal");
+                break;
+        }
+
+        // Create Label
+        Label label = new Label(text);
+        label.AddToClassList("kill-text");
+        entry.Add(label);
+
+        // Add to Feed
+        killFeedContainer.Add(entry);
+        activeKillEntries.Add(entry);
+
+        // Limit feed size to max 5 items to avoid cluttering the screen
+        if (activeKillEntries.Count > 5)
+        {
+            VisualElement oldest = activeKillEntries[0];
+            killFeedContainer.Remove(oldest);
+            activeKillEntries.RemoveAt(0);
+        }
+
+        // Automatically fade out and remove after 4 seconds
+        entry.schedule.Execute(() =>
+        {
+            if (killFeedContainer != null && activeKillEntries.Contains(entry))
+            {
+                // Smooth fade out using UI Toolkit transitions
+                entry.style.opacity = 0f;
+
+                // Remove from DOM shortly after fade animation
+                entry.schedule.Execute(() =>
+                {
+                    if (killFeedContainer != null && entry.parent == killFeedContainer)
+                    {
+                        killFeedContainer.Remove(entry);
+                    }
+                    activeKillEntries.Remove(entry);
+                }).ExecuteLater(300);
+            }
+        }).ExecuteLater(4000);
+    }
+
+    /// <summary>
+    /// Updates the alive players counter at the top bar.
+    /// </summary>
+    public void UpdateAliveCount(int remaining, int total)
+    {
+        aliveCount = remaining;
+        totalPlayers = total;
+        if (aliveTextLabel != null)
+        {
+            aliveTextLabel.text = $"🚢 {aliveCount} / {totalPlayers} Left";
+        }
+    }
+
+    /// <summary>
+    /// Registers a floating text name tag above a player or enemy bot.
+    /// </summary>
+    public void RegisterNameTag(NameTag tag)
+    {
+        if (tag == null) return;
+        if (activeNameTags.Contains(tag)) return;
+
+        activeNameTags.Add(tag);
+
+        if (nameTagsContainer != null)
+        {
+            // Spawn dynamic text-only container and label
+            VisualElement container = new VisualElement();
+            container.AddToClassList("floating-name-tag");
+
+            Label nameLabel = new Label(tag.displayName);
+            nameLabel.AddToClassList("name-tag-text");
+            nameLabel.style.color = tag.nameColor;
+            container.Add(nameLabel);
+
+            nameTagsContainer.Add(container);
+            nameTagElements[tag] = container;
+
+            // Hide initially until LateUpdate positions it correctly
+            container.style.display = DisplayStyle.None;
+        }
+    }
+
+    /// <summary>
+    /// Unregisters a floating name tag when an entity dies or is disabled.
+    /// </summary>
+    public void UnregisterNameTag(NameTag tag)
+    {
+        if (tag == null) return;
+        if (activeNameTags.Contains(tag))
+        {
+            activeNameTags.Remove(tag);
+        }
+
+        if (nameTagElements.TryGetValue(tag, out VisualElement element))
+        {
+            if (nameTagsContainer != null && element.parent == nameTagsContainer)
+            {
+                nameTagsContainer.Remove(element);
+            }
+            nameTagElements.Remove(tag);
+        }
+    }
+
+    private float autoAttachTimer = 0f;
+
+    void LateUpdate()
+    {
+        // Periodically scan and auto-attach NameTag components to entities that don't have them
+        autoAttachTimer += Time.deltaTime;
+        if (autoAttachTimer >= 0.5f)
+        {
+            autoAttachTimer = 0f;
+            AutoAttachNameTags();
+        }
+
+        UpdateNameTags();
+    }
+
+    private void AutoAttachNameTags()
+    {
+        // Auto-attach to Player
+        PlayerMovement player = FindFirstObjectByType<PlayerMovement>();
+        if (player != null && player.GetComponent<NameTag>() == null)
+        {
+            NameTag tag = player.gameObject.AddComponent<NameTag>();
+            tag.displayName = string.IsNullOrEmpty(playerName) ? "Player" : playerName;
+            tag.nameColor = new Color(0.2f, 0.8f, 1f); // Sleek modern light blue/cyan
+            tag.offset = new Vector3(0, 2.0f, 0); // Floats beautifully above player's head
+        }
+
+        // Auto-attach to all AI Bots
+        AIBot[] bots = FindObjectsByType<AIBot>(FindObjectsSortMode.None);
+        foreach (var bot in bots)
+        {
+            if (bot.GetComponent<NameTag>() == null)
+            {
+                NameTag tag = bot.gameObject.AddComponent<NameTag>();
+                tag.displayName = bot.gameObject.name.Replace("(Clone)", "").Trim();
+                tag.nameColor = new Color(1f, 0.35f, 0.35f); // Sleek modern soft red
+                tag.offset = new Vector3(0, 2.0f, 0); // Floats beautifully above bot's head
+            }
+        }
+    }
+
+    private void UpdateNameTags()
+    {
+        if (nameTagsContainer == null) return;
+
+        // Find main camera or fallback to any camera in the scene (highly robust)
+        Camera mainCam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+        if (mainCam == null) return;
+
+        for (int i = activeNameTags.Count - 1; i >= 0; i--)
+        {
+            NameTag tag = activeNameTags[i];
+            if (tag == null)
+            {
+                activeNameTags.RemoveAt(i);
+                continue;
+            }
+
+            if (nameTagElements.TryGetValue(tag, out VisualElement element))
+            {
+                // Check if target gameobject is disabled/inactive
+                if (!tag.gameObject.activeInHierarchy || !tag.enabled)
+                {
+                    element.style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                // Project 3D coordinates above the character's head
+                Vector3 worldPos = tag.transform.position + tag.offset;
+                Vector3 screenPos = mainCam.WorldToScreenPoint(worldPos);
+
+                // Hide tag if it is behind the camera plane
+                if (screenPos.z < 0)
+                {
+                    element.style.display = DisplayStyle.None;
+                }
+                else
+                {
+                    element.style.display = DisplayStyle.Flex;
+
+                    // Dynamically synchronize display name and color (in case they were set at runtime)
+                    Label label = element.Q<Label>(className: "name-tag-text");
+                    if (label != null)
+                    {
+                        label.text = tag.displayName;
+                        label.style.color = tag.nameColor;
+                    }
+
+                    // Convert screen coordinates to runtime panel coordinates (highly robust for all resolutions & aspect ratios)
+                    Vector2 screenPoint = new Vector2(screenPos.x, Screen.height - screenPos.y);
+                    Vector2 localPoint = RuntimePanelUtils.ScreenToPanel(element.panel, screenPoint);
+
+                    // Update UI Toolkit element layout positions
+                    element.style.left = localPoint.x;
+                    element.style.top = localPoint.y;
+                }
+            }
+        }
+    }
+}

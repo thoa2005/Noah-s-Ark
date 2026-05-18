@@ -1,0 +1,129 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="../Styles/Global.uss" />
+    <ui:Style src="../Styles/BattleHUD.uss" />
+    
+    <ui:VisualElement name="battle-hud-root" class="battle-hud-root">
+        <!-- Full-Screen Flash Overlay for Knockout -->
+        <ui:VisualElement name="ko-overlay" class="ko-overlay visual-hidden" />
+
+        <!-- Floating Name Tags Container -->
+        <ui:VisualElement name="name-tags-container" class="name-tags-container" />
+
+        <!-- TOP BAR HUD -->
+        <ui:VisualElement name="top-bar" class="top-bar">
+            <ui:VisualElement name="map-badge" class="badge bg-badge">
+                <ui:Label name="map-text" text="🌊 Typhoon Bay" class="badge-text map-color" />
+            </ui:VisualElement>
+            
+            <ui:VisualElement name="alive-badge" class="badge bg-badge">
+                <ui:Label name="alive-text" text="🚢 4 / 6 Left" class="badge-text alive-color" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- PLAYER STATUS (TOP LEFT) -->
+        <ui:VisualElement name="player-status" class="player-status glass-panel">
+            <ui:VisualElement name="avatar-container" class="avatar-container">
+                <ui:VisualElement name="avatar-circle" class="avatar-circle">
+                    <ui:Label name="avatar-emoji" text="🧑‍✈️" class="avatar-emoji" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            
+            <ui:VisualElement name="status-info" class="status-info">
+                <ui:Label name="player-name" text="CaptainCute" class="player-name-text" />
+                
+                <ui:VisualElement name="hp-section" class="bar-section">
+                    <ui:Label name="hp-label" text="❤️ HP" class="bar-label hp-label-color" />
+                    <ui:VisualElement name="hp-bar-bg" class="bar-bg">
+                        <ui:VisualElement name="hp-bar-fill" class="bar-fill hp-bar-fill-color" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                
+                <ui:VisualElement name="shield-section" class="bar-section">
+                    <ui:Label name="shield-label" text="🛡️ Shield" class="bar-label shield-label-color" />
+                    <ui:VisualElement name="shield-bar-bg" class="bar-bg">
+                        <ui:VisualElement name="shield-bar-fill" class="bar-fill shield-bar-fill-color" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- MINIMAP (TOP RIGHT) -->
+        <ui:VisualElement name="minimap" class="minimap glass-panel">
+            <ui:Label name="minimap-title" text="🗺️ MAP" class="minimap-title-text" />
+            
+            <ui:VisualElement name="minimap-canvas" class="minimap-canvas">
+                <!-- Mini dots representing other players / objects -->
+                <ui:VisualElement name="dot-you" class="minimap-dot you-dot" style="left: 45%; top: 40%;">
+                    <ui:Label name="you-label" text="YOU" class="you-dot-label" />
+                </ui:VisualElement>
+                <ui:VisualElement name="dot-enemy-1" class="minimap-dot enemy-dot" style="left: 20%; top: 30%;" />
+                <ui:VisualElement name="dot-enemy-2" class="minimap-dot enemy-dot" style="left: 75%; top: 50%;" />
+                <ui:VisualElement name="dot-enemy-3" class="minimap-dot enemy-dot" style="left: 60%; top: 80%;" />
+                
+                <!-- Safe Zone Circle -->
+                <ui:VisualElement name="minimap-storm-circle" class="minimap-storm-circle" />
+            </ui:VisualElement>
+            <!-- Minimap Footer containing Storm Label & Reset Button -->
+            <ui:VisualElement name="minimap-footer" class="minimap-footer">
+                <ui:Label name="storm-label" text="⚡ Storm Zone" class="storm-label-text" />
+                <ui:Button name="btn-reset-camera" text="🎥 Reset Cam" class="btn-reset-cam glass-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- KILL FEED (RIGHT, BELOW MINIMAP) -->
+        <ui:VisualElement name="kill-feed" class="kill-feed">
+            <!-- Mock items for UI Builder Preview, script will handle dynamic ones -->
+            <ui:VisualElement class="kill-entry kill-entry-danger">
+                <ui:Label text="🦁 StormKing sank 🐶 SaltyDog" class="kill-text" />
+            </ui:VisualElement>
+            <ui:VisualElement class="kill-entry kill-entry-normal">
+                <ui:Label text="💣 Bubbles used Torpedo!" class="kill-text" />
+            </ui:VisualElement>
+            <ui:VisualElement class="kill-entry kill-entry-warning">
+                <ui:Label text="🛥️ Speedboat is on fire! 🔥" class="kill-text" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- HOTBAR SKILLS (BOTTOM CENTER) -->
+        <ui:VisualElement name="hotbar-container" class="hotbar-container glass-panel">
+            <!-- Skill 1: Punch -->
+            <ui:VisualElement class="skill-container">
+                <ui:Label text="LMB" class="skill-key-label" />
+                <ui:VisualElement name="skill-q" class="skill-slot ready">
+                    <ui:Label text="👊" class="skill-emoji" />
+                    <ui:Label text="Punch" class="skill-name" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            
+            <!-- Skill 2: Grab -->
+            <ui:VisualElement class="skill-container">
+                <ui:Label text="Hold RMB" class="skill-key-label" />
+                <ui:VisualElement name="skill-w" class="skill-slot ready">
+                    <ui:Label text="🤜" class="skill-emoji" />
+                    <ui:Label text="Grab" class="skill-name" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            
+            <!-- Skill 3: Throw -->
+            <ui:VisualElement class="skill-container">
+                <ui:Label text="Release RMB" class="skill-key-label" />
+                <ui:VisualElement name="skill-e" class="skill-slot ready">
+                    <ui:Label text="🤾" class="skill-emoji" />
+                    <ui:Label text="Throw" class="skill-name" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            
+            <!-- Skill 4: Special -->
+            <ui:VisualElement class="skill-container">
+                <ui:Label text="[R] Special" class="skill-key-label skill-key-special" />
+                <ui:VisualElement name="skill-r" class="skill-slot locked">
+                    <ui:VisualElement name="lock-overlay" class="lock-overlay">
+                        <ui:Label text="🔒" class="lock-icon" />
+                    </ui:VisualElement>
+                    <ui:Label text="✨" class="skill-emoji" />
+                    <ui:Label text="Special" class="skill-name" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

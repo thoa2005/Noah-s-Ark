@@ -22,7 +22,7 @@ public class Tool_Sua_Loi_Ket_Noi_Khop : EditorWindow
 
     public static void Fix()
     {
-        var joints = GameObject.FindObjectsOfType<ConfigurableJoint>();
+        var joints = Object.FindObjectsByType<ConfigurableJoint>(FindObjectsSortMode.None);
         int fixedCount = 0;
 
         foreach (var joint in joints)

@@ -1,0 +1,369 @@
+/* Main Menu Stylesheet - Glassmorphism & Animated Parallax waves */
+
+.menu-root-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: #061121;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Background Overlay Containers for Animations */
+.bg-overlay-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+/* Twinkling Stars */
+.star {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+/* Float Bubbles */
+.bubble {
+    position: absolute;
+    background-color: rgba(0, 242, 254, 0.12);
+    border-width: 1px;
+    border-color: rgba(0, 242, 254, 0.3);
+    border-radius: 50%;
+}
+
+.bubble-sm {
+    width: 12px;
+    height: 12px;
+}
+
+.bubble-md {
+    width: 24px;
+    height: 24px;
+}
+
+.bubble-lg {
+    width: 48px;
+    height: 48px;
+}
+
+/* Wave Layers under the Sea */
+.wave {
+    position: absolute;
+    bottom: 0;
+    left: -50%;
+    width: 200%;
+    border-top-left-radius: 120px;
+    border-top-right-radius: 120px;
+}
+
+.wave-back {
+    height: 180px;
+    background-color: rgba(0, 242, 254, 0.08);
+}
+
+.wave-front {
+    height: 120px;
+    background-color: rgba(0, 143, 206, 0.15);
+}
+
+.wave-foam {
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Dynamic Interactive UI Foreground */
+.menu-foreground {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 60px;
+    padding-right: 60px;
+    padding-top: 80px;
+    padding-bottom: 80px;
+}
+
+/* Columnar Sections */
+.side-section {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.left-section {
+    align-items: flex-start;
+}
+
+.right-section {
+    align-items: flex-end;
+}
+
+.center-section {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+/* Premium Glassmorphism Panels */
+.glass-panel {
+    background-color: rgba(11, 36, 71, 0.45);
+    border-width: 1px;
+    border-color: rgba(0, 242, 254, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    transition-property: border-color, background-color;
+    transition-duration: 0.3s;
+}
+
+.glass-panel:hover {
+    background-color: rgba(11, 36, 71, 0.6);
+    border-color: rgba(0, 242, 254, 0.35);
+}
+
+/* Left Section: Player Card */
+.player-card {
+    width: 100%;
+    margin-top: 190px; /* Offset to align with Figma y: 270 */
+}
+
+.player-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.avatar-bg {
+    width: 52px;
+    height: 52px;
+    background-color: rgba(0, 242, 254, 0.15);
+    border-width: 1px;
+    border-color: rgba(0, 242, 254, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-emoji {
+    font-size: 26px;
+}
+
+.player-info {
+    margin-left: 12px;
+}
+
+.player-name-text {
+    font-size: 18px;
+    color: #FFFFFF;
+    -unity-font-style: bold;
+}
+
+.player-level-text {
+    font-size: 13px;
+    color: rgba(0, 242, 254, 0.85);
+}
+
+.xp-container {
+    width: 100%;
+}
+
+.xp-bar-bg {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.xp-bar-fill {
+    height: 100%;
+    background-color: #00F2FE;
+    border-radius: 4px;
+}
+
+.xp-progress-text {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Center Section: Title & Buttons */
+.title-wrapper {
+    margin-top: 10px;
+    align-items: center;
+    position: relative;
+    height: 150px;
+}
+
+.menu-title {
+    font-size: 84px;
+    -unity-font-style: bold;
+    letter-spacing: 4px;
+    position: absolute;
+}
+
+.shadow-title {
+    color: #00F2FE;
+    top: 4px;
+    left: 4px;
+    opacity: 0.35;
+}
+
+.main-title {
+    color: #FFFFFF;
+    top: 0;
+    left: 0;
+}
+
+.menu-subtitle {
+    font-size: 16px;
+    color: rgba(0, 242, 254, 0.85);
+    letter-spacing: 6px;
+    margin-top: 110px;
+    -unity-font-style: bold;
+}
+
+.button-container {
+    width: 320px;
+    margin-bottom: 40px;
+}
+
+/* Button Styling */
+.btn {
+    width: 100%;
+    height: 52px;
+    border-radius: 12px;
+    font-size: 15px;
+    -unity-font-style: bold;
+    margin-bottom: 12px;
+    border-width: 1px;
+    transition-property: scale, background-color, border-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-in-out;
+}
+
+.btn:hover {
+    scale: 1.05;
+}
+
+.btn:active {
+    scale: 0.95;
+}
+
+.btn-primary {
+    background-color: #00F2FE;
+    color: #020813;
+    border-color: #00F2FE;
+}
+
+.btn-primary:hover {
+    background-color: #33F5FF;
+    border-color: #33F5FF;
+}
+
+.btn-secondary {
+    background-color: rgba(0, 242, 254, 0.1);
+    color: #FFFFFF;
+    border-color: rgba(0, 242, 254, 0.4);
+}
+
+.btn-secondary:hover {
+    background-color: rgba(0, 242, 254, 0.25);
+    border-color: rgba(0, 242, 254, 0.7);
+}
+
+.sub-button-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.btn-muted {
+    width: 48%;
+    height: 46px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.15);
+    margin-bottom: 0;
+}
+
+.btn-muted:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Right Section: News Card & Online Badge */
+.news-card {
+    width: 100%;
+    margin-top: 190px; /* Aligned with Left Player Card */
+    margin-bottom: 20px;
+}
+
+.news-tag {
+    font-size: 11px;
+    color: #00F2FE;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.news-title {
+    font-size: 15px;
+    color: #FFFFFF;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.news-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    white-space: normal;
+}
+
+.online-badge {
+    width: 100%;
+    padding: 12px 20px;
+}
+
+.online-indicator {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.online-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #00FF66;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.online-count-text {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    -unity-font-style: bold;
+}
+
+/* Footer Version */
+.footer-version {
+    position: absolute;
+    bottom: 20px;
+    align-self: center;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+}

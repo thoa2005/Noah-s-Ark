@@ -1,0 +1,125 @@
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
+
+public class UIManager : MonoBehaviour
+{
+    public static UIManager Instance { get; private set; }
+
+    [Header("Core UI Document (Global Overlay)")]
+    [SerializeField] private UIDocument globalDocument;
+
+    [Header("Global UI Templates")]
+    [SerializeField] private VisualTreeAsset settingsTemplate;
+
+    private bool isSettingsOpen = false;
+
+    void Awake()
+    {
+        // Setup Singleton
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            // Standard Singleton: Destroy duplicate GameObject cleanly!
+            Destroy(gameObject);
+            return;
+        }
+
+        if (globalDocument == null)
+        {
+            globalDocument = GetComponent<UIDocument>();
+        }
+
+        // Disable global overlay UIDocument by default so it doesn't block gameplay input/clicks!
+        if (globalDocument != null)
+        {
+            globalDocument.enabled = false;
+        }
+    }
+
+    void Update()
+    {
+        // Toggle Settings Overlay with Escape key (Modern Input System compatible)
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            ToggleSettings();
+        }
+    }
+
+    /// <summary>
+    /// Toggles the global Settings UI overlay on top of any active scene
+    /// </summary>
+    public void ToggleSettings()
+    {
+        if (globalDocument == null)
+        {
+            globalDocument = GetComponent<UIDocument>();
+        }
+
+        if (globalDocument == null || settingsTemplate == null)
+        {
+            Debug.LogWarning("[UIManager] Settings template or Global UIDocument is not assigned!");
+            return;
+        }
+
+        isSettingsOpen = !isSettingsOpen;
+
+        if (isSettingsOpen)
+        {
+            globalDocument.enabled = true; // Enable overlay to display settings
+            globalDocument.visualTreeAsset = settingsTemplate;
+            Debug.Log("[UIManager] Global Settings UI Overlay Opened.");
+
+            // Safe Freeze Input: Reset movement values and disable input listeners
+            CharacterInput charInput = FindFirstObjectByType<CharacterInput>();
+            if (charInput != null)
+            {
+                charInput.ClearAllInputs();
+            }
+            PlayerInput playerInput = FindFirstObjectByType<PlayerInput>();
+            if (playerInput != null)
+            {
+                playerInput.enabled = false;
+            }
+        }
+        else
+        {
+            globalDocument.visualTreeAsset = null;
+            globalDocument.enabled = false; // Disable overlay completely so it releases input capturing
+            
+            // Blur focus to return keyboard control to the active gameplay scene
+            globalDocument.rootVisualElement?.panel?.focusController?.focusedElement?.Blur();
+            Debug.Log("[UIManager] Global Settings UI Overlay Closed.");
+
+            // Thaw Input: Re-enable inputs for gameplay
+            PlayerInput playerInput = FindFirstObjectByType<PlayerInput>();
+            if (playerInput != null)
+            {
+                playerInput.enabled = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Loads the gameplay scene (SampleScene) asynchronously
+    /// </summary>
+    public void StartGameplay()
+    {
+        Debug.Log("[UIManager] Starting gameplay scene transition to SampleScene...");
+        SceneManager.LoadScene("SampleScene");
+    }
+
+    /// <summary>
+    /// Returns to the main menu scene
+    /// </summary>
+    public void ReturnToMainMenu()
+    {
+        Debug.Log("[UIManager] Returning to MainMenuScene...");
+        SceneManager.LoadScene("MainMenuScene");
+    }
+}

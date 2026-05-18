@@ -1,0 +1,103 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="project://database/Assets/UI/Styles/Global.uss" />
+    <ui:Style src="project://database/Assets/UI/Styles/MainMenu.uss" />
+
+    <ui:VisualElement name="main-menu-root" class="menu-root-container">
+        <!-- Background Animated Aquatic Elements -->
+        <ui:VisualElement name="star-container" class="bg-overlay-container">
+            <ui:VisualElement name="star-0" class="star twinkle-1" style="left: 150px; top: 80px;" />
+            <ui:VisualElement name="star-1" class="star twinkle-2" style="left: 350px; top: 200px;" />
+            <ui:VisualElement name="star-2" class="star twinkle-3" style="left: 600px; top: 50px;" />
+            <ui:VisualElement name="star-3" class="star twinkle-1" style="left: 850px; top: 120px;" />
+            <ui:VisualElement name="star-4" class="star twinkle-2" style="left: 1050px; top: 60px;" />
+            <ui:VisualElement name="star-5" class="star twinkle-3" style="left: 1250px; top: 200px;" />
+            <ui:VisualElement name="star-6" class="star twinkle-1" style="left: 1400px; top: 350px;" />
+            <ui:VisualElement name="star-7" class="star twinkle-2" style="left: 200px; top: 400px;" />
+            <ui:VisualElement name="star-8" class="star twinkle-3" style="left: 1380px; top: 700px;" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="bubble-container" class="bg-overlay-container">
+            <ui:VisualElement name="bubble-0" class="bubble bubble-lg" style="left: 80px; top: 200px;" />
+            <ui:VisualElement name="bubble-1" class="bubble bubble-sm" style="left: 200px; top: 550px;" />
+            <ui:VisualElement name="bubble-2" class="bubble bubble-lg" style="left: 1300px; top: 150px;" />
+            <ui:VisualElement name="bubble-3" class="bubble bubble-sm" style="left: 1100px; top: 600px;" />
+            <ui:VisualElement name="bubble-4" class="bubble bubble-md" style="left: 400px; top: 750px;" />
+            <ui:VisualElement name="bubble-5" class="bubble bubble-sm" style="left: 900px; top: 80px;" />
+            <ui:VisualElement name="bubble-6" class="bubble bubble-lg" style="left: 1350px; top: 480px;" />
+        </ui:VisualElement>
+
+        <!-- Wave Parallax Bottom Layers -->
+        <ui:VisualElement name="wave-back" class="wave wave-back" />
+        <ui:VisualElement name="wave-front" class="wave wave-front" />
+        <ui:VisualElement name="wave-foam" class="wave wave-foam" />
+
+        <!-- Interactive 2D Glass UI Layout -->
+        <ui:VisualElement name="menu-foreground" class="menu-foreground">
+            
+            <!-- LEFT COLUMN: Player Card -->
+            <ui:VisualElement name="left-section" class="side-section left-section">
+                <ui:VisualElement name="player-card" class="glass-panel player-card">
+                    <ui:VisualElement class="player-header">
+                        <ui:VisualElement class="avatar-bg">
+                            <ui:Label text="🧑‍✈️" class="avatar-emoji" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="player-info">
+                            <ui:Label text="Captain Cute" name="lbl-player-name" class="player-name-text" />
+                            <ui:Label text="⭐ Lv.24" name="lbl-player-level" class="player-level-text" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    
+                    <ui:VisualElement class="xp-container">
+                        <ui:VisualElement class="xp-bar-bg">
+                            <ui:VisualElement class="xp-bar-fill" style="width: 70%;" />
+                        </ui:VisualElement>
+                        <ui:Label text="70% XP (14,200 / 20,000)" class="xp-progress-text" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- CENTER COLUMN: Game Title & Action Buttons -->
+            <ui:VisualElement name="center-section" class="center-section">
+                <ui:VisualElement class="title-wrapper">
+                    <!-- Twin title labels for glowing text shadow -->
+                    <ui:Label text="WARSHIP" class="menu-title shadow-title" />
+                    <ui:Label text="WARSHIP" class="menu-title main-title" />
+                    <ui:Label text="RAGDOLL FIGHT CHAMPIONSHIP" class="menu-subtitle" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="button-container">
+                    <ui:Button name="btn-play" class="btn btn-primary" text="🎮 PLAY OFFLINE" />
+                    <ui:Button name="btn-create" class="btn btn-secondary" text="🏠 CREATE LOBBY" />
+                    <ui:Button name="btn-join" class="btn btn-secondary" text="🚪 JOIN ROOM" />
+                    
+                    <ui:VisualElement class="sub-button-row">
+                        <ui:Button name="btn-settings" class="btn btn-muted" text="⚙️ SETTINGS" />
+                        <ui:Button name="btn-profile" class="btn btn-muted" text="👤 PROFILE" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- RIGHT COLUMN: Update News & Online Status -->
+            <ui:VisualElement name="right-section" class="side-section right-section">
+                <!-- News Card -->
+                <ui:VisualElement class="glass-panel news-card">
+                    <ui:Label text="📢 UPDATE NEWS" class="news-tag" />
+                    <ui:Label text="Version 1.0.5 Released" class="news-title" />
+                    <ui:Label text="• Dynamic UI manager transition.\n• Perfect name tags scaling at all resolutions.\n• Added physical boat drag and wind force.\n• Smoothed ragdoll grab mechanics." class="news-desc" />
+                </ui:VisualElement>
+
+                <!-- Online Counter Badge -->
+                <ui:VisualElement class="glass-panel online-badge">
+                    <ui:VisualElement class="online-indicator">
+                        <ui:VisualElement class="online-dot" />
+                        <ui:Label text="142 Captains Online" class="online-count-text" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            
+        </ui:VisualElement>
+
+        <!-- Version Footer -->
+        <ui:Label text="v1.0.5 · Active Ragdoll Framework · Noah's Ark" class="footer-version" />
+    </ui:VisualElement>
+</ui:UXML>

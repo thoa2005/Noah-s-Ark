@@ -159,7 +159,10 @@ public class PlayerCombat : MonoBehaviour
                     Vector3 punchDir = (hrb.transform.position - hand.position).normalized + Vector3.up * 0.2f;
                     hrb.AddForce(punchDir * stats.pushForce, ForceMode.Impulse);
                     var targetController = hrb.GetComponentInParent<ActiveRagdollController>();
-                    if (targetController != null) targetController.ApplyDamage(stats.punchForce);
+                    if (targetController != null && targetController != this.ragdoll)
+                    {
+                        targetController.ApplyDamage(stats.punchForce);
+                    }
                     // Ghi nhớ thời gian vừa đấm trúng người này
                     lastHitTime[hrb.gameObject] = Time.time;
                 }
@@ -218,7 +221,7 @@ public class PlayerCombat : MonoBehaviour
                 // KHÔNG CHO TÓM NẾU MÌNH ĐANG BỊ TÓM (Chống đệ quy vật lý)
                 if (grabbedTargetController == ragdoll || ragdoll.IsBeingGrabbed) return;
 
-                grabbedTargetController.SetGrabbedState(true);
+                grabbedTargetController.SetGrabbedState(true, this.gameObject);
             }
 
             AttachHand(leftPhysicsHand, commonTarget);
@@ -236,9 +239,9 @@ public class PlayerCombat : MonoBehaviour
     public void ReleaseGrab()
     {
         // Báo cho nạn nhân biết mình đã thả
-        if (grabbedTargetController != null)
+        if (grabbedTargetController != null && grabbedTargetController.gameObject != null)
         {
-            grabbedTargetController.SetGrabbedState(false);
+            grabbedTargetController.SetGrabbedState(false, this.gameObject);
             grabbedTargetController = null;
         }
 

@@ -1,0 +1,16 @@
+:root {
+    --color-bg: #0a1440;
+    --color-hp: #2ed973;
+    --color-shield: #4099ff;
+    --color-gold: #fabf1a;
+    --color-danger: #ff4d59;
+    --color-panel: rgba(255, 255, 255, 0.06);
+    --color-border: rgba(255, 255, 255, 0.14);
+    --color-text: #ffffff;
+    --color-text-muted: rgba(255, 255, 255, 0.6);
+    --color-bar-bg: rgba(0, 0, 0, 0.4);
+    --color-skill-bg: rgba(255, 255, 255, 0.1);
+    --color-skill-ready: rgba(255, 255, 255, 0.25);
+    --color-skill-cd: rgba(128, 128, 153, 0.4);
+    --color-kill-bg: rgba(0, 0, 0, 0.4);
+}

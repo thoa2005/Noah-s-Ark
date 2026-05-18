@@ -40,8 +40,15 @@ public class ActiveRagdollController : MonoBehaviour
     private CharacterInput playerInput;
 
     private Dictionary<Rigidbody, float> originalMasses = new Dictionary<Rigidbody, float>();
-    private int grabberCount = 0;
-    public bool IsBeingGrabbed => grabberCount > 0;
+    private List<GameObject> grabbers = new List<GameObject>();
+    public bool IsBeingGrabbed
+    {
+        get
+        {
+            grabbers.RemoveAll(g => g == null);
+            return grabbers.Count > 0;
+        }
+    }
     private float originalMuscleSpring;
 
     private float lastMuscleSpring, lastMuscleDamper;
@@ -179,7 +186,7 @@ public class ActiveRagdollController : MonoBehaviour
         // --- GỒNG CƠ BẮP KHI ĐẤM ---
         if (playerInput != null && playerInput.isPunching && !IsBeingGrabbed)
         {
-            currentMuscleSpring *= 5f;
+            currentMuscleSpring *= 2.5f;
             currentBalanceSpring *= 2f;
         }
 
@@ -306,29 +313,37 @@ public class ActiveRagdollController : MonoBehaviour
         return muscleSpring;
     }
 
-    public void SetGrabbedState(bool state)
+    public void SetGrabbedState(bool state, GameObject grabber)
     {
+        bool wasGrabbed = IsBeingGrabbed;
+
         if (state)
         {
-            grabberCount++;
-            if (grabberCount == 1) // Người đầu tiên tóm
-            {
-                foreach (var rb in originalMasses.Keys)
-                {
-                    if (rb != null) rb.mass = 1.5f;
-                }
-            }
+            if (grabber != null && !grabbers.Contains(grabber))
+                grabbers.Add(grabber);
         }
         else
         {
-            grabberCount--;
-            if (grabberCount <= 0) // Người cuối cùng thả
+            if (grabber != null)
+                grabbers.Remove(grabber);
+        }
+
+        // Dọn dẹp references null (nếu có ai đó bị xóa ngang)
+        grabbers.RemoveAll(g => g == null);
+        bool isGrabbedNow = grabbers.Count > 0;
+
+        if (!wasGrabbed && isGrabbedNow) // Người đầu tiên tóm
+        {
+            foreach (var rb in originalMasses.Keys)
             {
-                grabberCount = 0;
-                foreach (var kvp in originalMasses)
-                {
-                    if (kvp.Key != null) kvp.Key.mass = kvp.Value;
-                }
+                if (rb != null) rb.mass = 1.5f;
+            }
+        }
+        else if (wasGrabbed && !isGrabbedNow) // Người cuối cùng thả
+        {
+            foreach (var kvp in originalMasses)
+            {
+                if (kvp.Key != null) kvp.Key.mass = kvp.Value;
             }
         }
 
@@ -348,7 +363,7 @@ public class ActiveRagdollController : MonoBehaviour
 
         Debug.Log(
             $"[GRAB STATUS] {gameObject.name} | " +
-            $"Grabbed:{IsBeingGrabbed} | Grabbers:{grabberCount} | " +
+            $"Grabbed:{IsBeingGrabbed} | Grabbers:{grabbers.Count} | " +
             $"Muscle:{curMuscle} | Mass:{curMass:F1} | " +
             $"Speed:{speedStr} | CanJump:{jumpStr} | CanGrab:{grabStr} | KO:{koStr}"
         );

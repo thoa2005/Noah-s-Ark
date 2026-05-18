@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[DefaultExecutionOrder(100)]
 public class CameraFollow : MonoBehaviour
 {
     [Header("Target")]
@@ -77,15 +78,5 @@ public class CameraFollow : MonoBehaviour
     public void ResetDistance()
     {
         distance = initialDistance;
-    }
-
-    private void OnGUI()
-    {
-        // Vẽ nút Reset ở góc trên bên phải màn hình
-        Rect buttonRect = new Rect(Screen.width - 160, 20, 140, 40);
-        if (GUI.Button(buttonRect, "Reset Camera"))
-        {
-            ResetDistance();
-        }
     }
 }

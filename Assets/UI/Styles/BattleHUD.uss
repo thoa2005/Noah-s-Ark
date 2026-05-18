@@ -1,0 +1,439 @@
+.battle-hud-root {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+    background-color: var(--color-panel);
+    border-width: 1px;
+    border-color: var(--color-border);
+    border-radius: 18px;
+}
+
+/* KO Flash Overlay */
+.ko-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 77, 89, 0.12); /* Decreased opacity from 0.35 to 0.12 for a softer, premium alert effect */
+    transition: opacity 0.3s ease-out;
+}
+
+.visual-hidden {
+    opacity: 0;
+    display: none;
+}
+
+/* TOP BAR */
+.top-bar {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    right: 20px;
+    height: 48px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0); /* Completely transparent! */
+}
+
+.badge {
+    height: 36px;
+    justify-content: center;
+    align-items: center;
+    padding-left: 14px;
+    padding-right: 14px;
+    border-radius: 12px;
+}
+
+.bg-badge {
+    background-color: rgba(10, 25, 47, 0.75);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.badge-text {
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.map-color {
+    color: #bfedff;
+}
+
+.alive-color {
+    color: #bfffd9;
+}
+
+/* PLAYER STATUS (TOP LEFT) */
+.player-status {
+    position: absolute;
+    top: 76px;
+    left: 20px;
+    width: 350px;
+    height: 124px;
+    padding: 14px 18px;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(10, 25, 47, 0.75);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+}
+
+.avatar-container {
+    width: 64px;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: var(--color-hp);
+    align-items: center;
+    justify-content: center;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.avatar-emoji {
+    font-size: 28px;
+}
+
+.status-info {
+    flex-grow: 1;
+    margin-left: 16px;
+}
+
+.player-name-text {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: #ffffff;
+    margin-bottom: 8px;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.bar-section {
+    margin-bottom: 6px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.bar-label {
+    font-size: 10px;
+    -unity-font-style: bold;
+    width: 68px; /* Align all bars perfectly by fixing label width */
+    margin-right: 8px;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hp-label-color {
+    color: #ff8099;
+}
+
+.shield-label-color {
+    color: #80bfff;
+}
+
+.bar-bg {
+    flex-grow: 1;
+    height: 12px;
+    background-color: var(--color-bar-bg);
+    border-radius: 6px;
+    overflow: hidden;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 6px;
+}
+
+.hp-bar-fill-color {
+    background-color: var(--color-hp);
+}
+
+.shield-bar-fill-color {
+    background-color: var(--color-shield);
+}
+
+/* MINIMAP (TOP RIGHT) */
+.minimap {
+    position: absolute;
+    top: 76px;
+    right: 20px;
+    width: 300px;
+    height: 160px;
+    padding: 10px;
+    align-items: center;
+}
+
+.minimap-title-text {
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: #99d9ffb2;
+    margin-bottom: 4px;
+}
+
+.minimap-canvas {
+    width: 280px;
+    height: 96px;
+    background-color: #001438cc;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(102, 178, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.minimap-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+}
+
+.you-dot {
+    background-color: var(--color-hp);
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #ffffff;
+}
+
+.you-dot-label {
+    position: absolute;
+    top: -14px;
+    left: -10px;
+    font-size: 9px;
+    -unity-font-style: bold;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.enemy-dot {
+    background-color: var(--color-danger);
+}
+
+.minimap-storm-circle {
+    position: absolute;
+    width: 100px;
+    height: 70px;
+    border-radius: 35px;
+    border-width: 1px;
+    border-color: rgba(255, 102, 26, 0.6);
+    background-color: rgba(255, 102, 26, 0.05);
+    left: 30%;
+    top: 15%;
+}
+
+.minimap-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 280px;
+    margin-top: 6px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.storm-label-text {
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: rgba(255, 153, 51, 0.85);
+}
+
+.btn-reset-cam {
+    font-size: 10px;
+    -unity-font-style: bold;
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 3px 8px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, scale 0.1s ease;
+}
+
+.btn-reset-cam:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    border-color: var(--color-shield);
+}
+
+.btn-reset-cam:active {
+    scale: 0.95;
+    background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* KILL FEED (RIGHT, BELOW MINIMAP) */
+.kill-feed {
+    position: absolute;
+    top: 260px;
+    right: 16px;
+    width: 384px;
+    max-height: 400px;
+    overflow: hidden;
+}
+
+.kill-entry {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background-color: var(--color-kill-bg);
+    border-left-width: 4px;
+    opacity: 0.95;
+}
+
+.kill-entry-danger {
+    border-left-color: var(--color-danger);
+    background-color: rgba(255, 77, 89, 0.15);
+}
+
+.kill-entry-normal {
+    border-left-color: var(--color-shield);
+    background-color: rgba(64, 153, 255, 0.15);
+}
+
+.kill-entry-warning {
+    border-left-color: var(--color-gold);
+    background-color: rgba(250, 191, 26, 0.15);
+}
+
+.kill-text {
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--color-text);
+}
+
+/* HOTBAR SKILLS (BOTTOM CENTER) */
+.hotbar-container {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    translate: -50% 0;
+    width: 480px;
+    height: 94px;
+    padding: 8px 16px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-radius: 24px;
+    overflow: visible; /* Allow labels to float outside the hotbar */
+}
+
+.skill-container {
+    align-items: center;
+    justify-content: flex-end;
+    height: 110px;
+    margin-top: -24px;
+}
+
+.skill-key-label {
+    font-size: 9px;
+    -unity-font-style: bold;
+    color: #ffffff;
+    background-color: rgba(10, 25, 47, 0.95);
+    border-width: 1px;
+    border-color: rgba(102, 178, 255, 0.4);
+    border-radius: 5px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.skill-key-special {
+    background-color: var(--color-gold);
+    border-color: #fabf1a;
+    color: #000000;
+    text-shadow: 0px 0px 0px rgba(0, 0, 0, 0);
+}
+
+.skill-slot {
+    width: 96px;
+    height: 72px;
+    border-radius: 14px;
+    background-color: var(--color-skill-bg);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.skill-slot.ready {
+    border-color: var(--color-skill-ready);
+}
+
+.skill-slot.locked {
+    opacity: 0.55;
+    border-color: var(--color-skill-cd);
+}
+
+.lock-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.65);
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+}
+
+.lock-icon {
+    font-size: 18px;
+}
+
+.skill-emoji {
+    font-size: 24px;
+    margin-bottom: 2px;
+}
+
+.skill-name {
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* FLOATING NAME TAGS (WORLD SPACE OVERLAY) */
+.name-tags-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+}
+
+.floating-name-tag {
+    position: absolute;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    translate: -50% -100%;
+    
+    /* Sleek translucent dark-grey background with premium border outline */
+    background-color: rgba(15, 15, 15, 0.75);
+    border-radius: 8px;
+    padding: 6px 16px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.name-tag-text {
+    font-size: 18px; /* Significantly scaled up for high legibility */
+    -unity-font-style: bold;
+    color: #ffffff;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.9);
+    margin: 0;
+    padding: 0;
+}
