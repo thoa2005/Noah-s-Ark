@@ -47,6 +47,26 @@ public class MainMenuUI : MonoBehaviour
         waveBack = menuRoot.Q<VisualElement>("wave-back");
         waveFront = menuRoot.Q<VisualElement>("wave-foam"); // using wave-foam or wave-foam for opposite parallax
 
+        // Programmatic vertical gradient for Season Card to bypass USS compiler limits and achieve perfect Figma looks
+        VisualElement seasonCard = menuRoot.Q<VisualElement>("season-card");
+        if (seasonCard != null)
+        {
+            Texture2D gradientTex = new Texture2D(1, 2);
+            gradientTex.wrapMode = TextureWrapMode.Clamp;
+            gradientTex.filterMode = FilterMode.Bilinear;
+            
+            // Bottom color: Coral Red (#e11d48)
+            Color bottomColor = new Color(0.882f, 0.114f, 0.282f, 1.0f);
+            // Top color: Warm Orange (#faa61a)
+            Color topColor = new Color(0.980f, 0.651f, 0.102f, 1.0f);
+            
+            gradientTex.SetPixel(0, 0, bottomColor);
+            gradientTex.SetPixel(0, 1, topColor);
+            gradientTex.Apply();
+            
+            seasonCard.style.backgroundImage = gradientTex;
+        }
+
         // Query buttons
         Button btnPlay = menuRoot.Q<Button>("btn-play");
         Button btnCreate = menuRoot.Q<Button>("btn-create");
@@ -84,7 +104,7 @@ public class MainMenuUI : MonoBehaviour
         animScheduler = menuRoot.schedule.Execute(UpdateAnimations).Every(16); // ~60fps
         animTime = 0f;
 
-        Debug.Log("[MainMenuUI] Main Menu successfully initialized and dynamic background animations activated!");
+
     }
 
     /// <summary>
@@ -161,7 +181,7 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnPlayClicked()
     {
-        Debug.Log("[MainMenuUI] Play Game button clicked! Triggering scene transition...");
+
         
         // Stop animations before loading scene
         if (animScheduler != null)
@@ -175,18 +195,18 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnCreateClicked()
     {
-        Debug.Log("[MainMenuUI] Create Lobby button clicked! (Lobby Room features can be integrated next)");
+
         // In the future, this can call UIManager.Instance.ShowScreen(ScreenType.LobbyRoom);
     }
 
     private void OnJoinClicked()
     {
-        Debug.Log("[MainMenuUI] Join Room button clicked! (Room system can be integrated next)");
+
     }
 
     private void OnSettingsClicked()
     {
-        Debug.Log("[MainMenuUI] Settings button clicked! Toggling global overlay Settings.");
+
         if (UIManager.Instance != null)
         {
             UIManager.Instance.ToggleSettings();
@@ -195,7 +215,7 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnProfileClicked()
     {
-        Debug.Log("[MainMenuUI] Profile button clicked!");
+
     }
 
     private void OnDestroy()

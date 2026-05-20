@@ -44,7 +44,6 @@ public class PlayerCombat : MonoBehaviour
         if (_input != null)
         {
             _input.isGrabPressed = false;
-            Debug.Log($"[COMBAT START] {gameObject.name} initialized with Input: {_input.gameObject.name}");
         }
 
         FindHandBones();
@@ -190,7 +189,6 @@ public class PlayerCombat : MonoBehaviour
 
     public void PerformGrab()
     {
-        Debug.Log($"[GRAB ATTEMPT] {gameObject.name} | InputState: {(_input != null ? _input.isGrabPressed.ToString() : "NULL")} | Frame: {Time.frameCount}");
 
         if (stats != null && stats.currentStamina < stats.grabStaminaCost) return;
 

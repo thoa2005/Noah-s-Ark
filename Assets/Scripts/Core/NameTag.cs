@@ -1,58 +1,60 @@
 using UnityEngine;
 
+/// <summary>
+/// Attach to any GameObject that should display a floating name tag above its head.
+/// BattleHUDUI reads the displayName and nameColor each frame to render it.
+/// </summary>
 public class NameTag : MonoBehaviour
 {
     [Header("Display Settings")]
-    public string displayName = "Player";
-    public Vector3 offset = new Vector3(0, 2.5f, 0); // Position above character pivot
-    
+    public string displayName;
+    public Vector3 offset = new Vector3(0, 2.5f, 0);
+
     [Header("Color Settings")]
     public Color nameColor = Color.white;
-    
-    private BattleHUDUI hud;
-    private bool isRegistered = false;
-    
-    void Start()
+
+    // Whether this NameTag has been registered with the HUD
+    private BattleHUDUI _hud;
+    private bool _isRegistered;
+
+    private void Start()
     {
-        // Try to auto-resolve name from object name if default is used
-        if (displayName == "Player")
-        {
+        // Only fall back to the GameObject name if no name was explicitly set
+        if (string.IsNullOrEmpty(displayName))
             displayName = gameObject.name;
-        }
-        
-        // Find HUD and register
-        hud = FindFirstObjectByType<BattleHUDUI>();
-        if (hud != null)
+
+        _hud = FindFirstObjectByType<BattleHUDUI>();
+        if (_hud != null)
         {
-            hud.RegisterNameTag(this);
-            isRegistered = true;
+            _hud.RegisterNameTag(this);
+            _isRegistered = true;
         }
     }
-    
-    void OnEnable()
+
+    private void OnEnable()
     {
-        if (hud != null && !isRegistered)
+        if (_hud != null && !_isRegistered)
         {
-            hud.RegisterNameTag(this);
-            isRegistered = true;
+            _hud.RegisterNameTag(this);
+            _isRegistered = true;
         }
     }
-    
-    void OnDisable()
+
+    private void OnDisable()
     {
-        if (hud != null && isRegistered)
+        if (_hud != null && _isRegistered)
         {
-            hud.UnregisterNameTag(this);
-            isRegistered = false;
+            _hud.UnregisterNameTag(this);
+            _isRegistered = false;
         }
     }
-    
-    void OnDestroy()
+
+    private void OnDestroy()
     {
-        if (hud != null && isRegistered)
+        if (_hud != null && _isRegistered)
         {
-            hud.UnregisterNameTag(this);
-            isRegistered = false;
+            _hud.UnregisterNameTag(this);
+            _isRegistered = false;
         }
     }
 }

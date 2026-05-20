@@ -39,19 +39,19 @@
                 <ui:VisualElement name="player-card" class="glass-panel player-card">
                     <ui:VisualElement class="player-header">
                         <ui:VisualElement class="avatar-bg">
-                            <ui:Label text="🧑‍✈️" class="avatar-emoji" />
+                            <ui:Label text="⚓" class="avatar-emoji" />
                         </ui:VisualElement>
                         <ui:VisualElement class="player-info">
-                            <ui:Label text="Captain Cute" name="lbl-player-name" class="player-name-text" />
-                            <ui:Label text="⭐ Lv.24" name="lbl-player-level" class="player-level-text" />
+                            <ui:Label text="CaptainCute" name="lbl-player-name" class="player-name-text" />
+                            <ui:Label text="★ Level 24 · Admiral" name="lbl-player-level" class="player-level-text" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                     
                     <ui:VisualElement class="xp-container">
                         <ui:VisualElement class="xp-bar-bg">
-                            <ui:VisualElement class="xp-bar-fill" style="width: 70%;" />
+                            <ui:VisualElement class="xp-bar-fill" style="width: 68%;" />
                         </ui:VisualElement>
-                        <ui:Label text="70% XP (14,200 / 20,000)" class="xp-progress-text" />
+                        <ui:Label text="XP: 3400 / 5000" class="xp-progress-text" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
@@ -59,38 +59,40 @@
             <!-- CENTER COLUMN: Game Title & Action Buttons -->
             <ui:VisualElement name="center-section" class="center-section">
                 <ui:VisualElement class="title-wrapper">
-                    <!-- Twin title labels for glowing text shadow -->
-                    <ui:Label text="WARSHIP" class="menu-title shadow-title" />
-                    <ui:Label text="WARSHIP" class="menu-title main-title" />
-                    <ui:Label text="RAGDOLL FIGHT CHAMPIONSHIP" class="menu-subtitle" />
+                    <!-- Anchor banner block as seen in Figma -->
+                    <ui:VisualElement class="title-banner">
+                        <ui:Label text="⚓" class="banner-anchor" />
+                        <ui:Label text="WARSHIP" class="menu-title" />
+                    </ui:VisualElement>
+                    <ui:Label text="The Chaotic Naval Party Game" class="menu-subtitle" />
                 </ui:VisualElement>
 
                 <ui:VisualElement class="button-container">
-                    <ui:Button name="btn-play" class="btn btn-primary" text="🎮 PLAY OFFLINE" />
-                    <ui:Button name="btn-create" class="btn btn-secondary" text="🏠 CREATE LOBBY" />
-                    <ui:Button name="btn-join" class="btn btn-secondary" text="🚪 JOIN ROOM" />
+                    <ui:Button name="btn-play" class="btn btn-primary" text="🎮  QUICK PLAY" />
+                    <ui:Button name="btn-create" class="btn btn-secondary btn-orange" text="🚢  CREATE ROOM" />
+                    <ui:Button name="btn-join" class="btn btn-secondary btn-blue" text="🔗  JOIN ROOM" />
                     
                     <ui:VisualElement class="sub-button-row">
-                        <ui:Button name="btn-settings" class="btn btn-muted" text="⚙️ SETTINGS" />
-                        <ui:Button name="btn-profile" class="btn btn-muted" text="👤 PROFILE" />
+                        <ui:Button name="btn-settings" class="btn-sub btn-grey" text="⚙️  SETTINGS" />
+                        <ui:Button name="btn-profile" class="btn-sub btn-purple" text="👤  PROFILE" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
 
-            <!-- RIGHT COLUMN: Update News & Online Status -->
+            <!-- RIGHT COLUMN: Season Card & Online Status -->
             <ui:VisualElement name="right-section" class="side-section right-section">
-                <!-- News Card -->
-                <ui:VisualElement class="glass-panel news-card">
-                    <ui:Label text="📢 UPDATE NEWS" class="news-tag" />
-                    <ui:Label text="Version 1.0.5 Released" class="news-title" />
-                    <ui:Label text="• Dynamic UI manager transition.\n• Perfect name tags scaling at all resolutions.\n• Added physical boat drag and wind force.\n• Smoothed ragdoll grab mechanics." class="news-desc" />
+                <!-- Season News Glass Card -->
+                <ui:VisualElement name="season-card" class="glass-panel season-card">
+                    <ui:Label text="NEW • SEASON 1" class="season-tag" />
+                    <ui:Label text="Stormy Waters" class="season-title" />
+                    <ui:Label text="New maps, ships, and&#10;chaotic weather events!" class="season-desc" />
                 </ui:VisualElement>
 
                 <!-- Online Counter Badge -->
                 <ui:VisualElement class="glass-panel online-badge">
                     <ui:VisualElement class="online-indicator">
                         <ui:VisualElement class="online-dot" />
-                        <ui:Label text="142 Captains Online" class="online-count-text" />
+                        <ui:Label text="3,842 Captains Online" class="online-count-text" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
@@ -98,6 +100,6 @@
         </ui:VisualElement>
 
         <!-- Version Footer -->
-        <ui:Label text="v1.0.5 · Active Ragdoll Framework · Noah's Ark" class="footer-version" />
+        <ui:Label text="v0.1.0 ALPHA  •  © 2025 Warship Studios" class="footer-version" />
     </ui:VisualElement>
 </ui:UXML>

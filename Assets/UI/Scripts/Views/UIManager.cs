@@ -73,7 +73,7 @@ public class UIManager : MonoBehaviour
         {
             globalDocument.enabled = true; // Enable overlay to display settings
             globalDocument.visualTreeAsset = settingsTemplate;
-            Debug.Log("[UIManager] Global Settings UI Overlay Opened.");
+
 
             // Safe Freeze Input: Reset movement values and disable input listeners
             CharacterInput charInput = FindFirstObjectByType<CharacterInput>();
@@ -94,7 +94,7 @@ public class UIManager : MonoBehaviour
             
             // Blur focus to return keyboard control to the active gameplay scene
             globalDocument.rootVisualElement?.panel?.focusController?.focusedElement?.Blur();
-            Debug.Log("[UIManager] Global Settings UI Overlay Closed.");
+
 
             // Thaw Input: Re-enable inputs for gameplay
             PlayerInput playerInput = FindFirstObjectByType<PlayerInput>();
@@ -110,7 +110,6 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void StartGameplay()
     {
-        Debug.Log("[UIManager] Starting gameplay scene transition to SampleScene...");
         SceneManager.LoadScene("SampleScene");
     }
 
@@ -119,7 +118,7 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ReturnToMainMenu()
     {
-        Debug.Log("[UIManager] Returning to MainMenuScene...");
+
         SceneManager.LoadScene("MainMenuScene");
     }
 }

@@ -143,6 +143,7 @@ public class BattleHUDUI : MonoBehaviour
         Button btnResetCamera = root.Q<Button>("btn-reset-camera");
         if (btnResetCamera != null)
         {
+            btnResetCamera.focusable = false; // Ngăn chặn tuyệt đối việc nút cướp tiêu điểm bàn phím của nhân vật!
             btnResetCamera.clicked += OnResetCameraClicked;
         }
     }
@@ -181,7 +182,7 @@ public class BattleHUDUI : MonoBehaviour
         UpdateStatsBars();
         UpdateSkillSlots();
 
-        Debug.Log($"[BattleHUDUI] Successfully bound to player: {stats.gameObject.name} (Ready for Battle!)");
+
     }
 
     private void SubscribeToStatsEvents()
@@ -190,15 +191,27 @@ public class BattleHUDUI : MonoBehaviour
         {
             playerStats.OnKnockout += OnPlayerKnockedOut;
             playerStats.OnWakeUp += OnPlayerWokeUp;
+
         }
         else
         {
-            // Try auto-finding player stats on same object or visual parent (fallback for offline test)
-            playerStats = FindFirstObjectByType<PlayerStats>();
+            // Tìm đúng nhân vật người chơi bằng Tag thay vì random theo thứ tự RAM
+            var playerObj = GameObject.FindGameObjectWithTag("Player");
+            if (playerObj != null)
+            {
+                playerStats = playerObj.GetComponent<PlayerStats>();
+
+            }
+            else
+            {
+                Debug.LogWarning("[HUDInit] Không tìm thấy đối tượng nào có Tag 'Player' trong Scene!");
+            }
+
             if (playerStats != null)
             {
                 playerStats.OnKnockout += OnPlayerKnockedOut;
                 playerStats.OnWakeUp += OnPlayerWokeUp;
+
             }
         }
 
@@ -274,7 +287,7 @@ public class BattleHUDUI : MonoBehaviour
 
     private void OnPlayerKnockedOut()
     {
-        Debug.Log("[BattleHUDUI] Player Knocked Out - Updating UI!");
+
 
         // Show KO Screen overlay (red flash)
         if (koOverlay != null)
@@ -293,7 +306,7 @@ public class BattleHUDUI : MonoBehaviour
 
     private void OnPlayerWokeUp()
     {
-        Debug.Log("[BattleHUDUI] Player Woke Up - Updating UI!");
+
 
         // Hide KO Screen overlay
         if (koOverlay != null)
@@ -455,28 +468,43 @@ public class BattleHUDUI : MonoBehaviour
 
     private void AutoAttachNameTags()
     {
-        // Auto-attach to Player
-        PlayerMovement player = FindFirstObjectByType<PlayerMovement>();
-        if (player != null && player.GetComponent<NameTag>() == null)
+        // Use Tag to find the real player — never a bot, even if bots share the same script
+        GameObject playerObj = GameObject.FindWithTag("Player");
+        if (playerObj != null && playerObj.GetComponent<NameTag>() == null)
         {
-            NameTag tag = player.gameObject.AddComponent<NameTag>();
-            tag.displayName = string.IsNullOrEmpty(playerName) ? "Player" : playerName;
-            tag.nameColor = new Color(0.2f, 0.8f, 1f); // Sleek modern light blue/cyan
-            tag.offset = new Vector3(0, 2.0f, 0); // Floats beautifully above player's head
+            AttachNameTag(
+                playerObj,
+                string.IsNullOrEmpty(playerName) ? "Player" : playerName,
+                new Color(0.2f, 0.8f, 1f));
         }
 
-        // Auto-attach to all AI Bots
-        AIBot[] bots = FindObjectsByType<AIBot>(FindObjectsSortMode.None);
-        foreach (var bot in bots)
+        // Auto-attach to all AI Bots (identified by AIBot component, never by name)
+        foreach (var bot in FindObjectsByType<AIBot>(FindObjectsSortMode.None))
         {
-            if (bot.GetComponent<NameTag>() == null)
-            {
-                NameTag tag = bot.gameObject.AddComponent<NameTag>();
-                tag.displayName = bot.gameObject.name.Replace("(Clone)", "").Trim();
-                tag.nameColor = new Color(1f, 0.35f, 0.35f); // Sleek modern soft red
-                tag.offset = new Vector3(0, 2.0f, 0); // Floats beautifully above bot's head
-            }
+            if (bot.GetComponent<NameTag>() != null) continue;
+
+            string botName = bot.gameObject.name
+                .Replace("(Clone)", "")
+                .Replace("Player", "Bot")   // guard: rename if GameObject was named "Player"
+                .Trim();
+
+            AttachNameTag(bot.gameObject, botName, new Color(1f, 0.35f, 0.35f));
         }
+    }
+
+    /// <summary>
+    /// Adds a NameTag component with all fields pre-set before Start() runs,
+    /// so NameTag.Start() never overwrites the assigned displayName.
+    /// </summary>
+    private void AttachNameTag(GameObject target, string name, Color color)
+    {
+        // Set values on the component immediately after adding it.
+        // Unity guarantees Start() runs at least one frame later,
+        // so our values are stable before NameTag.Start() checks them.
+        NameTag tag    = target.AddComponent<NameTag>();
+        tag.displayName = name;
+        tag.nameColor   = color;
+        tag.offset      = new Vector3(0, 2.0f, 0);
     }
 
     private void UpdateNameTags()

@@ -1,102 +1,109 @@
-/* Main Menu Stylesheet - Glassmorphism & Animated Parallax waves */
+/* Main Menu Stylesheet - 100% Figma High Fidelity Color & Design System Mapping */
 
 .menu-root-container {
     width: 100%;
     height: 100%;
     position: absolute;
-    background-color: #061121;
+    /* Base theme color s54 from Figma */
+    background-color: #0a1440;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
 
-/* Background Overlay Containers for Animations */
+/* Background Overlay Containers for Twinkle Stars and Floating Bubbles */
 .bg-overlay-container {
     width: 100%;
     height: 100%;
     position: absolute;
 }
 
-/* Twinkling Stars */
+/* Twinkling Stars s6 from Figma */
 .star {
     position: absolute;
-    width: 6px;
-    height: 6px;
-    background-color: #FFFFFF;
+    width: 18px;
+    height: 18px;
+    background-color: #fff280;
     border-radius: 50%;
-    opacity: 0.8;
+    opacity: 0.7;
 }
 
-/* Float Bubbles */
+/* Floating Bubbles s4 and s5 from Figma */
 .bubble {
     position: absolute;
-    background-color: rgba(0, 242, 254, 0.12);
-    border-width: 1px;
-    border-color: rgba(0, 242, 254, 0.3);
+    background-color: rgba(255, 255, 255, 0.04); /* s4 */
+    border-width: 1.5px;
+    border-color: rgba(255, 255, 255, 0.12); /* s5 */
     border-radius: 50%;
 }
 
 .bubble-sm {
-    width: 12px;
-    height: 12px;
+    width: 30px;
+    height: 30px;
 }
 
 .bubble-md {
-    width: 24px;
-    height: 24px;
+    width: 65px;
+    height: 65px;
 }
 
 .bubble-lg {
-    width: 48px;
-    height: 48px;
+    width: 90px;
+    height: 90px;
 }
 
-/* Wave Layers under the Sea */
+/* Wave Layers under the Sea (Figma exact styled bottom waves s1, s2, s3) */
 .wave {
     position: absolute;
     bottom: 0;
-    left: -50%;
-    width: 200%;
-    border-top-left-radius: 120px;
-    border-top-right-radius: 120px;
+    left: -20%;
+    width: 140%;
+    border-top-left-radius: 400px;
+    border-top-right-radius: 400px;
 }
 
 .wave-back {
-    height: 180px;
-    background-color: rgba(0, 242, 254, 0.08);
+    height: 240px;
+    background-color: rgba(6, 40, 100, 0.75); /* s1 */
+    bottom: -30px;
 }
 
 .wave-front {
-    height: 120px;
-    background-color: rgba(0, 143, 206, 0.15);
+    height: 160px;
+    background-color: rgba(13, 71, 161, 0.85); /* s2 */
+    bottom: -15px;
 }
 
 .wave-foam {
-    height: 60px;
-    background-color: rgba(255, 255, 255, 0.04);
+    height: 85px;
+    background-color: rgba(41, 182, 246, 0.35); /* s3 */
+    bottom: 0px;
 }
 
-/* Dynamic Interactive UI Foreground */
+/* Centered Clustered Layout (Figma Aspect Ratio Perfect match) */
 .menu-foreground {
     width: 100%;
+    max-width: 1280px;
     height: 100%;
     position: absolute;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    padding-left: 60px;
-    padding-right: 60px;
-    padding-top: 80px;
-    padding-bottom: 80px;
+    align-self: center; /* Horizontally centers the entire menu panel */
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 70px;
+    padding-bottom: 70px;
 }
 
 /* Columnar Sections */
 .side-section {
-    width: 300px;
+    width: 320px;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 .left-section {
@@ -112,46 +119,45 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center; /* Vertically center Title and Buttons to perfectly match Figma cluster */
     margin-left: 20px;
     margin-right: 20px;
 }
 
-/* Premium Glassmorphism Panels */
+/* Premium Glassmorphism Panels s17 & s16 from Figma */
 .glass-panel {
-    background-color: rgba(11, 36, 71, 0.45);
-    border-width: 1px;
-    border-color: rgba(0, 242, 254, 0.15);
-    border-radius: 16px;
-    padding: 20px;
-    transition-property: border-color, background-color;
+    background-color: rgba(255, 255, 255, 0.1); /* s17 fills */
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.2); /* s16 strokes */
+    border-radius: 20px;
+    padding: 24px;
+    transition-property: border-color, background-color, scale;
     transition-duration: 0.3s;
 }
 
 .glass-panel:hover {
-    background-color: rgba(11, 36, 71, 0.6);
-    border-color: rgba(0, 242, 254, 0.35);
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Left Section: Player Card */
 .player-card {
-    width: 100%;
-    margin-top: 190px; /* Offset to align with Figma y: 270 */
+    width: 300px;
+    position: relative;
+    margin-bottom: 20px;
 }
 
 .player-header {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
 .avatar-bg {
-    width: 52px;
-    height: 52px;
-    background-color: rgba(0, 242, 254, 0.15);
-    border-width: 1px;
-    border-color: rgba(0, 242, 254, 0.3);
+    width: 64px;
+    height: 64px;
+    background-color: #fabf33; /* exact s48 / s18 avatar color */
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -159,22 +165,23 @@
 }
 
 .avatar-emoji {
-    font-size: 26px;
+    font-size: 36px;
 }
 
 .player-info {
-    margin-left: 12px;
+    margin-left: 14px;
 }
 
 .player-name-text {
-    font-size: 18px;
+    font-size: 22px;
     color: #FFFFFF;
     -unity-font-style: bold;
 }
 
 .player-level-text {
-    font-size: 13px;
-    color: rgba(0, 242, 254, 0.85);
+    font-size: 14px;
+    color: #ffe566; /* exact s19 level star color */
+    -unity-font-style: bold;
 }
 
 .xp-container {
@@ -183,107 +190,127 @@
 
 .xp-bar-bg {
     width: 100%;
-    height: 8px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    height: 16px;
+    background-color: rgba(0, 0, 0, 0.4); /* s9 shadow/dark fill bg */
+    border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .xp-bar-fill {
     height: 100%;
-    background-color: #00F2FE;
-    border-radius: 4px;
+    background-color: #2ed973; /* exact s10 green play color */
+    border-radius: 7px;
 }
 
 .xp-progress-text {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    color: #b2ffd9; /* exact s54 green-tinged progress label */
+    -unity-font-style: bold;
 }
 
-/* Center Section: Title & Buttons */
+/* Center Section: Banner Title & Subtitle */
 .title-wrapper {
     margin-top: 10px;
     align-items: center;
-    position: relative;
-    height: 150px;
+    display: flex;
+    flex-direction: column;
+}
+
+.title-banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 20, 64, 0.55); /* s22 title shadow overlay */
+    border-width: 3px;
+    border-color: #05478c; /* s1 wave deep blue border */
+    border-radius: 32px;
+    padding: 10px 40px;
+    margin-bottom: 16px;
+}
+
+.banner-anchor {
+    font-size: 54px;
+    color: #ffffff; /* Silver/white anchor */
+    background-color: rgba(0, 0, 0, 0.35); /* Dark background container for the anchor icon */
+    border-radius: 16px;
+    padding: 6px 16px;
+    margin-right: 24px;
+    -unity-font-style: bold;
 }
 
 .menu-title {
-    font-size: 84px;
+    font-size: 76px;
+    color: #ffeb4d; /* s7 title gold color */
     -unity-font-style: bold;
-    letter-spacing: 4px;
-    position: absolute;
-}
-
-.shadow-title {
-    color: #00F2FE;
-    top: 4px;
-    left: 4px;
-    opacity: 0.35;
-}
-
-.main-title {
-    color: #FFFFFF;
-    top: 0;
-    left: 0;
+    letter-spacing: 2px;
 }
 
 .menu-subtitle {
-    font-size: 16px;
-    color: rgba(0, 242, 254, 0.85);
-    letter-spacing: 6px;
-    margin-top: 110px;
+    font-size: 22px;
+    color: #bfedff; /* s8 subtitle blue text */
+    letter-spacing: 1px;
     -unity-font-style: bold;
 }
 
 .button-container {
     width: 320px;
-    margin-bottom: 40px;
+    margin-top: 50px; /* Elegant gap between Title and Buttons, matching Figma */
+    margin-bottom: 20px;
 }
 
-/* Button Styling */
+/* Figma Perfect Buttons Styling with 3D Pop Effect */
 .btn {
     width: 100%;
-    height: 52px;
-    border-radius: 12px;
-    font-size: 15px;
+    height: 60px;
+    border-radius: 20px;
+    font-size: 22px;
     -unity-font-style: bold;
-    margin-bottom: 12px;
-    border-width: 1px;
+    margin-bottom: 14px;
+    border-width: 2px;
+    border-bottom-width: 5px; /* 3D pop shadow! */
+    border-color: rgba(255, 255, 255, 0.4);
+    border-bottom-color: rgba(0, 0, 0, 0.35); /* exact bottom shadow */
+    color: #FFFFFF;
     transition-property: scale, background-color, border-color;
     transition-duration: 0.15s;
     transition-timing-function: ease-in-out;
 }
 
 .btn:hover {
-    scale: 1.05;
+    scale: 1.04;
 }
 
 .btn:active {
-    scale: 0.95;
+    scale: 0.96;
 }
 
+/* Quick Play (Green s10) */
 .btn-primary {
-    background-color: #00F2FE;
-    color: #020813;
-    border-color: #00F2FE;
+    background-color: #2ed973;
 }
 
 .btn-primary:hover {
-    background-color: #33F5FF;
-    border-color: #33F5FF;
+    background-color: #3bf084;
 }
 
-.btn-secondary {
-    background-color: rgba(0, 242, 254, 0.1);
-    color: #FFFFFF;
-    border-color: rgba(0, 242, 254, 0.4);
+/* Create Room (Orange s13) */
+.btn-orange {
+    background-color: #faa61a;
 }
 
-.btn-secondary:hover {
-    background-color: rgba(0, 242, 254, 0.25);
-    border-color: rgba(0, 242, 254, 0.7);
+.btn-orange:hover {
+    background-color: #ffbb3d;
+}
+
+/* Join Room (Blue s14) */
+.btn-blue {
+    background-color: #4099ff;
+}
+
+.btn-blue:hover {
+    background-color: #66b2ff;
 }
 
 .sub-button-row {
@@ -293,50 +320,84 @@
     width: 100%;
 }
 
-.btn-muted {
-    width: 48%;
-    height: 46px;
-    background-color: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.15);
-    margin-bottom: 0;
-}
-
-.btn-muted:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.35);
-}
-
-/* Right Section: News Card & Online Badge */
-.news-card {
-    width: 100%;
-    margin-top: 190px; /* Aligned with Left Player Card */
-    margin-bottom: 20px;
-}
-
-.news-tag {
-    font-size: 11px;
-    color: #00F2FE;
+/* Dedicated Sub-button base style (avoids chained USS selectors completely) */
+.btn-sub {
+    height: 52px;
+    border-radius: 16px;
+    font-size: 16px;
     -unity-font-style: bold;
-    margin-bottom: 6px;
+    border-width: 2px;
+    border-bottom-width: 4px;
+    border-color: rgba(255, 255, 255, 0.4);
+    border-bottom-color: rgba(0, 0, 0, 0.3);
+    color: #FFFFFF;
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-in-out;
 }
 
-.news-title {
-    font-size: 15px;
+.btn-sub:hover {
+    scale: 1.04;
+}
+
+.btn-sub:active {
+    scale: 0.96;
+}
+
+.btn-grey {
+    width: 48%;
+    background-color: rgba(100, 116, 139, 0.75); /* Slate gray matching Figma */
+}
+
+.btn-grey:hover {
+    background-color: rgba(120, 136, 159, 0.9);
+}
+
+.btn-purple {
+    width: 48%;
+    background-color: #8c4dd9; /* Profile purple */
+}
+
+.btn-purple:hover {
+    background-color: #a366f2;
+}
+
+/* Right Section: Season news Card & Online counter */
+.season-card {
+    width: 300px;
+    margin-bottom: 24px;
+    background-color: #ff5e36; /* Coral orange matching Figma gradient midpoint */
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.season-tag {
+    font-size: 14px;
     color: #FFFFFF;
     -unity-font-style: bold;
     margin-bottom: 8px;
+    letter-spacing: 1px;
 }
 
-.news-desc {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.65);
+.season-title {
+    font-size: 22px;
+    color: #FFFFFF;
+    -unity-font-style: bold;
+    margin-bottom: 12px;
+}
+
+.season-desc {
+    font-size: 15px;
+    color: #ffe5e5; /* s43 light pink description text */
     white-space: normal;
 }
 
 .online-badge {
-    width: 100%;
+    width: 300px; /* match season card width exactly! */
     padding: 12px 20px;
+    border-radius: 16px;
+    background-color: rgba(15, 23, 42, 0.55);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .online-indicator {
@@ -346,16 +407,16 @@
 }
 
 .online-dot {
-    width: 10px;
-    height: 10px;
-    background-color: #00FF66;
+    width: 12px;
+    height: 12px;
+    background-color: #2ed973; /* matching vibrant green online dot */
     border-radius: 50%;
-    margin-right: 10px;
+    margin-right: 12px;
 }
 
 .online-count-text {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    color: #d9ffe5; /* exact s46 light green text */
     -unity-font-style: bold;
 }
 
@@ -364,6 +425,7 @@
     position: absolute;
     bottom: 20px;
     align-self: center;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.35);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.3); /* exact s20 version text color */
+    -unity-font-style: bold;
 }

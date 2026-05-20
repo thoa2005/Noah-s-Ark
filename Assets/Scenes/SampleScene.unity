@@ -255,6 +255,10 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1919387608882267368, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1942540608919030650, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Layer
       value: 6
@@ -920,7 +924,7 @@ MonoBehaviour:
   smoothSpeed: 6
   rotationSmoothSpeed: 5
   minDistance: 3
-  maxDistance: 15
+  maxDistance: 12
   zoomSpeed: 35
   collisionRadius: 0.3
   collisionMask:
@@ -1637,7 +1641,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1429550510}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbe3e6acadb210c49b906cb481154ee4, type: 3}
   m_Name: 
@@ -1798,6 +1802,10 @@ PrefabInstance:
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 853130377}
+    - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: moveSpeed
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: InitialModule.rotation3D
       value: 1
