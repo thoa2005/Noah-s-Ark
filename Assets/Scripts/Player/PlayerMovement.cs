@@ -18,9 +18,13 @@ public class PlayerMovement : MonoBehaviour
     Camera mainCam;
 
     [Header("Movement Smoothing")]
-    public float accelerationTime = 0.12f;  // Thời gian tăng tốc (giây) - tăng để mượt hơn
-    public float decelerationTime = 0.08f;  // Thời gian giảm tốc khi thả phím
-    private Vector3 currentVelocityXZ;      // Velocity hiện tại đã smooth (chỉ XZ)
+    public float accelerationTime = 0.12f;
+    public float decelerationTime = 0.08f;
+    [Range(1f, 20f)]
+    public float rotationSpeed = 8f;
+    private Vector3 currentVelocityXZ;
+    private Quaternion targetRotation;
+    private Vector3 lastMoveDir; // Hướng di chuyển frame trước để smooth
 
 
 
@@ -28,12 +32,12 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
-        ragdoll = GetComponent<ActiveRagdollController>(); // <-- THÊM DÒNG NÀY
+        ragdoll = GetComponent<ActiveRagdollController>();
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         mainCam = Camera.main;
-
         _input = GetComponent<CharacterInput>();
+        targetRotation = transform.rotation; // Khởi tạo rotation đích
     }
 
 
@@ -104,10 +108,12 @@ public class PlayerMovement : MonoBehaviour
 
         if (anim != null)
         {
-            anim.SetFloat("Speed", dir.magnitude);
+            // Dùng dampTime để animation blend mượt thay vì chuyển đột ngột
+            anim.SetFloat("Speed", dir.magnitude, 0.25f, Time.fixedDeltaTime);
             if (dir.magnitude > 0.1f)
             {
-                anim.SetFloat("MotionDirection", isMovingBackwards ? -1f : 1f);
+                float motionDir = isMovingBackwards ? -1f : 1f;
+                anim.SetFloat("MotionDirection", motionDir, 0.1f, Time.fixedDeltaTime);
             }
         }
 
@@ -116,12 +122,14 @@ public class PlayerMovement : MonoBehaviour
             float finalMoveSpeed = stats.moveSpeed;
             if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f;
 
-            Vector3 targetVelXZ = dir * finalMoveSpeed;
+            // Smooth hướng di chuyển trước khi tính velocity
+            // Đây là key fix: không đổi hướng đột ngột mà lerp dần
+            lastMoveDir = Vector3.Slerp(lastMoveDir, dir, rotationSpeed * Time.fixedDeltaTime);
+            if (lastMoveDir.magnitude < 0.01f) lastMoveDir = dir;
 
-            // Smooth velocity thay vì set thẳng → tránh giật khi đổi hướng đột ngột
-            float smoothTime = accelerationTime;
-            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, targetVelXZ, 
-                (1f / smoothTime) * Time.fixedDeltaTime);
+            Vector3 targetVelXZ = lastMoveDir.normalized * finalMoveSpeed * dir.magnitude;
+            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, targetVelXZ,
+                (1f / accelerationTime) * Time.fixedDeltaTime);
 
             Vector3 vel = currentVelocityXZ;
             vel.y = rb.linearVelocity.y;
@@ -129,13 +137,15 @@ public class PlayerMovement : MonoBehaviour
 
             if (!isMovingBackwards)
             {
-                rb.MoveRotation(Quaternion.Slerp(rb.rotation,
-                    Quaternion.LookRotation(dir), 4f * Time.fixedDeltaTime));
+                // Xoay theo hướng đã smooth (lastMoveDir) thay vì dir thô
+                targetRotation = Quaternion.LookRotation(lastMoveDir);
+                rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation,
+                    rotationSpeed * Time.fixedDeltaTime));
             }
         }
         else
         {
-            // Giảm tốc mượt khi thả phím
+            lastMoveDir = Vector3.zero;
             currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, Vector3.zero,
                 (1f / decelerationTime) * Time.fixedDeltaTime);
 
