@@ -54,6 +54,9 @@ public class ActiveRagdollController : MonoBehaviour
     private float lastMuscleSpring, lastMuscleDamper;
     private float lastBalanceSpring, lastBalanceDamper;
 
+    // Lưu reference coroutine để có thể cancel khi màn kết thúc giữa chừng
+    private Coroutine knockoutCoroutine;
+
     void Awake()
     {
         InitializeRig();
@@ -86,7 +89,30 @@ public class ActiveRagdollController : MonoBehaviour
 
     void OnKnockoutReceived()
     {
-        StartCoroutine(KnockoutRoutine());
+        // Cancel coroutine cũ nếu đang chạy (tránh chạy 2 lần song song)
+        if (knockoutCoroutine != null) StopCoroutine(knockoutCoroutine);
+        knockoutCoroutine = StartCoroutine(KnockoutRoutine());
+    }
+
+    /// <summary>
+    /// Hủy KnockoutRoutine và reset trạng thái về bình thường.
+    /// Gọi bởi GameManager khi màn kết thúc hoặc hồi sinh đầu màn mới.
+    /// </summary>
+    public void CancelKnockout()
+    {
+        if (knockoutCoroutine != null)
+        {
+            StopCoroutine(knockoutCoroutine);
+            knockoutCoroutine = null;
+        }
+        isWakingUp = false;
+
+        // Restore joint yMotion về Locked nếu đang bị Free
+        if (hipRb != null)
+        {
+            var joint = hipRb.GetComponent<ConfigurableJoint>();
+            if (joint != null) joint.yMotion = ConfigurableJointMotion.Locked;
+        }
     }
 
     void OnWakeUpReceived()
@@ -406,6 +432,43 @@ public class ActiveRagdollController : MonoBehaviour
         stats.TakeDamage(force);
     }
 
+    /// <summary>
+    /// Teleport toàn bộ ragdoll (capsule + physicRig + tất cả xương) đến vị trí mới.
+    /// Phải gọi cái này thay vì chỉ set transform.position khi respawn.
+    /// </summary>
+    public void TeleportTo(Vector3 position, Quaternion rotation)
+    {
+        if (playerRb == null) return;
+
+        // 1. Tắt physics tạm thời để tránh jitter khi teleport
+        Physics.SyncTransforms();
+
+        // 2. Tính offset từ vị trí cũ sang vị trí mới
+        Vector3 offset = position - playerRb.position;
+
+        // 3. Teleport capsule gốc
+        playerRb.position = position;
+        playerRb.rotation = rotation;
+        playerRb.linearVelocity = Vector3.zero;
+        playerRb.angularVelocity = Vector3.zero;
+        transform.position = position;
+        transform.rotation = rotation;
+
+        // 4. Teleport physicRig và tất cả xương theo offset
+        if (physicRig != null)
+        {
+            foreach (var rb in physicRig.GetComponentsInChildren<Rigidbody>())
+            {
+                rb.position += offset;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        // 5. Sync lại để Unity biết vị trí mới
+        Physics.SyncTransforms();
+    }
+
     private System.Collections.IEnumerator KnockoutRoutine()
     {
         var joint = hipRb.GetComponent<ConfigurableJoint>();
@@ -420,5 +483,6 @@ public class ActiveRagdollController : MonoBehaviour
         yield return new WaitForSeconds(2f);
 
         stats.ResetAfterWakeUp();
+        knockoutCoroutine = null; // Xóa reference khi hoàn thành tự nhiên
     }
 }

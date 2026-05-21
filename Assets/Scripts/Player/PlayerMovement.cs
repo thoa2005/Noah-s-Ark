@@ -12,10 +12,15 @@ public class PlayerMovement : MonoBehaviour
 
     // --- Runtime state ---
     public Animator anim;
-    private ActiveRagdollController ragdoll; // <-- THÊM DÒNG NÀY
+    private ActiveRagdollController ragdoll;
     Rigidbody rb;
     private CharacterInput _input;
     Camera mainCam;
+
+    [Header("Movement Smoothing")]
+    public float accelerationTime = 0.12f;  // Thời gian tăng tốc (giây) - tăng để mượt hơn
+    public float decelerationTime = 0.08f;  // Thời gian giảm tốc khi thả phím
+    private Vector3 currentVelocityXZ;      // Velocity hiện tại đã smooth (chỉ XZ)
 
 
 
@@ -109,9 +114,16 @@ public class PlayerMovement : MonoBehaviour
         if (dir.magnitude > 0.1f)
         {
             float finalMoveSpeed = stats.moveSpeed;
-            if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f; // Giảm 90% tốc độ khi bị tóm
+            if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f;
 
-            Vector3 vel = dir * finalMoveSpeed;
+            Vector3 targetVelXZ = dir * finalMoveSpeed;
+
+            // Smooth velocity thay vì set thẳng → tránh giật khi đổi hướng đột ngột
+            float smoothTime = accelerationTime;
+            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, targetVelXZ, 
+                (1f / smoothTime) * Time.fixedDeltaTime);
+
+            Vector3 vel = currentVelocityXZ;
             vel.y = rb.linearVelocity.y;
             rb.linearVelocity = vel;
 
@@ -123,12 +135,13 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            Vector3 vel = rb.linearVelocity;
-            vel.x = Mathf.Lerp(vel.x, 0f, 10f * Time.fixedDeltaTime);
-            vel.z = Mathf.Lerp(vel.z, 0f, 10f * Time.fixedDeltaTime);
-            rb.linearVelocity = vel;
-            // rb.AddForce(dir * moveSpeed, ForceMode.Acceleration);
+            // Giảm tốc mượt khi thả phím
+            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, Vector3.zero,
+                (1f / decelerationTime) * Time.fixedDeltaTime);
 
+            Vector3 vel = currentVelocityXZ;
+            vel.y = rb.linearVelocity.y;
+            rb.linearVelocity = vel;
         }
 
     }

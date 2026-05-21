@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [DefaultExecutionOrder(100)]
 public class CameraFollow : MonoBehaviour
@@ -9,71 +8,140 @@ public class CameraFollow : MonoBehaviour
 
     [Header("Camera Settings")]
     public float distance = 10f;
-    public float fixedPitch = 40f;   // Goc nhin tu tren xuong co dinh (nhu Party Animals)
+    public float fixedPitch = 40f;
     public float rotateSpeed = 120f;
     public float smoothSpeed = 6f;
-    public float rotationSmoothSpeed = 5f; // Tốc độ xoay camera mượt
+    public float rotationSmoothSpeed = 5f;
 
     [Header("Wall Collision")]
-    public float minDistance = 3f;   // Khoang cach toi thieu toi muc tieu
-    public float maxDistance = 10f;  // Khoảng cách tối đa (Zoom out)
-    public float zoomSpeed = 35f;   // Tốc độ zoom
-    public float collisionRadius = 0.3f; // Ban kinh sphere cast tranh tuong
-    public LayerMask collisionMask = ~0;   // Mac dinh va cham tat ca layer
+    public float minDistance = 3f;
+    public float maxDistance = 10f;
+    public float zoomSpeed = 35f;
+    public float collisionRadius = 0.3f;
+    public LayerMask collisionMask = ~0;
 
     [Header("Input")]
     public CharacterInput _input;
 
+    // ------------------------------------------------------------------ //
+    //  SPECTATOR MODE
+    // ------------------------------------------------------------------ //
+
+    private bool isSpectating = false;
+    private Transform spectateTarget;                // Target hiện tại khi spectate
+    private GameManager.TeamData spectateTeam;       // Team để tìm đồng đội còn sống
+    private Transform boatFallback;                  // Nhìn vào đây khi tất cả đồng đội chết
+
+    // ------------------------------------------------------------------ //
+    //  RUNTIME
+    // ------------------------------------------------------------------ //
+
     private float currentYaw = 0f;
-    private Vector3 currentTargetPos;      // Vị trí mục tiêu ảo (đã làm mượt)
-    private Vector3 smoothVelocity;        // Biến phụ cho SmoothDamp
-    private float initialDistance;         // Lưu khoảng cách ban đầu
+    private Vector3 currentTargetPos;
+    private Vector3 smoothVelocity;
+    private float initialDistance;
 
     void Start()
     {
-        initialDistance = distance; // Lưu lại khoảng cách ban đầu
+        initialDistance = distance;
         if (target != null) currentTargetPos = target.position;
-        // Nếu chưa gán input, tự tìm trên player
         if (_input == null) _input = FindFirstObjectByType<CharacterInput>();
     }
 
     void LateUpdate()
     {
-        if (target == null) return;
+        Transform activeTarget = ResolveTarget();
+        if (activeTarget == null) return;
 
-        // 1. LÀM MƯỢT VỊ TRÍ MỤC TIÊU: Triệt tiêu rung lắc từ Ragdoll
-        currentTargetPos = Vector3.SmoothDamp(currentTargetPos, target.position, ref smoothVelocity, 0.2f);
+        // Clamp Y: không cho camera target lao xuống dưới mức sàn
+        Vector3 rawPos = activeTarget.position;
+        rawPos.y = Mathf.Max(rawPos.y, 0.5f);
 
-        // Xoay ngang bằng Input System mới
+        // Làm mượt vị trí target (triệt tiêu rung lắc ragdoll)
+        currentTargetPos = Vector3.SmoothDamp(currentTargetPos, rawPos, ref smoothVelocity, 0.2f);
+
+        // Xoay camera
         if (_input != null && _input.isCameraRotatePressed)
-        {
             currentYaw += _input.lookInput.x * rotateSpeed * Time.deltaTime;
-        }
 
-        // --- XỬ LÝ ZOOM ---
+        // Zoom
         if (_input != null && _input.zoomInput.y != 0)
         {
-            // zoomInput.y > 0 là cuộn lên (Zoom In), < 0 là cuộn xuống (Zoom Out)
             float zoomAmount = _input.zoomInput.y * zoomSpeed * 0.01f;
             distance = Mathf.Clamp(distance - zoomAmount, minDistance, maxDistance);
-
-            // Xóa tín hiệu sau khi dùng để tránh bị trôi Zoom
             _input.zoomInput = Vector2.zero;
         }
 
-        // Tinh huong camera
-        Quaternion rotation = Quaternion.Euler(fixedPitch, currentYaw, 0f);
-        Vector3 targetViewPos = currentTargetPos + Vector3.up * 0.5f; // Điểm nhìn cao hơn chân một chút
-        Vector3 camDir = rotation * Vector3.back;
+        // Tính vị trí camera
+        Quaternion rotation    = Quaternion.Euler(fixedPitch, currentYaw, 0f);
+        Vector3 targetViewPos  = currentTargetPos + Vector3.up * 0.5f;
+        Vector3 camDir         = rotation * Vector3.back;
 
-        // 2. DI CHUYỂN CAMERA MƯỢT MÀ
         Vector3 desiredPos = targetViewPos + camDir * distance;
         transform.position = Vector3.Lerp(transform.position, desiredPos, smoothSpeed * Time.deltaTime);
 
-        // 3. XOAY CAMERA MƯỢT MÀ
         Quaternion targetRotation = Quaternion.LookRotation(targetViewPos - transform.position);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSmoothSpeed * Time.deltaTime);
+
+        // Cập nhật spectate target theo đồng đội còn sống
+        if (isSpectating) UpdateSpectateTarget();
     }
+
+    // ------------------------------------------------------------------ //
+    //  SPECTATOR API
+    // ------------------------------------------------------------------ //
+
+    /// <summary>
+    /// Gọi khi owner của camera này chết.
+    /// Camera chuyển sang nhìn đồng đội còn sống, hoặc thuyền nếu tất cả chết.
+    /// </summary>
+    public void EnterSpectatorMode(GameManager.TeamData team, Transform boatCenter)
+    {
+        isSpectating  = true;
+        spectateTeam  = team;
+        boatFallback  = boatCenter;
+        UpdateSpectateTarget();
+        Debug.Log($"[CameraFollow] Spectator mode. Target: {spectateTarget?.name ?? "thuyền"}");
+    }
+
+    /// <summary>
+    /// Gọi khi màn mới bắt đầu, trả camera về follow owner ban đầu.
+    /// ownerTransform được bỏ qua — camera luôn quay về target gốc đã gán trong Inspector.
+    /// </summary>
+    public void ExitSpectatorMode(Transform ownerTransform)
+    {
+        isSpectating   = false;
+        spectateTarget = null;
+        spectateTeam   = null;
+        // KHÔNG override target — giữ nguyên target đã gán trong Inspector
+        // target chỉ được set 1 lần duy nhất lúc đầu, không bị ghi đè khi respawn
+        Debug.Log($"[CameraFollow] Thoát spectator mode → tiếp tục follow {target?.name ?? "NULL"}");
+    }
+
+    void UpdateSpectateTarget()
+    {
+        if (spectateTeam != null)
+        {
+            var aliveMembers = spectateTeam.GetAliveMembers();
+            if (aliveMembers.Count > 0)
+            {
+                spectateTarget = aliveMembers[0].transform;
+                return;
+            }
+        }
+        // Không còn đồng đội → nhìn vào thuyền
+        spectateTarget = boatFallback;
+    }
+
+    Transform ResolveTarget()
+    {
+        if (isSpectating) return spectateTarget;
+        return target;
+    }
+
+    // ------------------------------------------------------------------ //
+    //  UTILITY
+    // ------------------------------------------------------------------ //
 
     public void ResetDistance()
     {

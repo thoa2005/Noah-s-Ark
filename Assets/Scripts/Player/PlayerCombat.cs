@@ -49,6 +49,12 @@ public class PlayerCombat : MonoBehaviour
         FindHandBones();
     }
 
+    void OnEnable()
+    {
+        // Reset khi object được bật lại (vd: hồi sinh đầu màn mới)
+        lastHitTime.Clear();
+    }
+
     void FindHandBones()
     {
         if (ragdoll == null) ragdoll = GetComponent<ActiveRagdollController>();
@@ -330,6 +336,19 @@ public class PlayerCombat : MonoBehaviour
 
     public bool IsCharging() { return isGrabbing && grabbedRb != null; }
     public float GetChargePct() { return stats != null ? chargeTimer / stats.maxChargeTime : 0; }
+
+    /// <summary>
+    /// Reset toàn bộ combat state về sạch.
+    /// Gọi bởi GameManager khi hồi sinh đầu màn mới.
+    /// </summary>
+    public void ResetCombatState()
+    {
+        lastHitTime.Clear();
+        ReleaseGrab();
+        punchTimer = 0f;
+        grabTimer  = 0f;
+        chargeTimer = 0f;
+    }
 
     public void PerformThrow()
     {
