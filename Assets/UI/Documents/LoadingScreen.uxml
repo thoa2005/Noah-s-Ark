@@ -1,0 +1,97 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:Style src="project://database/Assets/UI/Styles/Global.uss" />
+    <ui:Style src="project://database/Assets/UI/Styles/LoadingScreen.uss" />
+
+    <ui:VisualElement name="loading-root" class="loading-root">
+
+        <!-- Background layers -->
+        <ui:VisualElement name="bg-base"        class="bg-base" />
+        <ui:VisualElement name="bg-sky"         class="bg-sky" />
+        <ui:VisualElement name="bg-horizon"     class="bg-horizon" />
+        <ui:VisualElement name="bg-ocean"       class="bg-ocean" />
+        <ui:VisualElement name="bg-horizon-glow" class="bg-horizon-glow" />
+
+        <!-- Stars -->
+        <ui:VisualElement name="star-container" class="bg-overlay-container">
+            <ui:VisualElement name="ls-star-0" class="ls-star" style="left:180px; top:80px;" />
+            <ui:VisualElement name="ls-star-1" class="ls-star" style="left:420px; top:55px;" />
+            <ui:VisualElement name="ls-star-2" class="ls-star" style="left:750px; top:30px;" />
+            <ui:VisualElement name="ls-star-3" class="ls-star" style="left:1100px; top:70px;" />
+            <ui:VisualElement name="ls-star-4" class="ls-star" style="left:1300px; top:110px;" />
+            <ui:VisualElement name="ls-star-5" class="ls-star" style="left:60px; top:200px;" />
+            <ui:VisualElement name="ls-star-6" class="ls-star" style="left:980px; top:150px;" />
+            <ui:VisualElement name="ls-star-7" class="ls-star" style="left:1380px; top:230px;" />
+        </ui:VisualElement>
+
+        <!-- Waves -->
+        <ui:VisualElement name="wave-a" class="ls-wave ls-wave-a" />
+        <ui:VisualElement name="wave-b" class="ls-wave ls-wave-b" />
+        <ui:VisualElement name="wave-c" class="ls-wave ls-wave-c" />
+
+        <!-- Vignette -->
+        <ui:VisualElement name="vignette" class="ls-vignette" />
+
+        <!-- ===== CONTENT ===== -->
+
+        <!-- TOP LEFT: Logo -->
+        <ui:VisualElement name="logo-block" class="logo-block">
+            <ui:Label name="logo-pre"   text="⚓ WARSHIP STUDIOS" class="logo-pre" />
+            <ui:Label name="logo-title" text="WARSHIP"            class="logo-title" />
+        </ui:VisualElement>
+
+        <!-- CENTER: Ship silhouette -->
+        <ui:Label name="ship-silhouette" text="🚢" class="ship-silhouette" />
+
+        <!-- TOP RIGHT: Map Preview Card -->
+        <ui:VisualElement name="map-card" class="map-card glass-panel">
+            <ui:VisualElement name="map-grid" class="map-grid">
+                <!-- Ship dots on grid -->
+                <ui:Label name="ship-dot-1" text="🚢" class="ship-dot" style="left:30px; top:18px;" />
+                <ui:Label name="ship-dot-2" text="🚢" class="ship-dot" style="left:120px; top:82px;" />
+                <ui:Label name="ship-dot-3" text="🚢" class="ship-dot" style="left:240px; top:32px;" />
+            </ui:VisualElement>
+            <ui:Label name="map-label" text="🗺 BATTLE MAP"    class="map-label" />
+            <ui:Label name="map-sub"   text="North Sea · Storm" class="map-sub" />
+        </ui:VisualElement>
+
+        <!-- INFO BAR (bottom section) -->
+        <ui:VisualElement name="info-bar" class="info-bar">
+
+            <!-- Accent line -->
+            <ui:VisualElement name="accent-line" class="accent-line" />
+
+            <!-- Left info -->
+            <ui:VisualElement name="info-left" class="info-left">
+                <ui:Label name="loading-label" text="LOADING"          class="loading-label" />
+                <ui:Label name="map-name"      text="North Sea Storm"  class="map-name" />
+                <ui:Label name="mode-badge"    text="⚔ TEAM BATTLE · 3 ROUNDS" class="mode-badge" />
+            </ui:VisualElement>
+
+            <!-- Progress bar -->
+            <ui:VisualElement name="progress-section" class="progress-section">
+                <ui:VisualElement name="progress-bar-bg" class="progress-bar-bg">
+                    <ui:VisualElement name="progress-bar-fill" class="progress-bar-fill" />
+                    <ui:VisualElement name="progress-dot"      class="progress-dot" />
+                </ui:VisualElement>
+                <ui:Label name="progress-percent" text="0%" class="progress-percent" />
+            </ui:VisualElement>
+
+            <!-- Tips panel -->
+            <ui:VisualElement name="tips-panel" class="tips-panel glass-panel">
+                <ui:Label name="tip-label" text="💡 TIP"                                                    class="tip-label" />
+                <ui:VisualElement name="tip-divider" class="tip-divider" />
+                <ui:Label name="tip-text"  text="Grab enemies and throw them overboard for instant KO!"     class="tip-text" />
+            </ui:VisualElement>
+
+            <!-- Loading dots -->
+            <ui:VisualElement name="loading-dots-row" class="loading-dots-row">
+                <ui:Label name="loading-dots-label" text="Loading" class="loading-dots-label" />
+                <ui:VisualElement name="spinner-dot-0" class="spinner-dot" />
+                <ui:VisualElement name="spinner-dot-1" class="spinner-dot" />
+                <ui:VisualElement name="spinner-dot-2" class="spinner-dot" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

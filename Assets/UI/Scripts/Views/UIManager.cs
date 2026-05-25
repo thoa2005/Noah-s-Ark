@@ -106,11 +106,11 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Loads the gameplay scene (SampleScene) asynchronously
+    /// Loads the loading scene which will then async-load SampleScene
     /// </summary>
     public void StartGameplay()
     {
-        SceneManager.LoadScene("SampleScene");
+        SceneManager.LoadScene("LoadingScene");
     }
 
     /// <summary>

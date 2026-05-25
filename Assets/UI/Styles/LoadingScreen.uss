@@ -1,0 +1,346 @@
+/* Loading Screen Stylesheet — matches Figma "10 - Loading Screen" */
+
+/* ===== ROOT ===== */
+.loading-root {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+
+/* ===== BACKGROUND LAYERS ===== */
+.bg-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #0d1b4b;
+}
+
+.bg-sky {
+    position: absolute;
+    width: 100%;
+    height: 560px;
+    top: 0;
+    background-color: rgba(10, 20, 80, 0.85);
+}
+
+.bg-horizon {
+    position: absolute;
+    left: -12%;
+    top: 380px;
+    width: 125%;
+    height: 300px;
+    background-color: rgba(6, 40, 100, 0.75);
+    border-top-left-radius: 300px;
+    border-top-right-radius: 300px;
+}
+
+.bg-ocean {
+    position: absolute;
+    left: -6%;
+    top: 480px;
+    width: 112%;
+    height: 520px;
+    background-color: rgba(4, 28, 80, 0.95);
+    border-top-left-radius: 200px;
+    border-top-right-radius: 200px;
+}
+
+.bg-horizon-glow {
+    position: absolute;
+    top: 470px;
+    width: 100%;
+    height: 60px;
+    background-color: rgba(41, 182, 246, 0.12);
+}
+
+/* ===== STARS ===== */
+.bg-overlay-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.ls-star {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+/* ===== WAVES ===== */
+.ls-wave {
+    position: absolute;
+    border-top-left-radius: 400px;
+    border-top-right-radius: 400px;
+}
+
+.ls-wave-a {
+    left: -7%;
+    top: 430px;
+    width: 63%;
+    height: 180px;
+    background-color: rgba(13, 71, 161, 0.6);
+}
+
+.ls-wave-b {
+    left: 40%;
+    top: 450px;
+    width: 60%;
+    height: 200px;
+    background-color: rgba(13, 71, 161, 0.55);
+}
+
+.ls-wave-c {
+    left: 62%;
+    top: 435px;
+    width: 49%;
+    height: 220px;
+    background-color: rgba(6, 40, 100, 0.65);
+}
+
+/* ===== VIGNETTE ===== */
+.ls-vignette {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* ===== LOGO BLOCK (top left) ===== */
+.logo-block {
+    position: absolute;
+    left: 60px;
+    top: 72px;
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-pre {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.55);
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+}
+
+.logo-title {
+    font-size: 80px;
+    color: #ffeb4d;
+    -unity-font-style: bold;
+    letter-spacing: 4px;
+}
+
+/* ===== SHIP SILHOUETTE (center) ===== */
+.ship-silhouette {
+    position: absolute;
+    left: 50%;
+    top: 270px;
+    translate: -50% 0;
+    font-size: 120px;
+    -unity-text-align: middle-center;
+}
+
+/* ===== MAP PREVIEW CARD (top right) ===== */
+.map-card {
+    position: absolute;
+    right: 60px;
+    top: 40px;
+    width: 360px;
+    height: 260px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.map-grid {
+    width: 100%;
+    height: 160px;
+    background-color: rgba(0, 20, 60, 0.6);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.ship-dot {
+    position: absolute;
+    font-size: 16px;
+}
+
+.map-label {
+    font-size: 16px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.map-sub {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* ===== INFO BAR (bottom) ===== */
+.info-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 322px;
+    display: flex;
+    flex-direction: column;
+    padding-left: 60px;
+    padding-right: 68px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.accent-line {
+    width: 100%;
+    height: 2px;
+    background-color: rgba(41, 182, 246, 0.4);
+    margin-bottom: 16px;
+}
+
+.info-left {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.loading-label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+}
+
+.map-name {
+    font-size: 32px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.mode-badge {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 1px;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.progress-bar-bg {
+    flex-grow: 1;
+    height: 14px;
+    background-color: rgba(0, 0, 0, 0.45);
+    border-radius: 7px;
+    overflow: visible;
+    position: relative;
+    margin-right: 16px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background-color: #4099ff;
+    border-radius: 7px;
+    transition-property: width;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out;
+}
+
+.progress-dot {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    top: -2px;
+    left: 0%;
+    translate: -50% 0;
+    transition-property: left;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out;
+}
+
+.progress-percent {
+    font-size: 18px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    width: 52px;
+    -unity-text-align: middle-right;
+}
+
+/* ===== TIPS PANEL ===== */
+.tips-panel {
+    width: 100%;
+    height: 100px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px 24px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.tip-label {
+    font-size: 13px;
+    color: #ffe566;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.tip-divider {
+    width: 100%;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.12);
+    margin-bottom: 8px;
+}
+
+.tip-text {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: normal;
+}
+
+/* ===== LOADING DOTS ROW ===== */
+.loading-dots-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.loading-dots-label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-right: 8px;
+}
+
+.spinner-dot {
+    width: 8px;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    margin-left: 6px;
+    opacity: 0.3;
+}

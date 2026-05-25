@@ -11663,6 +11663,7 @@ GameObject:
   - component: {fileID: 2399636266419173693}
   - component: {fileID: 193116604987329666}
   - component: {fileID: 4051467310743205094}
+  - component: {fileID: 4200195292331592929}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -11811,6 +11812,9 @@ MonoBehaviour:
   groundDetect: {fileID: 193116604987329666}
   stats: {fileID: 4051467310743205094}
   anim: {fileID: 948129903056447725}
+  accelerationTime: 0.12
+  decelerationTime: 0.08
+  rotationSpeed: 8
 --- !u!114 &1491835629853130060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11966,6 +11970,18 @@ MonoBehaviour:
   minThrowForce: 100
   maxThrowForce: 1000
   maxChargeTime: 5
+--- !u!114 &4200195292331592929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f9fb6112bae424883fa9b14a41985e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterSkinManager
 --- !u!1 &8920073147725819176
 GameObject:
   m_ObjectHideFlags: 0
