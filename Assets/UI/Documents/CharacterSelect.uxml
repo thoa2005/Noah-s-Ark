@@ -1,0 +1,156 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Style src="project://database/Assets/UI/Styles/Global.uss" />
+    <ui:Style src="project://database/Assets/UI/Styles/CharacterSelect.uss" />
+
+    <ui:VisualElement name="cs-root" class="cs-root">
+
+        <!-- Background (reuse MainMenu aquatic theme) -->
+        <ui:VisualElement name="cs-bg" class="cs-bg">
+            <ui:VisualElement name="cs-wave-back" class="cs-wave cs-wave-back" />
+            <ui:VisualElement name="cs-wave-front" class="cs-wave cs-wave-front" />
+            <ui:VisualElement name="cs-wave-foam" class="cs-wave cs-wave-foam" />
+        </ui:VisualElement>
+
+        <!-- Header -->
+        <ui:VisualElement name="cs-header" class="cs-header">
+            <ui:VisualElement class="cs-header-title-row">
+                <ui:Label text="👤" class="cs-header-icon" />
+                <ui:Label text="Choose Your Captain" class="cs-header-title" />
+            </ui:VisualElement>
+            <ui:VisualElement name="cs-timer-badge" class="cs-timer-badge">
+                <ui:VisualElement class="cs-timer-dot" />
+                <ui:Label name="lbl-timer" text="0:30" class="cs-timer-text" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Main Content -->
+        <ui:VisualElement name="cs-content" class="cs-content">
+
+            <!-- LEFT: 3D Preview Panel -->
+            <ui:VisualElement name="cs-preview-panel" class="cs-preview-panel glass-panel">
+                <ui:Label text="🎮 3D CHARACTER VIEW" class="cs-preview-label" />
+                <!-- Render Texture được gán bằng code vào đây -->
+                <ui:VisualElement name="cs-preview-container" class="cs-preview-container" />
+                <ui:Label name="lbl-character-name" text="Bunny" class="cs-character-name" />
+                <ui:Label name="lbl-drag-hint" text="drag to rotate" class="cs-drag-hint" />
+            </ui:VisualElement>
+
+            <!-- RIGHT: Selection Panel -->
+            <ui:VisualElement name="cs-right-panel" class="cs-right-panel">
+
+                <!-- Character Grid -->
+                <ui:VisualElement name="cs-choose-section" class="cs-section glass-panel">
+                    <ui:VisualElement class="cs-section-header">
+                        <ui:Label text="⭐" class="cs-section-icon" />
+                        <ui:Label text="CHOOSE CAPTAIN" class="cs-section-title" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="cs-character-grid" class="cs-character-grid">
+                        <!-- Row 1 -->
+                        <ui:Button name="char-btn-0" class="cs-char-card cs-char-selected">
+                            <ui:Label name="char-icon-0" text="🐰" class="cs-char-icon" />
+                            <ui:Label name="char-name-0" text="Bunny" class="cs-char-name" />
+                            <ui:Label name="char-stat-0" text="⚔ Attack +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-0" class="cs-char-check" />
+                        </ui:Button>
+                        <ui:Button name="char-btn-1" class="cs-char-card">
+                            <ui:Label name="char-icon-1" text="🦆" class="cs-char-icon" />
+                            <ui:Label name="char-name-1" text="Duck" class="cs-char-name" />
+                            <ui:Label name="char-stat-1" text="❤ HP +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-1" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                        <ui:Button name="char-btn-2" class="cs-char-card">
+                            <ui:Label name="char-icon-2" text="🦁" class="cs-char-icon" />
+                            <ui:Label name="char-name-2" text="Lion" class="cs-char-name" />
+                            <ui:Label name="char-stat-2" text="💨 Speed +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-2" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                        <ui:Button name="char-btn-3" class="cs-char-card">
+                            <ui:Label name="char-icon-3" text="🐒" class="cs-char-icon" />
+                            <ui:Label name="char-name-3" text="Monkey" class="cs-char-name" />
+                            <ui:Label name="char-stat-3" text="🎯 Crit +5%" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-3" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                        <!-- Row 2 -->
+                        <ui:Button name="char-btn-4" class="cs-char-card">
+                            <ui:Label name="char-icon-4" text="🐱" class="cs-char-icon" />
+                            <ui:Label name="char-name-4" text="Cat" class="cs-char-name" />
+                            <ui:Label name="char-stat-4" text="👻 Stealth +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-4" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                        <ui:Button name="char-btn-5" class="cs-char-card">
+                            <ui:Label name="char-icon-5" text="🐶" class="cs-char-icon" />
+                            <ui:Label name="char-name-5" text="Dog" class="cs-char-name" />
+                            <ui:Label name="char-stat-5" text="🛡 Defense +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-5" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                        <ui:Button name="char-btn-6" class="cs-char-card">
+                            <ui:Label name="char-icon-6" text="🐷" class="cs-char-icon" />
+                            <ui:Label name="char-name-6" text="Pig" class="cs-char-name" />
+                            <ui:Label name="char-stat-6" text="💪 Power +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-6" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                        <ui:Button name="char-btn-7" class="cs-char-card">
+                            <ui:Label name="char-icon-7" text="🐼" class="cs-char-icon" />
+                            <ui:Label name="char-name-7" text="Panda" class="cs-char-name" />
+                            <ui:Label name="char-stat-7" text="🎋 Balance +1" class="cs-char-stat" />
+                            <ui:VisualElement name="char-check-7" class="cs-char-check cs-hidden" />
+                        </ui:Button>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- Players In Room -->
+                <ui:VisualElement name="cs-players-section" class="cs-section glass-panel">
+                    <ui:VisualElement class="cs-section-header">
+                        <ui:Label text="👥" class="cs-section-icon" />
+                        <ui:Label text="PLAYERS IN ROOM" class="cs-section-title" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="cs-player-list" class="cs-player-list">
+                        <!-- Fake data - sẽ được thay bằng Photon sau -->
+                        <ui:VisualElement name="player-row-0" class="cs-player-row cs-player-you">
+                            <ui:VisualElement class="cs-player-avatar">
+                                <ui:Label text="🐰" class="cs-player-avatar-icon" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="cs-player-info">
+                                <ui:Label text="YOU · CaptainCute" class="cs-player-name" />
+                                <ui:Label text="Bunny" class="cs-player-char" />
+                            </ui:VisualElement>
+                            <ui:Label text="✓ READY" class="cs-player-status cs-status-ready" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="player-row-1" class="cs-player-row">
+                            <ui:VisualElement class="cs-player-avatar">
+                                <ui:Label text="🐼" class="cs-player-avatar-icon" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="cs-player-info">
+                                <ui:Label text="OceanPanda" class="cs-player-name" />
+                                <ui:Label text="Panda" class="cs-player-char" />
+                            </ui:VisualElement>
+                            <ui:Label text="⟳ Selecting" class="cs-player-status cs-status-selecting" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="player-row-2" class="cs-player-row">
+                            <ui:VisualElement class="cs-player-avatar">
+                                <ui:Label text="🦁" class="cs-player-avatar-icon" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="cs-player-info">
+                                <ui:Label text="WaveRider" class="cs-player-name" />
+                                <ui:Label text="Lion" class="cs-player-char" />
+                            </ui:VisualElement>
+                            <ui:Label text="✓ READY" class="cs-player-status cs-status-ready" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Footer: Lock In Button -->
+        <ui:VisualElement name="cs-footer" class="cs-footer">
+            <ui:Button name="btn-lock-in" class="cs-btn-lockin" text="⚓ LOCK IN &amp; READY!" />
+        </ui:VisualElement>
+
+        <!-- Invisible drag overlay for rotating preview -->
+        <ui:VisualElement name="cs-drag-overlay" class="cs-drag-overlay" />
+
+    </ui:VisualElement>
+</ui:UXML>

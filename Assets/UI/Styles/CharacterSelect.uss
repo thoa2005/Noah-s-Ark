@@ -1,0 +1,385 @@
+/* CharacterSelect.uss - Character Selection Screen Styles */
+
+/* ===== ROOT ===== */
+.cs-root {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: #0a1440;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+/* ===== BACKGROUND ===== */
+.cs-bg {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.cs-wave {
+    position: absolute;
+    bottom: 0;
+    left: -20%;
+    width: 140%;
+    border-top-left-radius: 400px;
+    border-top-right-radius: 400px;
+}
+
+.cs-wave-back {
+    height: 200px;
+    background-color: rgba(6, 40, 100, 0.75);
+    bottom: -30px;
+}
+
+.cs-wave-front {
+    height: 130px;
+    background-color: rgba(13, 71, 161, 0.85);
+    bottom: -15px;
+}
+
+.cs-wave-foam {
+    height: 70px;
+    background-color: rgba(41, 182, 246, 0.35);
+    bottom: 0;
+}
+
+/* ===== HEADER ===== */
+.cs-header {
+    width: 100%;
+    height: 64px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 24px;
+    padding-right: 24px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.cs-header-title-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.cs-header-icon {
+    font-size: 22px;
+    margin-right: 10px;
+}
+
+.cs-header-title {
+    font-size: 24px;
+    color: #ffffff;
+    -unity-font-style: bold;
+}
+
+.cs-btn-back {
+    width: 120px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 14px;
+    -unity-font-style: bold;
+    transition-property: background-color, scale;
+    transition-duration: 0.15s;
+}
+
+.cs-btn-back:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    scale: 1.04;
+}
+
+.cs-timer-badge {
+    flex-direction: row;
+    align-items: center;
+    background-color: #e53935;
+    border-radius: 20px;
+    padding: 6px 16px;
+}
+
+.cs-timer-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.cs-timer-text {
+    font-size: 18px;
+    color: #ffffff;
+    -unity-font-style: bold;
+}
+
+/* ===== MAIN CONTENT ===== */
+.cs-content {
+    flex-grow: 1;
+    flex-direction: row;
+    padding: 16px 24px;
+    align-items: stretch;
+}
+
+/* ===== GLASS PANEL (reuse from MainMenu) ===== */
+.glass-panel {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-width: 1.5px;
+    border-color: rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    padding: 16px;
+}
+
+/* ===== LEFT: PREVIEW PANEL ===== */
+.cs-preview-panel {
+    width: 45%;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 16px;
+}
+
+.cs-preview-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    align-self: flex-start;
+}
+
+.cs-preview-container {
+    flex-grow: 1;
+    width: 100%;
+    border-radius: 12px;
+    background-color: rgba(10, 20, 60, 0.8);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1);
+    /* Render Texture được gán bằng code */
+    background-size: cover;
+    background-position: center;
+}
+
+.cs-character-name {
+    font-size: 32px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    margin-top: 16px;
+    align-self: center;
+}
+
+.cs-drag-hint {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 4px;
+    align-self: center;
+}
+
+/* ===== RIGHT PANEL ===== */
+.cs-right-panel {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.cs-section {
+    margin-bottom: 12px;
+}
+
+.cs-section-header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.cs-section-icon {
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.cs-section-title {
+    font-size: 14px;
+    color: #ffd700;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+/* ===== CHARACTER GRID ===== */
+.cs-character-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.cs-char-card {
+    width: 23%;
+    margin: 1%;
+    padding: 8px 4px;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    transition-property: background-color, border-color, scale;
+    transition-duration: 0.15s;
+    cursor: link;
+}
+
+.cs-char-card:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.35);
+    scale: 1.05;
+}
+
+.cs-char-selected {
+    background-color: rgba(220, 50, 50, 0.25);
+    border-color: #e53935;
+    border-width: 2px;
+}
+
+.cs-char-icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+}
+
+.cs-char-name {
+    font-size: 12px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+    -unity-text-align: middle-center;
+}
+
+.cs-char-stat {
+    font-size: 10px;
+    color: rgba(255, 220, 100, 0.85);
+    -unity-text-align: middle-center;
+}
+
+.cs-char-check {
+    width: 16px;
+    height: 16px;
+    background-color: #2ed973;
+    border-radius: 50%;
+    margin-top: 4px;
+}
+
+.cs-hidden {
+    display: none;
+}
+
+/* ===== PLAYERS IN ROOM ===== */
+.cs-player-list {
+    flex-direction: column;
+}
+
+.cs-player-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.cs-player-you {
+    background-color: rgba(46, 217, 115, 0.15);
+    border-color: rgba(46, 217, 115, 0.4);
+}
+
+.cs-player-avatar {
+    width: 36px;
+    height: 36px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.cs-player-avatar-icon {
+    font-size: 18px;
+}
+
+.cs-player-info {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.cs-player-name {
+    font-size: 13px;
+    color: #ffffff;
+    -unity-font-style: bold;
+}
+
+.cs-player-char {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.cs-player-status {
+    font-size: 12px;
+    -unity-font-style: bold;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.cs-status-ready {
+    background-color: rgba(46, 217, 115, 0.25);
+    color: #2ed973;
+    border-width: 1px;
+    border-color: #2ed973;
+}
+
+.cs-status-selecting {
+    background-color: rgba(250, 166, 26, 0.25);
+    color: #faa61a;
+    border-width: 1px;
+    border-color: #faa61a;
+}
+
+/* ===== FOOTER ===== */
+.cs-footer {
+    height: 80px;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 12px;
+}
+
+.cs-btn-lockin {
+    width: 320px;
+    height: 56px;
+    background-color: #faa61a;
+    border-radius: 28px;
+    border-width: 2px;
+    border-bottom-width: 5px;
+    border-color: rgba(255, 255, 255, 0.4);
+    border-bottom-color: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    font-size: 22px;
+    -unity-font-style: bold;
+    transition-property: scale, background-color;
+    transition-duration: 0.15s;
+}
+
+.cs-btn-lockin:hover {
+    background-color: #ffbb3d;
+    scale: 1.04;
+}
+
+.cs-btn-lockin:active {
+    scale: 0.96;
+}
+
+/* ===== DRAG OVERLAY ===== */
+.cs-drag-overlay {
+    position: absolute;
+    left: 0;
+    top: 64px; /* below header */
+    width: 45%;
+    bottom: 80px; /* above footer */
+    background-color: rgba(0, 0, 0, 0);
+    /* Transparent overlay nhận drag input cho preview */
+}

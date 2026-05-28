@@ -14,6 +14,11 @@ public class CharacterSelectionManager : MonoBehaviour
 
     void Start()
     {
+        // Đọc character đã chọn từ PlayerPrefs
+        int savedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", defaultCharacterIndex);
+        savedIndex = Mathf.Clamp(savedIndex, 0, characterDataArray != null ? characterDataArray.Length - 1 : 0);
+        defaultCharacterIndex = savedIndex;
+
         ApplyCharacterToAllPlayers();
     }
 

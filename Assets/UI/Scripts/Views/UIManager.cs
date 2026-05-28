@@ -13,6 +13,14 @@ public class UIManager : MonoBehaviour
     [Header("Global UI Templates")]
     [SerializeField] private VisualTreeAsset settingsTemplate;
 
+    [Header("Screen Templates")]
+    [SerializeField] private VisualTreeAsset characterSelectTemplate;
+
+    [Header("Screen References")]
+    [SerializeField] private UIDocument mainMenuDocument;
+    [SerializeField] private CharacterSelectUI characterSelectUI;
+    private UIDocument characterSelectDocument;
+
     private bool isSettingsOpen = false;
 
     void Awake()
@@ -106,6 +114,46 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Hiển thị màn hình chọn nhân vật (CharacterSelect)
+    /// </summary>
+    public void ShowCharacterSelect()
+    {
+        // Lấy UIDocument của CharacterSelectUI nếu chưa có
+        if (characterSelectDocument == null && characterSelectUI != null)
+            characterSelectDocument = characterSelectUI.GetComponent<UIDocument>();
+
+        // Ẩn MainMenu
+        if (mainMenuDocument != null)
+            mainMenuDocument.enabled = false;
+
+        // Hiện CharacterSelect
+        if (characterSelectDocument != null)
+        {
+            characterSelectDocument.enabled = true;
+            characterSelectUI.EnablePreviewCamera();
+            characterSelectUI.Initialize(characterSelectDocument.rootVisualElement);
+        }
+        else
+        {
+            Debug.LogWarning("[UIManager] CharacterSelectUI UIDocument chưa được gán!");
+        }
+    }
+
+    /// <summary>
+    /// Quay lại màn hình MainMenu từ CharacterSelect
+    /// </summary>
+    public void ShowMainMenu()
+    {
+        // Ẩn CharacterSelect
+        if (characterSelectDocument != null)
+            characterSelectDocument.enabled = false;
+
+        // Hiện lại MainMenu
+        if (mainMenuDocument != null)
+            mainMenuDocument.enabled = true;
+    }
+
+    /// <summary>
     /// Loads the loading scene which will then async-load SampleScene
     /// </summary>
     public void StartGameplay()
@@ -118,7 +166,6 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ReturnToMainMenu()
     {
-
         SceneManager.LoadScene("MainMenuScene");
     }
 }

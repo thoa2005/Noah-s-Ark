@@ -801,7 +801,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0adfd5d08d0537e4792cb8971f59f1b8, type: 2}
   - {fileID: 11400000, guid: a4e6c9ada3c07c24da526bc20125d4ca, type: 2}
   - {fileID: 11400000, guid: 723dad31f85c1e54082c13fe7655cb78, type: 2}
-  defaultCharacterIndex: 0
+  - {fileID: 11400000, guid: c27804bdc02c48744aeda5d673eebba7, type: 2}
+  - {fileID: 11400000, guid: cc045af9c83e7b241948de7648571d43, type: 2}
+  - {fileID: 11400000, guid: ee4a46584cfe6a547af80516ff7f72a6, type: 2}
+  - {fileID: 11400000, guid: 8da388214757ace4c84d2d38e1a23b9b, type: 2}
+  defaultCharacterIndex: 5
 --- !u!4 &232645372
 Transform:
   m_ObjectHideFlags: 0
@@ -1856,6 +1860,14 @@ PrefabInstance:
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 853130377}
+    - target: {fileID: 3995493702570494473, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: muscleDamper
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3995493702570494473, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: spineMuscleMultiplier
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 4051467310743205094, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: moveSpeed
       value: 6
@@ -1960,6 +1972,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6638056434018654202, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 8761874046549495678, guid: dd340ba935211864c939405b9d604709, type: 3}
+    - target: {fileID: 6638056434018654202, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: b92e02b77eef04946a406857d5ef106a, type: 2}
     - target: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Name
       value: Player
