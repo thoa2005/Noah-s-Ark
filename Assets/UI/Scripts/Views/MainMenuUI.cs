@@ -181,16 +181,12 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnPlayClicked()
     {
-
-        
-        // Stop animations before loading scene
+        // Stop animations before switching screen
         if (animScheduler != null)
-        {
             animScheduler.Pause();
-        }
 
-        // Trigger UIManager scene load
-        UIManager.Instance.StartGameplay();
+        // Chuyển sang màn hình chọn nhân vật thay vì load scene ngay
+        UIManager.Instance.ShowCharacterSelect();
     }
 
     private void OnCreateClicked()

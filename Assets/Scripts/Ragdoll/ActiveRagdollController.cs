@@ -212,8 +212,8 @@ public class ActiveRagdollController : MonoBehaviour
         // --- GỒNG CƠ BẮP KHI ĐẤM ---
         if (playerInput != null && playerInput.isPunching && !IsBeingGrabbed)
         {
-            currentMuscleSpring *= 2.5f;
-            currentBalanceSpring *= 2f;
+            currentMuscleSpring *= 10f;
+            currentBalanceSpring *=0f;
         }
 
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up);
