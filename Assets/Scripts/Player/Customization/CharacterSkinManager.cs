@@ -30,6 +30,14 @@ public class CharacterSkinManager : MonoBehaviour
             return;
         }
 
+        // Tự tìm lại nếu chưa có
+        if (skinMeshRenderer == null)
+        {
+            skinMeshRenderer = GetComponent<SkinnedMeshRenderer>();
+            if (skinMeshRenderer == null)
+                skinMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>();
+        }
+
         if (skinMeshRenderer == null)
         {
             Debug.LogError("[CharacterSkinManager] SkinnedMeshRenderer chưa được khởi tạo!");
@@ -38,7 +46,11 @@ public class CharacterSkinManager : MonoBehaviour
 
         // Swap mesh
         if (characterData.Mesh != null)
+        {
             skinMeshRenderer.sharedMesh = characterData.Mesh;
+            // Set bounds thủ công vì không có Root Bone
+            skinMeshRenderer.localBounds = new Bounds(Vector3.up * 0.5f, Vector3.one * 2f);
+        }
         else
             Debug.LogWarning($"[CharacterSkinManager] {characterData.CharacterName} không có mesh!");
 

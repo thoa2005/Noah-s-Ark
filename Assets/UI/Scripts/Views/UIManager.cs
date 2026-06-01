@@ -144,9 +144,11 @@ public class UIManager : MonoBehaviour
     /// </summary>
     public void ShowMainMenu()
     {
-        // Ẩn CharacterSelect
+        // Ẩn CharacterSelect + tắt preview camera
         if (characterSelectDocument != null)
             characterSelectDocument.enabled = false;
+        if (characterSelectUI != null)
+            characterSelectUI.DisablePreviewCamera();
 
         // Hiện lại MainMenu
         if (mainMenuDocument != null)

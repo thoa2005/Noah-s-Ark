@@ -1,4 +1,4 @@
-/* CharacterSelect.uss - Character Selection Screen Styles */
+/* CharacterSelect.uss — matched to Figma "03 - Ship & Character Select" */
 
 /* ===== ROOT ===== */
 .cs-root {
@@ -10,7 +10,7 @@
     flex-direction: column;
 }
 
-/* ===== BACKGROUND ===== */
+/* ===== BACKGROUND WAVES ===== */
 .cs-bg {
     width: 100%;
     height: 100%;
@@ -44,108 +44,74 @@
     bottom: 0;
 }
 
-/* ===== HEADER ===== */
-.cs-header {
+/* ===== TOP BAR (Figma: height 68, bg #00000059) ===== */
+.cs-topbar {
     width: 100%;
-    height: 64px;
+    height: 68px;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     padding-left: 24px;
     padding-right: 24px;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.35);
     border-bottom-width: 1px;
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
-.cs-header-title-row {
-    flex-direction: row;
-    align-items: center;
-}
-
-.cs-header-icon {
-    font-size: 22px;
-    margin-right: 10px;
-}
-
-.cs-header-title {
-    font-size: 24px;
+/* Figma: "👤 Choose Your Captain" — Nunito Black 26px white */
+.cs-topbar-title {
+    font-size: 26px;
     color: #ffffff;
     -unity-font-style: bold;
 }
 
-.cs-btn-back {
-    width: 120px;
-    height: 40px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #ffffff;
-    font-size: 14px;
-    -unity-font-style: bold;
-    transition-property: background-color, scale;
-    transition-duration: 0.15s;
-}
-
-.cs-btn-back:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    scale: 1.04;
-}
-
+/* Figma: Timer BG — #ff334dd9, radius 12, 120×40 */
 .cs-timer-badge {
-    flex-direction: row;
-    align-items: center;
-    background-color: #e53935;
-    border-radius: 20px;
-    padding: 6px 16px;
+    background-color: rgba(255, 51, 77, 0.85);
+    border-radius: 12px;
+    padding: 5px 16px;
 }
 
-.cs-timer-dot {
-    width: 10px;
-    height: 10px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    margin-right: 8px;
-}
-
+/* Figma: "⏱ 0:28" — Nunito Black 22px white */
 .cs-timer-text {
-    font-size: 18px;
+    font-size: 22px;
     color: #ffffff;
     -unity-font-style: bold;
 }
 
-/* ===== MAIN CONTENT ===== */
-.cs-content {
-    flex-grow: 1;
-    flex-direction: row;
-    padding: 16px 24px;
-    align-items: stretch;
-}
-
-/* ===== GLASS PANEL (reuse from MainMenu) ===== */
-.glass-panel {
-    background-color: rgba(255, 255, 255, 0.08);
+/* ===== GLASS PANEL (Figma: #ffffff0f, stroke #ffffff24, radius 24) ===== */
+.cs-glass {
+    background-color: rgba(255, 255, 255, 0.06);
     border-width: 1.5px;
-    border-color: rgba(255, 255, 255, 0.18);
-    border-radius: 20px;
+    border-color: rgba(255, 255, 255, 0.14);
+    border-radius: 24px;
     padding: 16px;
 }
 
-/* ===== LEFT: PREVIEW PANEL ===== */
-.cs-preview-panel {
-    width: 45%;
-    flex-direction: column;
-    align-items: center;
-    margin-right: 16px;
+/* ===== MAIN CONTENT ROW ===== */
+.cs-content {
+    flex-grow: 1;
+    flex-direction: row;
+    padding: 12px 20px;
+    align-items: stretch;
 }
 
-.cs-preview-label {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
+/* ===== LEFT: 3D VIEWPORT (Figma: 840×720, stroke #4099ff30) ===== */
+.cs-viewport-panel {
+    flex-grow: 1;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 12px;
+    border-color: rgba(64, 153, 255, 0.19);
+}
+
+/* Figma: "🎮 3D CHARACTER VIEW" — 13px Bold, #4099ff40 */
+.cs-viewport-label {
+    font-size: 13px;
+    color: rgba(64, 153, 255, 0.25);
     -unity-font-style: bold;
     letter-spacing: 1px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     align-self: flex-start;
 }
 
@@ -155,113 +121,189 @@
     border-radius: 12px;
     background-color: rgba(10, 20, 60, 0.8);
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.1);
-    /* Render Texture được gán bằng code */
-    background-size: cover;
-    background-position: center;
+    border-color: rgba(255, 255, 255, 0.08);
+    /* Không dùng background-size: cover vì sẽ upscale RT → mờ */
+    /* RT được resize pixel-perfect bằng code (OnPreviewContainerResized) */
 }
 
+/* Figma: character name — Nunito Black 36px white */
 .cs-character-name {
-    font-size: 32px;
+    font-size: 36px;
     color: #ffffff;
     -unity-font-style: bold;
-    margin-top: 16px;
+    margin-top: 14px;
     align-self: center;
 }
 
 .cs-drag-hint {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.35);
     margin-top: 4px;
     align-self: center;
 }
 
-/* ===== RIGHT PANEL ===== */
-.cs-right-panel {
-    flex-grow: 1;
+/* ===== RIGHT COLUMN ===== */
+.cs-right-col {
+    width: 42%;
     flex-direction: column;
 }
 
+/* ===== SECTION SHARED ===== */
 .cs-section {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
-.cs-section-header {
-    flex-direction: row;
-    align-items: center;
-    margin-bottom: 12px;
+/* Captain section: fixed height so scroll works */
+.cs-captain-section {
+    height: 55%;
+    flex-direction: column;
 }
 
-.cs-section-icon {
-    font-size: 16px;
-    margin-right: 8px;
-}
-
+/* Figma: section title — Nunito Black 18px #bfedffd9 */
 .cs-section-title {
-    font-size: 14px;
-    color: #ffd700;
+    font-size: 18px;
+    color: rgba(191, 237, 255, 0.85);
     -unity-font-style: bold;
     letter-spacing: 1px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
-/* ===== CHARACTER GRID ===== */
-.cs-character-grid {
+.cs-section-title-players {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.38);
+}
+
+/* ===== SCROLLBAR STYLING — Unity UI Toolkit correct selectors ===== */
+
+/* Toàn bộ scroller container */
+.unity-scroller--vertical {
+    width: 6px;
+    margin-left: 6px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* Ẩn 2 nút mũi tên (high/low buttons) */
+#unity-high-button,
+#unity-low-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* Track (nền thanh) */
+#unity-tracker {
+    background-color: rgba(255, 255, 255, 0.07);
+    border-radius: 3px;
+    border-width: 0;
+    margin: 0;
+}
+
+/* Thumb (nút kéo) */
+#unity-dragger {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    border-width: 0;
+    width: 6px;
+    min-height: 20px;
+    margin: 0;
+}
+
+#unity-dragger:hover {
+    background-color: rgba(255, 255, 255, 0.55);
+}
+
+#unity-dragger:active {
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+/* ===== CAPTAIN SCROLL WRAPPER ===== */
+.cs-captain-scroll {
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* ===== CAPTAIN GRID (3 per row) ===== */
+.cs-captain-grid {
     flex-direction: row;
     flex-wrap: wrap;
+    padding-bottom: 4px;
 }
 
-.cs-char-card {
-    width: 23%;
+/* ===== PLAYERS SCROLL ===== */
+.cs-players-scroll {
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* Figma: cap card — radius 16, #ffffff12, stroke #ffffff1f, 158×160 */
+.cs-cap-card {
+    width: 31%;
     margin: 1%;
-    padding: 8px 4px;
+    padding: 10px 4px;
     flex-direction: column;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.06);
-    border-width: 2px;
-    border-color: rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.07);
+    border-width: 1.5px;
+    border-color: rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
     transition-property: background-color, border-color, scale;
     transition-duration: 0.15s;
     cursor: link;
 }
 
-.cs-char-card:hover {
+.cs-cap-card:hover {
     background-color: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.35);
-    scale: 1.05;
+    border-color: rgba(255, 255, 255, 0.3);
+    scale: 1.04;
 }
 
-.cs-char-selected {
-    background-color: rgba(220, 50, 50, 0.25);
-    border-color: #e53935;
+/* Figma: selected — #ff4d5938, stroke #ff4d59 */
+.cs-cap-selected {
+    background-color: rgba(255, 77, 89, 0.22);
+    border-color: #ff4d59;
     border-width: 2px;
 }
 
-.cs-char-icon {
-    font-size: 28px;
-    margin-bottom: 4px;
+/* Figma: locked — #26264099, stroke #66668066 */
+.cs-cap-locked {
+    background-color: rgba(38, 38, 64, 0.6);
+    border-color: rgba(102, 102, 128, 0.4);
+    border-width: 1.5px;
 }
 
-.cs-char-name {
-    font-size: 12px;
+/* Figma: captain emoji — 44px */
+.cs-cap-icon {
+    font-size: 44px;
+    margin-bottom: 6px;
+}
+
+/* Figma: captain name — Nunito Black 13px white */
+.cs-cap-name {
+    font-size: 13px;
     color: #ffffff;
     -unity-font-style: bold;
-    margin-bottom: 2px;
     -unity-text-align: middle-center;
 }
 
-.cs-char-stat {
-    font-size: 10px;
-    color: rgba(255, 220, 100, 0.85);
-    -unity-text-align: middle-center;
+/* Figma: locked name — #808099 */
+.cs-cap-name-locked {
+    color: rgba(128, 128, 153, 1);
 }
 
-.cs-char-check {
+.cs-cap-lock-icon {
+    font-size: 14px;
+    margin-top: 4px;
+    color: rgba(128, 128, 153, 1);
+}
+
+/* Figma: checkmark — green dot */
+.cs-cap-check {
     width: 16px;
     height: 16px;
     background-color: #2ed973;
     border-radius: 50%;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 .cs-hidden {
@@ -269,38 +311,49 @@
 }
 
 /* ===== PLAYERS IN ROOM ===== */
+.cs-players-section {
+    flex-grow: 1;
+    min-height: 140px;
+}
+
 .cs-player-list {
     flex-direction: column;
 }
 
+/* Figma: player row — radius 12, #ffffff08, height 38 */
 .cs-player-row {
     flex-direction: row;
     align-items: center;
     padding: 8px 10px;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 6px;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.04);
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* Figma: YOU row — #2ed97318, stroke #2ed97340 */
 .cs-player-you {
-    background-color: rgba(46, 217, 115, 0.15);
-    border-color: rgba(46, 217, 115, 0.4);
+    background-color: rgba(46, 217, 115, 0.09);
+    border-width: 1px;
+    border-color: rgba(46, 217, 115, 0.25);
 }
 
-.cs-player-avatar {
-    width: 36px;
-    height: 36px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    margin-right: 10px;
+/* Figma: YOU tag — #2ed973, radius 6, 34×18 */
+.cs-you-tag {
+    font-size: 10px;
+    color: #ffffff;
+    -unity-font-style: bold;
+    background-color: #2ed973;
+    border-radius: 6px;
+    padding: 2px 5px;
+    margin-right: 6px;
 }
 
-.cs-player-avatar-icon {
-    font-size: 18px;
+/* Figma: player emoji — 20px */
+.cs-player-emoji {
+    font-size: 20px;
+    margin-right: 8px;
 }
 
 .cs-player-info {
@@ -308,36 +361,38 @@
     flex-direction: column;
 }
 
+/* Figma: player name — Nunito Black 14px white */
 .cs-player-name {
-    font-size: 13px;
+    font-size: 14px;
     color: #ffffff;
     -unity-font-style: bold;
 }
 
+/* Figma: player char — 12px Bold #ffffff50 */
 .cs-player-char {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.cs-player-status {
     font-size: 12px;
+    color: rgba(255, 255, 255, 0.31);
     -unity-font-style: bold;
-    padding: 4px 10px;
-    border-radius: 8px;
 }
 
+/* Figma: status badge — 11px Black */
+.cs-player-status {
+    font-size: 11px;
+    -unity-font-style: bold;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+/* Figma: ready — #2ed973 bg */
 .cs-status-ready {
-    background-color: rgba(46, 217, 115, 0.25);
-    color: #2ed973;
-    border-width: 1px;
-    border-color: #2ed973;
+    background-color: #2ed973;
+    color: #ffffff;
 }
 
+/* Figma: selecting — #fabf1a40 bg, #fabf1a text */
 .cs-status-selecting {
-    background-color: rgba(250, 166, 26, 0.25);
-    color: #faa61a;
-    border-width: 1px;
-    border-color: #faa61a;
+    background-color: rgba(250, 191, 26, 0.25);
+    color: #fabf1a;
 }
 
 /* ===== FOOTER ===== */
@@ -348,17 +403,18 @@
     padding-bottom: 12px;
 }
 
+/* Figma: Confirm Button — radius 20, stroke #ffffff4d, 360×56 */
 .cs-btn-lockin {
-    width: 320px;
+    width: 360px;
     height: 56px;
     background-color: #faa61a;
-    border-radius: 28px;
+    border-radius: 20px;
     border-width: 2px;
     border-bottom-width: 5px;
-    border-color: rgba(255, 255, 255, 0.4);
-    border-bottom-color: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.3);
+    border-bottom-color: rgba(0, 0, 0, 0.3);
     color: #ffffff;
-    font-size: 22px;
+    font-size: 26px;
     -unity-font-style: bold;
     transition-property: scale, background-color;
     transition-duration: 0.15s;
@@ -377,9 +433,8 @@
 .cs-drag-overlay {
     position: absolute;
     left: 0;
-    top: 64px; /* below header */
-    width: 45%;
-    bottom: 80px; /* above footer */
+    top: 68px;
+    width: 58%;
+    bottom: 80px;
     background-color: rgba(0, 0, 0, 0);
-    /* Transparent overlay nhận drag input cho preview */
 }

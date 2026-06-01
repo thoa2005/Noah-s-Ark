@@ -1755,6 +1755,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 358056322}
   m_LocalEulerAnglesHint: {x: 1.369, y: 31.86, z: 2.455}
+--- !u!1 &1939347632 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5967557787693804990, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+  m_PrefabInstance: {fileID: 1062085005266668913}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1939347636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1939347632}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66779767bd2558349ae600f97e0d1116, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunDustVFX
+  minSpeedThreshold: 0.5
 --- !u!134 &1945003359
 PhysicsMaterial:
   m_ObjectHideFlags: 0
@@ -1873,7 +1891,15 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: emitterVelocityMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: InitialModule.rotation3D
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
@@ -1889,8 +1915,20 @@ PrefabInstance:
       value: 6.283185
       objectReference: {fileID: 0}
     - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: LifetimeByEmitterSpeedModule.enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: EmissionModule.rateOverDistance.scalar
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: LifetimeByEmitterSpeedModule.m_Range.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: LifetimeByEmitterSpeedModule.m_Range.y
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: ColorModule.gradient.maxGradient.atime1
@@ -1923,6 +1961,10 @@ PrefabInstance:
     - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: ColorModule.gradient.maxGradient.m_NumAlphaKeys
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4425305286257523384, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: LifetimeByEmitterSpeedModule.m_Curve.minMaxState
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5290964068162305169, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Material
@@ -1990,7 +2032,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5432009328030636140, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 646331361}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5967557787693804990, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1939347636}
   m_SourcePrefab: {fileID: 100100000, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -2,291 +2,251 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 /// <summary>
-/// Màn hình chọn nhân vật - UI Toolkit.
-/// Hiển thị 3D preview qua Render Texture, swap mesh/material qua CharacterSkinManager.
+/// Character Selection Screen.
+/// - Player preview ẩn cho đến khi chọn nhân vật lần đầu.
+/// - Kéo chuột trái trên preview để xoay model.
+/// - Camera position/rotation/FOV chỉnh thẳng trên Transform của camera GameObject trong scene.
 /// </summary>
 public class CharacterSelectUI : MonoBehaviour
 {
-    [Header("Character Data")]
+    [Header("Data")]
     [SerializeField] private CharacterData[] characters;
 
-    [Header("3D Preview")]
-    [SerializeField] private RenderTexture previewRenderTexture;
-    [SerializeField] private CharacterSkinManager previewSkinManager;
-    [SerializeField] private Transform previewTransform;
+    [Header("Preview")]
+    [SerializeField] private GameObject       previewPlayerRoot;   // Player GameObject (inactive lúc đầu)
+    [SerializeField] private Transform        previewRotateTarget; // Transform để xoay (Player root)
+    [SerializeField] private Camera           previewCamera;
+    [SerializeField] private RenderTexture    previewRT;
+    [SerializeField] private CharacterSkinManager previewSkin;
 
-    [Header("Rotation Settings")]
-    [SerializeField] private float rotationSpeed = 120f;
+    [Header("Rotation")]
+    [SerializeField] private float dragSensitivity = 0.4f;
     [SerializeField] private float autoRotateSpeed = 20f;
 
-    // UI Elements
-    private VisualElement root;
-    private VisualElement previewContainer;
-    private Label lblCharacterName;
-    private VisualElement dragOverlay;
+    // ── UI refs ───────────────────────────────────────────────────────────
+    private VisualElement    previewContainer;
+    private Label            lblName;
+    private VisualElement    dragOverlay;
+    private Button[]         cardButtons = new Button[8];
+    private VisualElement[]  cardChecks  = new VisualElement[8];
 
-    // Character card buttons & checks
-    private Button[] charButtons;
-    private VisualElement[] charChecks;
+    // ── State ─────────────────────────────────────────────────────────────
+    private int   selectedIndex = -1;
+    private float yaw           = 0f;
+    private bool  isDragging    = false;
+    private float lastX         = 0f;
+    private IVisualElementScheduledItem autoRotateTick;
 
-    // State
-    private int selectedIndex = 0;
-    private bool isDragging = false;
-    private float lastPointerX = 0f;
-    private float currentRotation = 0f;
-    private IVisualElementScheduledItem autoRotateScheduler;
+    // ═════════════════════════════════════════════════════════════════════
+    //  PUBLIC API
+    // ═════════════════════════════════════════════════════════════════════
 
-    // ===== LIFECYCLE =====
-
-    
-    // ===== INITIALIZE =====
-
-    /// <summary>
-    /// Khởi tạo UI - gọi từ UIManager hoặc Start()
-    /// </summary>
+    /// <summary>Gọi từ UIManager khi hiện màn hình này.</summary>
     public void Initialize(VisualElement uiRoot)
     {
-        root = uiRoot;
+        previewContainer = uiRoot.Q<VisualElement>("cs-preview-container");
+        lblName          = uiRoot.Q<Label>("lbl-character-name");
+        dragOverlay      = uiRoot.Q<VisualElement>("cs-drag-overlay");
 
-        // Query UI elements
-        previewContainer = root.Q<VisualElement>("cs-preview-container");
-        lblCharacterName = root.Q<Label>("lbl-character-name");
-        dragOverlay = root.Q<VisualElement>("cs-drag-overlay");
-
-        // Query character cards (8 cards)
-        charButtons = new Button[8];
-        charChecks = new VisualElement[8];
         for (int i = 0; i < 8; i++)
         {
-            int index = i; // closure capture
-            charButtons[i] = root.Q<Button>($"char-btn-{i}");
-            charChecks[i] = root.Q<VisualElement>($"char-check-{i}");
-
-            if (charButtons[i] != null)
-                charButtons[i].clicked += () => SelectCharacter(index);
+            int idx = i;
+            cardButtons[i] = uiRoot.Q<Button>($"char-btn-{i}");
+            cardChecks[i]  = uiRoot.Q<VisualElement>($"char-check-{i}");
+            cardButtons[i]?.RegisterCallback<ClickEvent>(_ => SelectCharacter(idx));
         }
 
-        // Query buttons
-        Button btnLockIn = root.Q<Button>("btn-lock-in");
+        uiRoot.Q<Button>("btn-lock-in")?.RegisterCallback<ClickEvent>(_ => OnLockIn());
 
-        if (btnLockIn != null) btnLockIn.clicked += OnLockInClicked;
-
-        // Gán Render Texture vào preview container
-        SetupRenderTexture();
-
-        // Setup drag input trên overlay
-        SetupDragInput();
-
-        // Load saved character hoặc default
-        int savedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", 0);
-        savedIndex = Mathf.Clamp(savedIndex, 0, characters.Length - 1);
-        
-        // Preview trống lúc đầu - không chọn character nào
-        selectedIndex = -1;
-        if (lblCharacterName != null)
-            lblCharacterName.text = "";
-        
-        // Reset card highlights
-        for (int i = 0; i < charButtons.Length; i++)
+        // Gán RT — resize pixel-perfect theo kích thước container
+        if (previewContainer != null && previewRT != null)
         {
-            if (charButtons[i] != null)
-                charButtons[i].RemoveFromClassList("cs-char-selected");
-            if (charChecks[i] != null)
-                charChecks[i].AddToClassList("cs-hidden");
+            previewContainer.RegisterCallback<GeometryChangedEvent>(OnPreviewContainerResized);
+            previewContainer.style.backgroundImage =
+                new StyleBackground(Background.FromRenderTexture(previewRT));
         }
 
-        // Auto rotate nhẹ khi không drag
-        autoRotateScheduler = root.schedule.Execute(AutoRotate).Every(16);
+        ResetSelection();
+        RegisterDragCallbacks();
+        autoRotateTick = uiRoot.schedule.Execute(Tick).Every(16);
     }
 
-    // ===== RENDER TEXTURE =====
-
-    private void SetupRenderTexture()
+    /// <summary>Gọi từ UIManager khi vào màn hình.</summary>
+    public void EnablePreviewCamera()
     {
-        if (previewContainer == null)
-        {
-            Debug.LogError("[CharacterSelectUI] Không tìm thấy cs-preview-container!");
-            return;
-        }
+        if (previewCamera != null) previewCamera.enabled = true;
+    }
 
-        if (previewRenderTexture == null)
-        {
-            Debug.LogError("[CharacterSelectUI] previewRenderTexture chưa được gán!");
-            return;
-        }
+    /// <summary>Gọi từ UIManager khi thoát màn hình.</summary>
+    public void DisablePreviewCamera()
+    {
+        if (previewCamera != null) previewCamera.enabled = false;
+    }
 
-        // Gán Render Texture vào VisualElement background
+    // ═════════════════════════════════════════════════════════════════════
+    //  RENDER TEXTURE — resize để tránh blur
+    // ═════════════════════════════════════════════════════════════════════
+
+    private void OnPreviewContainerResized(GeometryChangedEvent e)
+    {
+        if (previewRT == null || previewContainer == null) return;
+
+        float panelScale = previewContainer.panel?.scaledPixelsPerPoint ?? 1f;
+        int w = Mathf.Max(64, Mathf.RoundToInt(e.newRect.width  * panelScale));
+        int h = Mathf.Max(64, Mathf.RoundToInt(e.newRect.height * panelScale));
+
+        if (previewRT.width == w && previewRT.height == h) return;
+
+        previewRT.Release();
+        previewRT.width  = w;
+        previewRT.height = h;
+        previewRT.Create();
+
         previewContainer.style.backgroundImage =
-            new StyleBackground(Background.FromRenderTexture(previewRenderTexture));
+            new StyleBackground(Background.FromRenderTexture(previewRT));
 
-        Debug.Log("[CharacterSelectUI] Render Texture đã được gán vào preview container.");
+        if (previewCamera != null)
+            previewCamera.targetTexture = previewRT;
+
+        Debug.Log($"[CharacterSelectUI] RT resized {w}×{h}");
     }
 
-    // ===== CHARACTER SELECTION =====
+    // ═════════════════════════════════════════════════════════════════════
+    //  SELECTION
+    // ═════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Chọn nhân vật theo index - swap mesh/material qua CharacterSkinManager
-    /// </summary>
-    public void SelectCharacter(int index)
+    private void SelectCharacter(int index)
     {
-        if (characters == null || index < 0 || index >= characters.Length)
-        {
-            Debug.LogError($"[CharacterSelectUI] Invalid character index: {index}");
-            return;
-        }
+        if (characters == null || index < 0 || index >= characters.Length) return;
 
         selectedIndex = index;
-        CharacterData charData = characters[index];
+        ActivatePreviewPlayer();
+        previewSkin?.ApplyCharacter(characters[index]);
 
-        // Swap mesh + material trên PreviewObject
-        if (previewSkinManager != null)
-            previewSkinManager.ApplyCharacter(charData);
-        else
-            Debug.LogWarning("[CharacterSelectUI] previewSkinManager chưa được gán!");
-
-        // Cập nhật tên nhân vật
-        if (lblCharacterName != null)
-            lblCharacterName.text = charData.CharacterName;
-
-        // Cập nhật highlight cards
+        if (lblName != null) lblName.text = characters[index].CharacterName;
         UpdateCardHighlights(index);
 
-        // Reset rotation về 0 khi đổi nhân vật
-        currentRotation = 0f;
-
-        Debug.Log($"[CharacterSelectUI] Selected: {charData.CharacterName}");
+        yaw = 0f;
+        Debug.Log($"[CharacterSelectUI] Selected: {characters[index].CharacterName}");
     }
 
-    private void UpdateCardHighlights(int selectedIdx)
+    private void OnLockIn()
     {
-        for (int i = 0; i < charButtons.Length; i++)
-        {
-            if (charButtons[i] == null) continue;
+        if (selectedIndex < 0) return;
+        PlayerPrefs.SetInt("SelectedCharacterIndex", selectedIndex);
+        PlayerPrefs.Save();
+        UIManager.Instance.StartGameplay();
+    }
 
-            if (i == selectedIdx)
-            {
-                // Highlight card được chọn
-                charButtons[i].AddToClassList("cs-char-selected");
-                if (charChecks[i] != null)
-                    charChecks[i].RemoveFromClassList("cs-hidden");
-            }
-            else
-            {
-                // Bỏ highlight các card khác
-                charButtons[i].RemoveFromClassList("cs-char-selected");
-                if (charChecks[i] != null)
-                    charChecks[i].AddToClassList("cs-hidden");
-            }
+    // ═════════════════════════════════════════════════════════════════════
+    //  PREVIEW PLAYER
+    // ═════════════════════════════════════════════════════════════════════
+
+    private void ActivatePreviewPlayer()
+    {
+        if (previewPlayerRoot == null || previewPlayerRoot.activeSelf) return;
+
+        previewPlayerRoot.SetActive(true);
+
+        // Freeze physics
+        foreach (var rb in previewPlayerRoot.GetComponentsInChildren<Rigidbody>())
+        {
+            rb.isKinematic     = true;
+            rb.linearVelocity  = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // Disable gameplay scripts
+        foreach (var mb in previewPlayerRoot.GetComponentsInChildren<MonoBehaviour>())
+        {
+            if (mb is PlayerMovement or ActiveRagdollController or ActiveRagdollBalancer
+                   or PlayerCombat   or CharacterInput          or GroundDetect
+                   or CombatDetect)
+                mb.enabled = false;
         }
     }
 
-    // ===== DRAG INPUT (xoay model) =====
+    // ═════════════════════════════════════════════════════════════════════
+    //  DRAG TO ROTATE
+    // ═════════════════════════════════════════════════════════════════════
 
-    private void SetupDragInput()
+    private void RegisterDragCallbacks()
     {
-        if (dragOverlay == null)
-        {
-            Debug.LogWarning("[CharacterSelectUI] Không tìm thấy cs-drag-overlay!");
-            return;
-        }
-
+        if (dragOverlay == null) return;
         dragOverlay.RegisterCallback<PointerDownEvent>(OnPointerDown);
         dragOverlay.RegisterCallback<PointerMoveEvent>(OnPointerMove);
         dragOverlay.RegisterCallback<PointerUpEvent>(OnPointerUp);
         dragOverlay.RegisterCallback<PointerLeaveEvent>(OnPointerLeave);
     }
 
-    private void OnPointerDown(PointerDownEvent evt)
+    private void OnPointerDown(PointerDownEvent e)
     {
         isDragging = true;
-        lastPointerX = evt.localPosition.x;
-        dragOverlay.CapturePointer(evt.pointerId);
-        autoRotateScheduler?.Pause(); // Dừng auto rotate khi drag
+        lastX      = e.localPosition.x;
+        dragOverlay.CapturePointer(e.pointerId);
+        autoRotateTick?.Pause();
     }
 
-    private void OnPointerMove(PointerMoveEvent evt)
+    private void OnPointerMove(PointerMoveEvent e)
     {
         if (!isDragging) return;
-
-        float deltaX = evt.localPosition.x - lastPointerX;
-        lastPointerX = evt.localPosition.x;
-
-        currentRotation -= deltaX * rotationSpeed * Time.deltaTime;
-        ApplyRotation();
+        yaw  -= (e.localPosition.x - lastX) * dragSensitivity;
+        lastX = e.localPosition.x;
+        ApplyYaw();
     }
 
-    private void OnPointerUp(PointerUpEvent evt)
+    private void OnPointerUp(PointerUpEvent e)
     {
         isDragging = false;
-        dragOverlay.ReleasePointer(evt.pointerId);
-        autoRotateScheduler = root.schedule.Execute(AutoRotate).Every(16); // Resume auto rotate
+        dragOverlay.ReleasePointer(e.pointerId);
+        autoRotateTick?.Resume();
     }
 
-    private void OnPointerLeave(PointerLeaveEvent evt)
+    private void OnPointerLeave(PointerLeaveEvent e)
     {
-        if (isDragging)
+        if (!isDragging) return;
+        isDragging = false;
+        autoRotateTick?.Resume();
+    }
+
+    private void Tick()
+    {
+        if (isDragging || previewRotateTarget == null) return;
+        yaw += autoRotateSpeed * Time.deltaTime;
+        ApplyYaw();
+    }
+
+    private void ApplyYaw()
+    {
+        if (previewRotateTarget != null)
+            previewRotateTarget.rotation = Quaternion.Euler(0f, yaw, 0f);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    //  HELPERS
+    // ═════════════════════════════════════════════════════════════════════
+
+    private void ResetSelection()
+    {
+        selectedIndex = -1;
+        if (lblName != null) lblName.text = "";
+        for (int i = 0; i < 8; i++)
         {
-            isDragging = false;
-            autoRotateScheduler = root.schedule.Execute(AutoRotate).Every(16);
+            cardButtons[i]?.RemoveFromClassList("cs-cap-selected");
+            cardChecks[i]?.AddToClassList("cs-hidden");
         }
     }
 
-    private void AutoRotate()
+    private void UpdateCardHighlights(int idx)
     {
-        if (isDragging) return;
-        currentRotation += autoRotateSpeed * Time.deltaTime;
-        ApplyRotation();
-    }
-
-    private void ApplyRotation()
-    {
-        if (previewTransform != null)
-            previewTransform.rotation = Quaternion.Euler(0, currentRotation, 0);
-    }
-
-    // ===== BUTTONS =====
-
-    private void OnLockInClicked()
-    {
-        if (characters == null || selectedIndex >= characters.Length) return;
-
-        // Lưu lựa chọn vào PlayerPrefs
-        PlayerPrefs.SetInt("SelectedCharacterIndex", selectedIndex);
-        PlayerPrefs.Save();
-
-        Debug.Log($"[CharacterSelectUI] Locked in: {characters[selectedIndex].CharacterName} (index {selectedIndex})");
-
-        // Load game
-        UIManager.Instance.StartGameplay();
-    }
-
-    // ===== HELPERS =====
-
-    private void DisablePreviewCamera()
-    {
-        // Tắt Preview Camera để tiết kiệm GPU khi không dùng
-        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-        foreach (var cam in cameras)
+        for (int i = 0; i < 8; i++)
         {
-            if (cam.targetTexture == previewRenderTexture)
-            {
-                cam.enabled = false;
-                break;
-            }
-        }
-    }
+            bool selected = i == idx;
+            if (selected) cardButtons[i]?.AddToClassList("cs-cap-selected");
+            else          cardButtons[i]?.RemoveFromClassList("cs-cap-selected");
 
-    public void EnablePreviewCamera()
-    {
-        // Bật lại Preview Camera khi vào màn hình
-        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-        foreach (var cam in cameras)
-        {
-            if (cam.targetTexture == previewRenderTexture)
-            {
-                cam.enabled = true;
-                break;
-            }
+            if (selected) cardChecks[i]?.RemoveFromClassList("cs-hidden");
+            else          cardChecks[i]?.AddToClassList("cs-hidden");
         }
     }
 }
