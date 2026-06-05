@@ -127,6 +127,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -1106553246494651020, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: SortKey
+      value: 1784488853
+      objectReference: {fileID: 0}
     - target: {fileID: 132024885785349973, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Layer
       value: 6
@@ -728,6 +732,10 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_TagString
       value: Bot
       objectReference: {fileID: 0}
@@ -848,7 +856,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &330585545
 Camera:
   m_ObjectHideFlags: 0
@@ -1530,7 +1538,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1235489768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1866,6 +1874,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -1106553246494651020, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: SortKey
+      value: 1059267548
+      objectReference: {fileID: 0}
     - target: {fileID: 1324362350271686237, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Material
       value: 
@@ -2025,6 +2037,10 @@ PrefabInstance:
     - target: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 8919391196086702788, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

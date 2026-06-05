@@ -1,4 +1,5 @@
 using UnityEngine;
+using Fusion;
 
 [DefaultExecutionOrder(100)]
 public class CameraFollow : MonoBehaviour
@@ -44,12 +45,23 @@ public class CameraFollow : MonoBehaviour
     void Start()
     {
         initialDistance = distance;
-        if (target != null) currentTargetPos = target.position;
-        if (_input == null) _input = FindFirstObjectByType<CharacterInput>();
+
+        // Player scene cũ có thể còn bị serialize trong Inspector.
+        // Bỏ target cũ để camera chỉ bind player local spawn bằng Fusion.
+        target = null;
+        _input = null;
+        currentTargetPos = transform.position;
     }
 
     void LateUpdate()
     {
+        if (!isSpectating && !IsTargetLocalPlayer())
+        {
+            target = null;
+            _input = null;
+            TryBindLocalPlayer();
+        }
+
         Transform activeTarget = ResolveTarget();
         if (activeTarget == null) return;
 
@@ -73,9 +85,9 @@ public class CameraFollow : MonoBehaviour
         }
 
         // Tính vị trí camera
-        Quaternion rotation    = Quaternion.Euler(fixedPitch, currentYaw, 0f);
-        Vector3 targetViewPos  = currentTargetPos + Vector3.up * 0.5f;
-        Vector3 camDir         = rotation * Vector3.back;
+        Quaternion rotation = Quaternion.Euler(fixedPitch, currentYaw, 0f);
+        Vector3 targetViewPos = currentTargetPos + Vector3.up * 0.5f;
+        Vector3 camDir = rotation * Vector3.back;
 
         Vector3 desiredPos = targetViewPos + camDir * distance;
         transform.position = Vector3.Lerp(transform.position, desiredPos, smoothSpeed * Time.deltaTime);
@@ -97,9 +109,9 @@ public class CameraFollow : MonoBehaviour
     /// </summary>
     public void EnterSpectatorMode(GameManager.TeamData team, Transform boatCenter)
     {
-        isSpectating  = true;
-        spectateTeam  = team;
-        boatFallback  = boatCenter;
+        isSpectating = true;
+        spectateTeam = team;
+        boatFallback = boatCenter;
         UpdateSpectateTarget();
         Debug.Log($"[CameraFollow] Spectator mode. Target: {spectateTarget?.name ?? "thuyền"}");
     }
@@ -110,9 +122,9 @@ public class CameraFollow : MonoBehaviour
     /// </summary>
     public void ExitSpectatorMode(Transform ownerTransform)
     {
-        isSpectating   = false;
+        isSpectating = false;
         spectateTarget = null;
-        spectateTeam   = null;
+        spectateTeam = null;
         // KHÔNG override target — giữ nguyên target đã gán trong Inspector
         // target chỉ được set 1 lần duy nhất lúc đầu, không bị ghi đè khi respawn
         Debug.Log($"[CameraFollow] Thoát spectator mode → tiếp tục follow {target?.name ?? "NULL"}");
@@ -137,6 +149,34 @@ public class CameraFollow : MonoBehaviour
     {
         if (isSpectating) return spectateTarget;
         return target;
+    }
+
+    private bool IsTargetLocalPlayer()
+    {
+        if (target == null) return false;
+
+        NetworkObject netObj = target.GetComponent<NetworkObject>();
+        return netObj != null && netObj.HasInputAuthority;
+    }
+
+    private void TryBindLocalPlayer()
+    {
+        NetworkObject[] networkObjects = FindObjectsByType<NetworkObject>(FindObjectsSortMode.None);
+
+        foreach (NetworkObject netObj in networkObjects)
+        {
+            if (netObj == null || !netObj.HasInputAuthority) continue;
+
+            CharacterInput input = netObj.GetComponent<CharacterInput>();
+            if (input == null) continue;
+
+            target = netObj.transform;
+            _input = input;
+            currentTargetPos = target.position;
+
+            Debug.Log($"[CameraFollow] Bind local player: {target.name}");
+            return;
+        }
     }
 
     // ------------------------------------------------------------------ //

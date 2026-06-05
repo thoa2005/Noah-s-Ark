@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
+using Fusion;
 
 public class UIManager : MonoBehaviour
 {
@@ -12,9 +13,6 @@ public class UIManager : MonoBehaviour
 
     [Header("Global UI Templates")]
     [SerializeField] private VisualTreeAsset settingsTemplate;
-
-    [Header("Screen Templates")]
-    [SerializeField] private VisualTreeAsset characterSelectTemplate;
 
     [Header("Screen References")]
     [SerializeField] private UIDocument mainMenuDocument;
@@ -29,7 +27,7 @@ public class UIManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -52,7 +50,11 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
-        // Toggle Settings Overlay with Escape key (Modern Input System compatible)
+        // Kiểm tra an toàn: Nếu Camera chính biến mất (đang chuyển cảnh), 
+        // lập tức dừng toàn bộ xử lý UI Toolkit ở dưới để tránh nổ lỗi Null
+        if (Camera.main == null) return;
+
+        // Code cũ xử lý phím ESC của bạn giữ nguyên phía dưới
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             ToggleSettings();
@@ -99,7 +101,7 @@ public class UIManager : MonoBehaviour
         {
             globalDocument.visualTreeAsset = null;
             globalDocument.enabled = false; // Disable overlay completely so it releases input capturing
-            
+
             // Blur focus to return keyboard control to the active gameplay scene
             globalDocument.rootVisualElement?.panel?.focusController?.focusedElement?.Blur();
 
@@ -158,9 +160,27 @@ public class UIManager : MonoBehaviour
     /// <summary>
     /// Loads the loading scene which will then async-load SampleScene
     /// </summary>
-    public void StartGameplay()
+    public async void StartGameplay()
     {
-        SceneManager.LoadScene("LoadingScene");
+        // 1. Tắt hết các rèm UI cũ
+        if (mainMenuDocument != null) mainMenuDocument.enabled = false;
+        if (characterSelectDocument != null) characterSelectDocument.enabled = false;
+        if (characterSelectUI != null) characterSelectUI.DisablePreviewCamera();
+
+        Debug.Log("UI đã dọn sạch. Load LoadingScene để hiển thị màn chờ...");
+
+        // 2. Load LoadingScene additive để hiện màn chờ
+        AsyncOperation loadingOp = SceneManager.LoadSceneAsync("LoadingScene", LoadSceneMode.Additive);
+        while (!loadingOp.isDone) await System.Threading.Tasks.Task.Yield();
+
+        Debug.Log("LoadingScene đã lên, ra lệnh cho GameNetworkManager kết nối Fusion...");
+
+        // 3. Gọi Fusion (sẽ tự load SampleScene, OnSceneLoadDone sẽ unload LoadingScene)
+        await GameNetworkManager.Instance.StartGameMatch(
+            GameMode.Host,
+            "Phong_Ragdoll_Party",
+            "SampleScene"
+        );
     }
 
     /// <summary>

@@ -104,6 +104,9 @@ public class LoadingScreenUI : MonoBehaviour
         tipText.text = tips[Random.Range(0, tips.Length)];
     }
 
+    // ── Static flag: GameNetworkManager set khi Fusion load xong ────────
+    public static bool FusionSceneReady = false;
+
     // ------------------------------------------------------------------ //
     //  LOAD ROUTINE
     // ------------------------------------------------------------------ //
@@ -111,42 +114,36 @@ public class LoadingScreenUI : MonoBehaviour
     IEnumerator LoadRoutine()
     {
         float elapsed = 0f;
-
-        // Bắt đầu load scene ở background
-        AsyncOperation op = SceneManager.LoadSceneAsync(targetScene);
-        op.allowSceneActivation = false; // Chưa chuyển scene ngay
+        FusionSceneReady = false;
 
         while (true)
         {
             elapsed += Time.deltaTime;
 
-            // Progress thực từ Unity (0 → 0.9)
-            float loadProgress = Mathf.Clamp01(op.progress / 0.9f);
+            float timeProgress   = Mathf.Clamp01(elapsed / minLoadTime);
+            // Chặn ở 85% cho đến khi Fusion xong — sau đó mới cho lên 100%
+            float fusionProgress = FusionSceneReady ? 1f : 0.85f;
 
-            // Progress hiển thị = max(loadProgress, elapsed/minLoadTime)
-            // Đảm bảo thanh không chạy nhanh hơn thời gian tối thiểu
-            float displayProgress = Mathf.Max(loadProgress, elapsed / minLoadTime);
-            displayProgress = Mathf.Clamp01(displayProgress);
-
+            // Progress hiển thị = min của cả 2 — đảm bảo không vượt quá giới hạn nào
+            float displayProgress = Mathf.Min(timeProgress, fusionProgress);
             UpdateProgressBar(displayProgress);
 
-            // Điều kiện chuyển scene: load xong VÀ đã đủ thời gian tối thiểu
-            bool loadDone = op.progress >= 0.9f;
-            bool timeDone = elapsed >= minLoadTime;
+            // Vào game khi: đã đủ 10s TỐI THIỂU và Fusion đã load xong
+            bool timeDone   = elapsed >= minLoadTime;
+            bool fusionDone = FusionSceneReady;
 
-            if (loadDone && timeDone)
+            if (timeDone && fusionDone)
             {
-                // Hiện 100% rồi chờ 0.5s cho người chơi thấy
+                Debug.Log($"[Loading] Vào game: elapsed={elapsed:F1}s, fusionReady={fusionDone}");
                 UpdateProgressBar(1f);
                 yield return new WaitForSeconds(0.5f);
-
-                // Dừng animation
                 animScheduler?.Pause();
-
-                // Chuyển sang SampleScene
-                op.allowSceneActivation = true;
+                UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(gameObject.scene);
                 yield break;
             }
+            
+            if (fusionDone && !timeDone)
+                Debug.Log($"[Loading] Fusion xong nhưng chờ timer: {elapsed:F1}/{minLoadTime}s");
 
             yield return null;
         }

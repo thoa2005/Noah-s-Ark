@@ -53,6 +53,29 @@ public class CharacterSelectionManager : MonoBehaviour
         }
     }
 
+    public void ApplySelectedCharacterTo(CharacterSkinManager playerSkin)
+    {
+        if (playerSkin == null)
+        {
+            Debug.LogWarning("[CharacterSelectionManager] PlayerSkin null, không apply character.");
+            return;
+        }
+
+        if (characterDataArray == null || characterDataArray.Length == 0)
+        {
+            Debug.LogError("[CharacterSelectionManager] CharacterDataArray trống!");
+            return;
+        }
+
+        int savedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", defaultCharacterIndex);
+        savedIndex = Mathf.Clamp(savedIndex, 0, characterDataArray.Length - 1);
+
+        CharacterData selectedCharacter = characterDataArray[savedIndex];
+        playerSkin.ApplyCharacter(selectedCharacter);
+
+        Debug.Log($"[CharacterSelectionManager] Applied selected {selectedCharacter.CharacterName} to {playerSkin.gameObject.name}");
+    }
+
     /// <summary>
     /// Apply character theo index.
     /// </summary>

@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Collections;
 using System.Collections.Generic;
+using Fusion;
 
 public class BattleHUDUI : MonoBehaviour
 {
@@ -49,6 +51,38 @@ public class BattleHUDUI : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Ẩn HUD cho đến khi LoadingScreen unload xong
+        // Tránh UI chèn lên LoadingScene khi load additive
+        var doc = GetComponent<UIDocument>();
+        if (doc != null) doc.enabled = false;
+        StartCoroutine(ShowHudWhenLoadingDone());
+    }
+
+    private IEnumerator ShowHudWhenLoadingDone()
+    {
+        // Chờ cho đến khi LoadingScene bị unload
+        while (UnityEngine.SceneManagement.SceneManager.GetSceneByName("LoadingScene").isLoaded)
+            yield return null;
+
+        // LoadingScene đã unload, giờ mới show HUD
+        var doc = GetComponent<UIDocument>();
+        if (doc != null)
+        {
+            doc.enabled = true;
+
+            // Đợi 1 frame để UIDocument khởi tạo rootVisualElement
+            yield return null;
+
+            // Re-initialize HUD với root mới
+            if (doc.rootVisualElement != null)
+                Initialize(doc.rootVisualElement);
+
+            // Re-bind local player nếu đã spawn rồi
+            TryBindLocalPlayer();
+        }
+
+        Debug.Log("[BattleHUDUI] LoadingScene unloaded, HUD initialized.");
     }
 
     void Start()
@@ -84,6 +118,13 @@ public class BattleHUDUI : MonoBehaviour
 
     void Update()
     {
+        if (!IsPanelReady()) return;
+
+        if (!IsBoundToLocalPlayer())
+        {
+            TryBindLocalPlayer();
+        }
+
         UpdateStatsBars();
         UpdateSkillSlots();
     }
@@ -187,37 +228,15 @@ public class BattleHUDUI : MonoBehaviour
 
     private void SubscribeToStatsEvents()
     {
+        if (playerStats == null)
+        {
+            TryBindLocalPlayer();
+        }
+
         if (playerStats != null)
         {
             playerStats.OnKnockout += OnPlayerKnockedOut;
             playerStats.OnWakeUp += OnPlayerWokeUp;
-
-        }
-        else
-        {
-            // Tìm đúng nhân vật người chơi bằng Tag thay vì random theo thứ tự RAM
-            var playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null)
-            {
-                playerStats = playerObj.GetComponent<PlayerStats>();
-
-            }
-            else
-            {
-                Debug.LogWarning("[HUDInit] Không tìm thấy đối tượng nào có Tag 'Player' trong Scene!");
-            }
-
-            if (playerStats != null)
-            {
-                playerStats.OnKnockout += OnPlayerKnockedOut;
-                playerStats.OnWakeUp += OnPlayerWokeUp;
-
-            }
-        }
-
-        if (playerCombat == null)
-        {
-            playerCombat = FindFirstObjectByType<PlayerCombat>();
         }
     }
 
@@ -455,6 +474,8 @@ public class BattleHUDUI : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!IsPanelReady()) return;
+
         // Periodically scan and auto-attach NameTag components to entities that don't have them
         autoAttachTimer += Time.deltaTime;
         if (autoAttachTimer >= 0.5f)
@@ -468,8 +489,7 @@ public class BattleHUDUI : MonoBehaviour
 
     private void AutoAttachNameTags()
     {
-        // Use Tag to find the real player — never a bot, even if bots share the same script
-        GameObject playerObj = GameObject.FindWithTag("Player");
+        GameObject playerObj = GetLocalPlayerObject();
         if (playerObj != null && playerObj.GetComponent<NameTag>() == null)
         {
             AttachNameTag(
@@ -501,68 +521,125 @@ public class BattleHUDUI : MonoBehaviour
         // Set values on the component immediately after adding it.
         // Unity guarantees Start() runs at least one frame later,
         // so our values are stable before NameTag.Start() checks them.
-        NameTag tag    = target.AddComponent<NameTag>();
+        NameTag tag = target.AddComponent<NameTag>();
         tag.displayName = name;
-        tag.nameColor   = color;
-        tag.offset      = new Vector3(0, 2.0f, 0);
+        tag.nameColor = color;
+        tag.offset = new Vector3(0, 2.0f, 0);
+    }
+
+    private bool IsBoundToLocalPlayer()
+    {
+        if (playerStats == null) return false;
+
+        NetworkObject netObj = playerStats.GetComponent<NetworkObject>();
+        if (netObj == null) netObj = playerStats.GetComponentInParent<NetworkObject>();
+
+        return netObj == null || netObj.HasInputAuthority;
+    }
+
+    private GameObject GetLocalPlayerObject()
+    {
+        NetworkObject[] networkObjects = FindObjectsByType<NetworkObject>(FindObjectsSortMode.None);
+
+        foreach (NetworkObject netObj in networkObjects)
+        {
+            if (netObj == null || !netObj.HasInputAuthority) continue;
+
+            PlayerStats stats = netObj.GetComponent<PlayerStats>();
+            if (stats == null) stats = netObj.GetComponentInChildren<PlayerStats>();
+            if (stats == null) continue;
+
+            return stats.gameObject;
+        }
+
+        return null;
+    }
+
+    private void TryBindLocalPlayer()
+    {
+        NetworkObject[] networkObjects = FindObjectsByType<NetworkObject>(FindObjectsSortMode.None);
+
+        foreach (NetworkObject netObj in networkObjects)
+        {
+            if (netObj == null || !netObj.HasInputAuthority) continue;
+
+            PlayerStats stats = netObj.GetComponent<PlayerStats>();
+            if (stats == null) stats = netObj.GetComponentInChildren<PlayerStats>();
+            if (stats == null) continue;
+
+            PlayerCombat combat = netObj.GetComponent<PlayerCombat>();
+            if (combat == null) combat = netObj.GetComponentInChildren<PlayerCombat>();
+
+            if (playerStats == stats && playerCombat == combat) return;
+
+            UnsubscribeFromStatsEvents();
+
+            playerStats = stats;
+            playerCombat = combat;
+
+            playerStats.OnKnockout += OnPlayerKnockedOut;
+            playerStats.OnWakeUp += OnPlayerWokeUp;
+
+            UpdateStatsBars();
+            UpdateSkillSlots();
+
+            Debug.Log($"[BattleHUDUI] Bind local player: {netObj.name}");
+            return;
+        }
+    }
+
+    private bool IsPanelReady()
+    {
+        return isActiveAndEnabled
+            && root != null
+            && root.panel != null;
     }
 
     private void UpdateNameTags()
     {
-        if (nameTagsContainer == null) return;
+        if (!IsPanelReady()) return;
+        if (nameTagsContainer == null || nameTagsContainer.panel == null) return;
 
-        // Find main camera or fallback to any camera in the scene (highly robust)
         Camera mainCam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
         if (mainCam == null) return;
 
         for (int i = activeNameTags.Count - 1; i >= 0; i--)
         {
             NameTag tag = activeNameTags[i];
-            if (tag == null)
+            if (tag == null) { activeNameTags.RemoveAt(i); continue; }
+
+            if (!nameTagElements.TryGetValue(tag, out VisualElement element) || element == null) continue;
+            if (element.panel == null) { element.style.display = DisplayStyle.None; continue; }
+
+            if (!tag.gameObject.activeInHierarchy || !tag.enabled)
             {
-                activeNameTags.RemoveAt(i);
+                element.style.display = DisplayStyle.None;
                 continue;
             }
 
-            if (nameTagElements.TryGetValue(tag, out VisualElement element))
+            Vector3 worldPos  = tag.transform.position + tag.offset;
+            Vector3 screenPos = mainCam.WorldToScreenPoint(worldPos);
+
+            if (screenPos.z < 0) { element.style.display = DisplayStyle.None; continue; }
+
+            element.style.display = DisplayStyle.Flex;
+
+            // Cập nhật text và màu
+            Label label = element.Q<Label>(className: "name-tag-text");
+            if (label != null)
             {
-                // Check if target gameobject is disabled/inactive
-                if (!tag.gameObject.activeInHierarchy || !tag.enabled)
-                {
-                    element.style.display = DisplayStyle.None;
-                    continue;
-                }
-
-                // Project 3D coordinates above the character's head
-                Vector3 worldPos = tag.transform.position + tag.offset;
-                Vector3 screenPos = mainCam.WorldToScreenPoint(worldPos);
-
-                // Hide tag if it is behind the camera plane
-                if (screenPos.z < 0)
-                {
-                    element.style.display = DisplayStyle.None;
-                }
-                else
-                {
-                    element.style.display = DisplayStyle.Flex;
-
-                    // Dynamically synchronize display name and color (in case they were set at runtime)
-                    Label label = element.Q<Label>(className: "name-tag-text");
-                    if (label != null)
-                    {
-                        label.text = tag.displayName;
-                        label.style.color = tag.nameColor;
-                    }
-
-                    // Convert screen coordinates to runtime panel coordinates (highly robust for all resolutions & aspect ratios)
-                    Vector2 screenPoint = new Vector2(screenPos.x, Screen.height - screenPos.y);
-                    Vector2 localPoint = RuntimePanelUtils.ScreenToPanel(element.panel, screenPoint);
-
-                    // Update UI Toolkit element layout positions
-                    element.style.left = localPoint.x;
-                    element.style.top = localPoint.y;
-                }
+                label.text       = tag.displayName;
+                label.style.color = tag.nameColor;
             }
+
+            // Chuyển screen → panel coordinates
+            // Unity screen: (0,0) = bottom-left; UI Toolkit panel: (0,0) = top-left
+            float panelScale = element.panel.scaledPixelsPerPoint;
+            float panelX     = screenPos.x / panelScale;
+            float panelY     = (Screen.height - screenPos.y) / panelScale;
+
+            element.style.left = panelX;
+            element.style.top  = panelY;
         }
     }
 }

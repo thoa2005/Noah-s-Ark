@@ -37,7 +37,8 @@ public class ActiveRagdollController : MonoBehaviour
     private Rigidbody playerRb;
     private Rigidbody hipRb;
     private Transform realHip;
-    private CharacterInput playerInput;
+    private PlayerCombat    playerCombat;  // để check IsPunching
+    private CharacterInput  charInput;     // để đọc moveInput cho leaning
 
     private Dictionary<Rigidbody, float> originalMasses = new Dictionary<Rigidbody, float>();
     private List<GameObject> grabbers = new List<GameObject>();
@@ -64,7 +65,8 @@ public class ActiveRagdollController : MonoBehaviour
 
     void Start()
     {
-        playerInput = GetComponent<CharacterInput>(); // <--- CACHE INPUT
+        playerCombat = GetComponent<PlayerCombat>();
+        charInput    = GetComponent<CharacterInput>();
         if (stats == null) stats = GetComponent<PlayerStats>();
 
         if (stats != null)
@@ -210,7 +212,7 @@ public class ActiveRagdollController : MonoBehaviour
         float currentMuscleSpring = GetTargetMuscleSpring();
 
         // --- GỒNG CƠ BẮP KHI ĐẤM ---
-        if (playerInput != null && playerInput.isPunching && !IsBeingGrabbed)
+        if (playerCombat != null && playerCombat.IsPunching && !IsBeingGrabbed)
         {
             currentMuscleSpring *= 10f;
             currentBalanceSpring *=0f;
@@ -270,10 +272,9 @@ public class ActiveRagdollController : MonoBehaviour
 
     private void HandleProceduralLeaning()
     {
-        if (playerInput == null) return;
+        if (charInput == null) return;
 
-        // Lấy hướng di chuyển từ Input
-        Vector3 moveInput = new Vector3(playerInput.moveInput.x, 0, playerInput.moveInput.y);
+        Vector3 moveInput = new Vector3(charInput.moveInput.x, 0, charInput.moveInput.y);
 
         Quaternion targetLean = Quaternion.identity;
 
