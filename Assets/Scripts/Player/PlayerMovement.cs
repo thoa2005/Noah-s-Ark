@@ -1,95 +1,135 @@
 using UnityEngine;
-using Fusion;
+using System.Collections.Generic;
 
-/// <summary>
-/// PlayerMovement — NetworkBehaviour (Fusion).
-/// - HasInputAuthority: player này là local → apply movement.
-/// - Remote players: Fusion sync position/rotation qua NetworkRigidbody.
-/// - Ragdoll physics chạy locally trên từng máy (không sync từng xương).
-/// </summary>
+
 [RequireComponent(typeof(Rigidbody))]
-public class PlayerMovement : NetworkBehaviour
+public class PlayerMovement : MonoBehaviour
 {
-    [Header("References")]
+    [Header("Detectors")]
     public GroundDetect groundDetect;
-    public PlayerStats  stats;
-    public Animator     anim;
+    public PlayerStats stats;
+
+
+    // --- Runtime state ---
+    public Animator anim;
+    private ActiveRagdollController ragdoll;
+    Rigidbody rb;
+    private CharacterInput _input;
+    Camera mainCam;
 
     [Header("Movement Smoothing")]
     public float accelerationTime = 0.12f;
     public float decelerationTime = 0.08f;
     [Range(1f, 20f)]
-    public float rotationSpeed    = 8f;
-
-    // ── Runtime ──────────────────────────────────────────────────────────
-    private ActiveRagdollController ragdoll;
-    private Rigidbody               rb;
-    private Camera                  mainCam;
-
-    private Vector3    currentVelocityXZ;
+    public float rotationSpeed = 8f;
+    private Vector3 currentVelocityXZ;
     private Quaternion targetRotation;
-    private Vector3    lastMoveDir;
+    private Vector3 lastMoveDir; // Hướng di chuyển frame trước để smooth
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
 
-    public override void Spawned()
+
+    // ------------------------------------------------------------------ //
+
+    void Start()
     {
-        ragdoll        = GetComponent<ActiveRagdollController>();
-        rb             = GetComponent<Rigidbody>();
+        ragdoll = GetComponent<ActiveRagdollController>();
+        rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotation;
-        mainCam        = Camera.main;
-        targetRotation = transform.rotation;
+        mainCam = Camera.main;
+        _input = GetComponent<CharacterInput>();
+        targetRotation = transform.rotation; // Khởi tạo rotation đích
     }
 
-    // ── State để Render() đọc ────────────────────────────────────────────
-    private float  _animSpeed;
-    private float  _animMotionDir;
-    private bool   _hasAnimData;
 
-    // ── Fusion tick (replaces FixedUpdate) ───────────────────────────────
 
-    public override void FixedUpdateNetwork()
+
+
+
+    void Jump()
     {
-        if (!HasInputAuthority) return;
+        // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm nhảy
         if (stats != null && stats.isKnockedOut) return;
-        if (!GetInput(out NetworkInputData data)) return;
+        if (ragdoll != null && ragdoll.IsBeingGrabbed) return; // KHÓA: Đang bị tóm thì không cho nhảy
+        if (groundDetect == null || !groundDetect.isGrounded) return;
 
-        if (data.IsJumping) HandleJump();
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
-        if (mainCam == null || !mainCam.isActiveAndEnabled)
-            mainCam = Camera.main;
+        // // Tinh tong khoi luong ragdoll de jump cho dung
+        // float totalMass = rb.mass;
 
+        // 1. Lấy tất cả Rigidbody (vỏ capsule + các khớp xương)
+        var allRbs = GetComponentsInChildren<Rigidbody>();
+        foreach (var r in allRbs)
+        {
+            // if (r != rb) totalMass += r.mass;
+
+            float force = stats.jumpForce * (r.mass * 0.8f);
+            r.AddForce(Vector3.up * force, ForceMode.Impulse);
+        }
+
+    }
+
+    // ------------------------------------------------------------------ //
+
+    void Update()
+    {
+        // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
+        if (stats != null && stats.isKnockedOut)
+        {
+            return; // Ngất rồi thì không cho làm gì nữa
+        }
+
+        // Thêm đoạn này để xử lý Nhảy
+        if (_input.isJumpPressed)
+        {
+            Jump(); // Gọi hàm nhảy chúng ta vừa sửa ở trên
+            _input.UseJumpRequest(); // Nhảy xong thì reset lệnh về false
+        }
+    }
+
+    // ------------------------------------------------------------------ //
+
+    void FixedUpdate()
+    {
+        // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Liệt chân, cấm chạy
+        if (stats != null && stats.isKnockedOut) return;
         Vector3 camF = mainCam != null ? mainCam.transform.forward : Vector3.forward;
         camF.y = 0f; camF.Normalize();
-
         Vector3 camR = mainCam != null ? mainCam.transform.right : Vector3.right;
         camR.y = 0f; camR.Normalize();
+        Vector3 dir = (camF * _input.moveInput.y + camR * _input.moveInput.x).normalized;
 
-        Vector3 dir = (camF * data.MoveInput.y + camR * data.MoveInput.x).normalized;
+        bool isMovingBackwards = false;
+        if (dir.magnitude > 0.1f)
+        {
+            float dot = Vector3.Dot(transform.forward, dir);
+            isMovingBackwards = dot < -0.7f;
+        }
 
-        bool isMovingBackwards = dir.magnitude > 0.1f &&
-                                 Vector3.Dot(transform.forward, dir) < -0.7f;
-
-        // Lưu animation data để Render() apply mỗi frame
-        _animSpeed     = dir.magnitude;
-        _animMotionDir = isMovingBackwards ? -1f : 1f;
-        _hasAnimData   = true;
+        if (anim != null)
+        {
+            // Dùng dampTime để animation blend mượt thay vì chuyển đột ngột
+            anim.SetFloat("Speed", dir.magnitude, 0.25f, Time.fixedDeltaTime);
+            if (dir.magnitude > 0.1f)
+            {
+                float motionDir = isMovingBackwards ? -1f : 1f;
+                anim.SetFloat("MotionDirection", motionDir, 0.1f, Time.fixedDeltaTime);
+            }
+        }
 
         if (dir.magnitude > 0.1f)
         {
-            float finalSpeed = stats != null ? stats.moveSpeed : 5f;
-            if (ragdoll != null && ragdoll.IsBeingGrabbed) finalSpeed *= 0.1f;
+            float finalMoveSpeed = stats.moveSpeed;
+            if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f;
 
-            if (lastMoveDir != Vector3.zero && Vector3.Dot(lastMoveDir, dir) < 0f)
-                lastMoveDir = dir;
-            else
-                lastMoveDir = Vector3.Slerp(lastMoveDir, dir, rotationSpeed * Runner.DeltaTime);
-
+            // Smooth hướng di chuyển trước khi tính velocity
+            // Đây là key fix: không đổi hướng đột ngột mà lerp dần
+            lastMoveDir = Vector3.Slerp(lastMoveDir, dir, rotationSpeed * Time.fixedDeltaTime);
             if (lastMoveDir.magnitude < 0.01f) lastMoveDir = dir;
 
-            Vector3 targetVelXZ = lastMoveDir.normalized * finalSpeed * dir.magnitude;
-            currentVelocityXZ   = Vector3.Lerp(currentVelocityXZ, targetVelXZ,
-                                      (1f / accelerationTime) * Runner.DeltaTime);
+            Vector3 targetVelXZ = lastMoveDir.normalized * finalMoveSpeed * dir.magnitude;
+            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, targetVelXZ,
+                (1f / accelerationTime) * Time.fixedDeltaTime);
 
             Vector3 vel = currentVelocityXZ;
             vel.y = rb.linearVelocity.y;
@@ -97,47 +137,25 @@ public class PlayerMovement : NetworkBehaviour
 
             if (!isMovingBackwards)
             {
+                // Xoay theo hướng đã smooth (lastMoveDir) thay vì dir thô
                 targetRotation = Quaternion.LookRotation(lastMoveDir);
                 rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation,
-                    rotationSpeed * Runner.DeltaTime));
+                    rotationSpeed * Time.fixedDeltaTime));
             }
         }
         else
         {
-            lastMoveDir       = Vector3.zero;
+            lastMoveDir = Vector3.zero;
             currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, Vector3.zero,
-                                    (1f / decelerationTime) * Runner.DeltaTime);
+                (1f / decelerationTime) * Time.fixedDeltaTime);
 
             Vector3 vel = currentVelocityXZ;
             vel.y = rb.linearVelocity.y;
             rb.linearVelocity = vel;
         }
+
     }
 
-    // ── Render: chạy mỗi frame, update animation mượt như offline ────────
-    public override void Render()
-    {
-        if (!_hasAnimData || anim == null) return;
 
-        // Dùng Time.deltaTime thay Runner.DeltaTime để blend đúng theo frame rate
-        anim.SetFloat("Speed", _animSpeed, 0.15f, Time.deltaTime);
-        if (_animSpeed > 0.1f)
-            anim.SetFloat("MotionDirection", _animMotionDir, 0.1f, Time.deltaTime);
-    }
 
-    // ── Jump ─────────────────────────────────────────────────────────────
-
-    private void HandleJump()
-    {
-        if (stats != null && stats.isKnockedOut) return;
-        if (ragdoll != null && ragdoll.IsBeingGrabbed) return;
-        if (groundDetect == null || !groundDetect.isGrounded) return;
-
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-
-        float jumpForce = stats != null ? stats.jumpForce : 10f;
-        var allRbs = GetComponentsInChildren<Rigidbody>();
-        foreach (var r in allRbs)
-            r.AddForce(Vector3.up * jumpForce * (r.mass * 0.8f), ForceMode.Impulse);
-    }
 }

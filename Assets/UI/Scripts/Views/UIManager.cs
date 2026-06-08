@@ -2,192 +2,375 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
-using Fusion;
+using System.Threading.Tasks;
 
+/// <summary>
+/// Quản lý toàn bộ screen navigation trong MainMenuScene.
+///
+/// Luồng đúng:
+///   [Play]   → CharacterSelect (quick) → Lock In → LoadingScene
+///   [Create] → Lobby (host=true)  → CharacterSelect (lobby) → Lock In → StartGame
+///   [Join]   → Lobby (host=false) → CharacterSelect (lobby) → Lock In → StartGame
+/// </summary>
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    [Header("Core UI Document (Global Overlay)")]
-    [SerializeField] private UIDocument globalDocument;
+    // ------------------------------------------------------------------ //
+    //  INSPECTOR FIELDS
+    // ------------------------------------------------------------------ //
 
-    [Header("Global UI Templates")]
+    [Header("Global Overlay (Settings / ESC)")]
+    [SerializeField] private UIDocument      globalDocument;
     [SerializeField] private VisualTreeAsset settingsTemplate;
 
-    [Header("Screen References")]
+    [Header("Main Menu")]
     [SerializeField] private UIDocument mainMenuDocument;
+
+    [Header("Character Select")]
+    [SerializeField] private UIDocument        characterSelectDocument;
     [SerializeField] private CharacterSelectUI characterSelectUI;
-    private UIDocument characterSelectDocument;
 
-    private bool isSettingsOpen = false;
+    [Header("Lobby")]
+    [SerializeField] private UIDocument lobbyDocument;
+    [SerializeField] private LobbyUI    lobbyUI;
 
-    void Awake()
+    // ------------------------------------------------------------------ //
+    //  RUNTIME STATE
+    // ------------------------------------------------------------------ //
+
+    public enum Screen { None, MainMenu, CharacterSelect, Lobby }
+
+    /// <summary>Context khi mở CharacterSelect: từ Quick Play hay từ Lobby.</summary>
+    public enum CharacterSelectContext { QuickPlay, FromLobby }
+
+    public Screen                 CurrentScreen  { get; private set; } = Screen.None;
+    public CharacterSelectContext SelectContext  { get; private set; } = CharacterSelectContext.QuickPlay;
+
+    private bool _isSettingsOpen;
+
+    // ------------------------------------------------------------------ //
+    //  UNITY LIFECYCLE
+    // ------------------------------------------------------------------ //
+
+void Awake()
     {
-        // Setup Singleton
-        if (Instance == null)
+        Debug.Log("[UIManager] Awake() called");
+        // Khong dung DontDestroyOnLoad vi UIManager song trong MainMenuScene
+        // Neu co instance cu (tu scene truoc) thi destroy no, dung instance moi
+        if (Instance != null && Instance != this)
         {
-            Instance = this;
-            // DontDestroyOnLoad(gameObject);
+            Debug.Log("[UIManager] Previous Instance found, destroying it");
+            Destroy(Instance.gameObject);
         }
-        else
-        {
-            // Standard Singleton: Destroy duplicate GameObject cleanly!
-            Destroy(gameObject);
-            return;
-        }
+        Instance = this;
+        Debug.Log("[UIManager] Instance set to this");
 
-        if (globalDocument == null)
-        {
-            globalDocument = GetComponent<UIDocument>();
-        }
+        if (globalDocument == null) globalDocument = GetComponent<UIDocument>();
+        if (globalDocument != null) globalDocument.enabled = false;
+    }
 
-        // Disable global overlay UIDocument by default so it doesn't block gameplay input/clicks!
-        if (globalDocument != null)
-        {
-            globalDocument.enabled = false;
-        }
+    void Start()
+    {
+        Debug.Log("[UIManager] Start() called");
+        SetAllScreensOff();
+        ShowMainMenu();
     }
 
     void Update()
     {
-        // Kiểm tra an toàn: Nếu Camera chính biến mất (đang chuyển cảnh), 
-        // lập tức dừng toàn bộ xử lý UI Toolkit ở dưới để tránh nổ lỗi Null
-        if (Camera.main == null) return;
-
-        // Code cũ xử lý phím ESC của bạn giữ nguyên phía dưới
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
             ToggleSettings();
-        }
     }
 
-    /// <summary>
-    /// Toggles the global Settings UI overlay on top of any active scene
-    /// </summary>
+    // ------------------------------------------------------------------ //
+    //  SETTINGS OVERLAY
+    // ------------------------------------------------------------------ //
+
     public void ToggleSettings()
     {
-        if (globalDocument == null)
-        {
-            globalDocument = GetComponent<UIDocument>();
-        }
-
+        if (globalDocument == null) globalDocument = GetComponent<UIDocument>();
         if (globalDocument == null || settingsTemplate == null)
         {
-            Debug.LogWarning("[UIManager] Settings template or Global UIDocument is not assigned!");
+            Debug.LogWarning("[UIManager] Settings template hoặc Global UIDocument chưa gán!");
             return;
         }
 
-        isSettingsOpen = !isSettingsOpen;
+        _isSettingsOpen = !_isSettingsOpen;
 
-        if (isSettingsOpen)
+        if (_isSettingsOpen)
         {
-            globalDocument.enabled = true; // Enable overlay to display settings
+            globalDocument.enabled = true;
             globalDocument.visualTreeAsset = settingsTemplate;
-
-
-            // Safe Freeze Input: Reset movement values and disable input listeners
-            CharacterInput charInput = FindFirstObjectByType<CharacterInput>();
-            if (charInput != null)
-            {
-                charInput.ClearAllInputs();
-            }
-            PlayerInput playerInput = FindFirstObjectByType<PlayerInput>();
-            if (playerInput != null)
-            {
-                playerInput.enabled = false;
-            }
+            FindFirstObjectByType<CharacterInput>()?.ClearAllInputs();
+            var pi = FindFirstObjectByType<PlayerInput>();
+            if (pi != null) pi.enabled = false;
         }
         else
         {
             globalDocument.visualTreeAsset = null;
-            globalDocument.enabled = false; // Disable overlay completely so it releases input capturing
-
-            // Blur focus to return keyboard control to the active gameplay scene
+            globalDocument.enabled = false;
             globalDocument.rootVisualElement?.panel?.focusController?.focusedElement?.Blur();
+            var pi = FindFirstObjectByType<PlayerInput>();
+            if (pi != null) pi.enabled = true;
+        }
+    }
 
+    // ------------------------------------------------------------------ //
+    //  SCREEN NAVIGATION
+    // ------------------------------------------------------------------ //
 
-            // Thaw Input: Re-enable inputs for gameplay
-            PlayerInput playerInput = FindFirstObjectByType<PlayerInput>();
-            if (playerInput != null)
+    /// <summary>01 - Main Menu</summary>
+    public void ShowMainMenu()
+    {
+        Debug.Log("[UIManager] ShowMainMenu() called");
+        characterSelectUI?.DisablePreviewCamera();
+        SetAllScreensOff();
+        SetScreen(mainMenuDocument, true);
+        
+        // IMPORTANT: Re-bind buttons khi MainMenu hiển thị lại
+        if (mainMenuDocument != null && mainMenuDocument.rootVisualElement != null)
+        {
+            Debug.Log("[UIManager] Re-initializing MainMenuUI");
+            var mainMenuUI = mainMenuDocument.GetComponent<MainMenuUI>();
+            if (mainMenuUI != null)
             {
-                playerInput.enabled = true;
+                mainMenuUI.Initialize(mainMenuDocument.rootVisualElement);
             }
+        }
+        
+        CurrentScreen = Screen.MainMenu;
+        Debug.Log("[UIManager] → MainMenu");
+    }
+
+    /// <summary>
+    /// 02 - Lobby / Room.
+    /// isHost=true  : player vừa nhấn Create → tạo phòng mới.
+    /// isHost=false : player vừa nhấn Join   → tìm phòng có sẵn.
+    /// CharacterSelect được mở từ nút trong Lobby, không phải bước trước Lobby.
+    /// </summary>
+    public void ShowLobby(bool isHost = true)
+    {
+        Debug.Log($"[UIManager] ShowLobby(isHost={isHost}) called");
+        characterSelectUI?.DisablePreviewCamera();
+        SetAllScreensOff();
+        SetScreen(lobbyDocument, true);
+
+        if (lobbyUI == null && lobbyDocument != null)
+            lobbyUI = lobbyDocument.GetComponent<LobbyUI>();
+
+        if (lobbyUI == null)
+        {
+            Debug.LogWarning("[UIManager] LobbyUI chưa gán!");
+            return;
+        }
+
+        // LobbyUI.OnEnable() tự Initialize nếu rootVE đã sẵn sàng
+        // Fallback: delay 1 frame rồi gọi SetHostMode
+        bool capturedIsHost = isHost;
+        StartCoroutine(DelayedLobbySetup(capturedIsHost));
+
+        CurrentScreen = Screen.Lobby;
+        Debug.Log($"[UIManager] → Lobby (host={isHost})");
+    }
+
+    private System.Collections.IEnumerator DelayedLobbySetup(bool isHost)
+    {
+        yield return null;
+        if (lobbyDocument?.rootVisualElement != null && lobbyUI != null)
+        {
+            lobbyUI.Initialize(lobbyDocument.rootVisualElement);
+            lobbyUI.SetHostMode(isHost);
         }
     }
 
     /// <summary>
-    /// Hiển thị màn hình chọn nhân vật (CharacterSelect)
+    /// 03 - Character Select.
+    /// context = QuickPlay  : Play button → Lock In → LoadingScene trực tiếp.
+    /// context = FromLobby  : nút Captain Select trong Lobby → Lock In → quay về Lobby (ready).
     /// </summary>
-    public void ShowCharacterSelect()
+    public void ShowCharacterSelect(CharacterSelectContext context = CharacterSelectContext.QuickPlay)
     {
-        // Lấy UIDocument của CharacterSelectUI nếu chưa có
+        SelectContext = context;
+        SetAllScreensOff();
+
         if (characterSelectDocument == null && characterSelectUI != null)
             characterSelectDocument = characterSelectUI.GetComponent<UIDocument>();
 
-        // Ẩn MainMenu
-        if (mainMenuDocument != null)
-            mainMenuDocument.enabled = false;
+        // Enable trước để rootVisualElement được khởi tạo
+        SetScreen(characterSelectDocument, true);
 
-        // Hiện CharacterSelect
-        if (characterSelectDocument != null)
+        if (characterSelectUI != null && characterSelectDocument?.rootVisualElement != null)
         {
-            characterSelectDocument.enabled = true;
             characterSelectUI.EnablePreviewCamera();
             characterSelectUI.Initialize(characterSelectDocument.rootVisualElement);
         }
+        else if (characterSelectUI != null)
+        {
+            // rootVisualElement chưa sẵn sàng — delay 1 frame
+            characterSelectUI.EnablePreviewCamera();
+            StartCoroutine(InitCharSelectNextFrame());
+        }
         else
         {
-            Debug.LogWarning("[UIManager] CharacterSelectUI UIDocument chưa được gán!");
+            Debug.LogWarning("[UIManager] CharacterSelectUI chưa gán!");
+        }
+
+        CurrentScreen = Screen.CharacterSelect;
+        Debug.Log($"[UIManager] → CharacterSelect (context={context})");
+    }
+
+    private System.Collections.IEnumerator InitCharSelectNextFrame()
+    {
+        yield return null;
+        if (characterSelectDocument?.rootVisualElement != null)
+            characterSelectUI.Initialize(characterSelectDocument.rootVisualElement);
+    }
+
+    /// <summary>
+    /// Gọi từ CharacterSelectUI.OnLockIn().
+    /// - QuickPlay  → thẳng vào LoadingScene
+    /// - FromLobby  → quay về Lobby, đánh dấu player READY
+    /// </summary>
+/// <summary>
+    /// Gọi từ CharacterSelectUI.OnLockIn().
+    /// - QuickPlay  → load LoadingScene trực tiếp
+    /// - FromLobby  → load LoadingScene (đã chọn xong, host đã nhấn START)
+    /// </summary>
+    public void OnCharacterLockIn(int selectedIndex)
+    {
+        PlayerPrefs.SetInt("SelectedCharacterIndex", selectedIndex);
+        PlayerPrefs.Save();
+        StartGameplayDirect();
+    }
+
+    /// <summary>Host nhấn START GAME trong Lobby → load game.</summary>
+/// <summary>
+    /// Lobby: host bấm START GAME → vào CharacterSelect (FromLobby) trước.
+    /// Quick Play: OnCharacterLockIn sẽ gọi StartGameplayDirect() sau khi lock in.
+    /// </summary>
+    public void StartGameplay()
+    {
+        ShowCharacterSelect(CharacterSelectContext.FromLobby);
+    }
+
+/// <summary>Load thẳng LoadingScene — gọi sau khi đã chọn nhân vật xong.</summary>
+   public void StartGameplayDirect()
+{
+    Debug.Log("[UI] StartGameplayDirect called");
+    SetAllScreensOff();
+    StartCoroutine(TransitionToGameplayCoroutine());
+}
+
+private System.Collections.IEnumerator TransitionToGameplayCoroutine()
+{
+    // CRITICAL: Move UIManager outside MainMenuScene FIRST
+    Debug.Log("[UI] Moving UIManager to DontDestroyOnLoad...");
+    gameObject.transform.SetParent(null);
+    DontDestroyOnLoad(gameObject);
+    
+    yield return null;
+
+    // IMPORTANT: Load LoadingScene FIRST (additive)
+    // This ensures there's always at least one scene loaded when we unload MainMenuScene
+    Debug.Log("[UI] Step 1: Loading LoadingScene (additive) FIRST...");
+    AsyncOperation loadingOp = SceneManager.LoadSceneAsync("LoadingScene", LoadSceneMode.Additive);
+    if (loadingOp != null)
+    {
+        yield return loadingOp;
+        Debug.Log("[UI] LoadingScene loaded");
+    }
+    else
+    {
+        Debug.LogError("[UI] Failed to load LoadingScene");
+        yield break;
+    }
+
+    yield return new WaitForSeconds(0.1f);
+
+    // NOW we can safely unload MainMenuScene
+    Debug.Log("[UI] Step 2: Unloading MainMenuScene...");
+    Scene mainMenuScene = SceneManager.GetSceneByName("MainMenuScene");
+    Debug.Log($"[UI] MainMenuScene - IsValid: {mainMenuScene.IsValid()}, isLoaded: {mainMenuScene.isLoaded}");
+    
+    if (mainMenuScene.IsValid() && mainMenuScene.isLoaded)
+    {
+        Debug.Log("[UI] Attempting UnloadSceneAsync...");
+        AsyncOperation unloadOp = SceneManager.UnloadSceneAsync("MainMenuScene", UnloadSceneOptions.UnloadAllEmbeddedSceneObjects);
+        
+        if (unloadOp != null)
+        {
+            Debug.Log("[UI] Waiting for unload to complete...");
+            yield return unloadOp;
+            Debug.Log("[UI] MainMenuScene unload completed");
+            
+            // Verify it's gone
+            Scene check = SceneManager.GetSceneByName("MainMenuScene");
+            Debug.Log($"[UI] After unload - IsValid: {check.IsValid()}, isLoaded: {check.isLoaded}");
+        }
+        else
+        {
+            Debug.LogError("[UI] UnloadSceneAsync returned null - trying force unload");
+            // Force unload by loading another scene (not ideal but works)
+            SceneManager.LoadScene("LoadingScene");
         }
     }
-
-    /// <summary>
-    /// Quay lại màn hình MainMenu từ CharacterSelect
-    /// </summary>
-    public void ShowMainMenu()
+    else
     {
-        // Ẩn CharacterSelect + tắt preview camera
-        if (characterSelectDocument != null)
-            characterSelectDocument.enabled = false;
-        if (characterSelectUI != null)
-            characterSelectUI.DisablePreviewCamera();
-
-        // Hiện lại MainMenu
-        if (mainMenuDocument != null)
-            mainMenuDocument.enabled = true;
+        Debug.Log("[UI] MainMenuScene not found or already unloaded");
     }
 
-    /// <summary>
-    /// Loads the loading scene which will then async-load SampleScene
-    /// </summary>
-    public async void StartGameplay()
+    yield return new WaitForSeconds(0.1f);
+
+    // Step 3: Set LoadingScene as active
+    Debug.Log("[UI] Step 3: Setting LoadingScene as active...");
+    Scene loadingScene = SceneManager.GetSceneByName("LoadingScene");
+    if (loadingScene.IsValid())
     {
-        // 1. Tắt hết các rèm UI cũ
-        if (mainMenuDocument != null) mainMenuDocument.enabled = false;
-        if (characterSelectDocument != null) characterSelectDocument.enabled = false;
-        if (characterSelectUI != null) characterSelectUI.DisablePreviewCamera();
+        SceneManager.SetActiveScene(loadingScene);
+        Debug.Log("[UI] LoadingScene is now the active scene");
+    }
+    else
+    {
+        Debug.LogError("[UI] LoadingScene not valid");
+        yield break;
+    }
 
-        Debug.Log("UI đã dọn sạch. Load LoadingScene để hiển thị màn chờ...");
+    yield return new WaitForSeconds(0.1f);
 
-        // 2. Load LoadingScene additive để hiện màn chờ
-        AsyncOperation loadingOp = SceneManager.LoadSceneAsync("LoadingScene", LoadSceneMode.Additive);
-        while (!loadingOp.isDone) await System.Threading.Tasks.Task.Yield();
-
-        Debug.Log("LoadingScene đã lên, ra lệnh cho GameNetworkManager kết nối Fusion...");
-
-        // 3. Gọi Fusion (sẽ tự load SampleScene, OnSceneLoadDone sẽ unload LoadingScene)
-        await GameNetworkManager.Instance.StartGameMatch(
-            GameMode.Host,
-            "Phong_Ragdoll_Party",
+    // Step 4: Call GameNetworkManager
+    Debug.Log("[UI] Step 4: Starting game via GameNetworkManager...");
+    if (GameNetworkManager.Instance != null)
+    {
+        GameNetworkManager.Instance.StartGameMatchAsync(
+            Fusion.GameMode.AutoHostOrClient,
+            "Phong_Ragdoll_Direct",
             "SampleScene"
         );
+        Debug.Log("[UI] GameNetworkManager.StartGameMatchAsync called");
+    }
+    else
+    {
+        Debug.LogError("[UI] GameNetworkManager.Instance is null!");
+    }
+}
+
+    /// <summary>Quay về MainMenuScene từ gameplay.</summary>
+    public void ReturnToMainMenu() => SceneManager.LoadScene("MainMenuScene");
+
+    // ------------------------------------------------------------------ //
+    //  HELPERS
+    // ------------------------------------------------------------------ //
+
+    private void SetAllScreensOff()
+    {
+        SetScreen(mainMenuDocument,        false);
+        SetScreen(characterSelectDocument, false);
+        SetScreen(lobbyDocument,           false);
     }
 
-    /// <summary>
-    /// Returns to the main menu scene
-    /// </summary>
-    public void ReturnToMainMenu()
+    private static void SetScreen(UIDocument doc, bool active)
     {
-        SceneManager.LoadScene("MainMenuScene");
+        if (doc != null) doc.enabled = active;
     }
 }

@@ -182,9 +182,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   globalDocument: {fileID: 145667718}
   settingsTemplate: {fileID: 0}
-  characterSelectTemplate: {fileID: 9197481963319205126, guid: 5c79324f4e34962448f649d01798d21d, type: 3}
   mainMenuDocument: {fileID: 1194594513}
+  characterSelectDocument: {fileID: 355236490}
   characterSelectUI: {fileID: 355236489}
+  lobbyDocument: {fileID: 1638882300}
+  lobbyUI: {fileID: 1638882299}
 --- !u!114 &145667718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -197,7 +199,7 @@ MonoBehaviour:
   m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: ad37d1a0872d5974097011e31066529d, type: 2}
+  m_PanelSettings: {fileID: 11400000, guid: 6a1c82d696fc341479146484531d617d, type: 2}
   m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 0}
   m_SortingOrder: 0
@@ -281,7 +283,7 @@ MonoBehaviour:
   m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: ad37d1a0872d5974097011e31066529d, type: 2}
+  m_PanelSettings: {fileID: 11400000, guid: 6a1c82d696fc341479146484531d617d, type: 2}
   m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: 5c79324f4e34962448f649d01798d21d, type: 3}
   m_SortingOrder: 0
@@ -334,7 +336,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 405843243}
-  m_Enabled: 0
+  m_Enabled: 1
 --- !u!20 &405843245
 Camera:
   m_ObjectHideFlags: 0
@@ -649,7 +651,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!108 &672401792
 Light:
   m_ObjectHideFlags: 0
@@ -805,7 +807,7 @@ GameObject:
   - component: {fileID: 1194594513}
   - component: {fileID: 1194594512}
   m_Layer: 0
-  m_Name: BattleHUDUI
+  m_Name: MainMenuUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -878,7 +880,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1463677080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -940,6 +942,74 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1638882298
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1638882301}
+  - component: {fileID: 1638882300}
+  - component: {fileID: 1638882299}
+  m_Layer: 0
+  m_Name: LobbyUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1638882299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638882298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e40383f6d9b30c41956812a0660310c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LobbyUI
+--- !u!114 &1638882300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638882298}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 6a1c82d696fc341479146484531d617d, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 8a803a17b3837b3488cddae409ab6351, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!4 &1638882301
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638882298}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1653685441
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -948,9 +1018,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 939887190}
     m_Modifications:
-    - target: {fileID: -1106553246494651020, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
+    - target: {fileID: -7821236833333369847, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: SortKey
-      value: 1691736951
+      value: 287595438
       objectReference: {fileID: 0}
     - target: {fileID: 132024885785349973, guid: 3c059ab967d7bde40b4d2362e23e6ea1, type: 3}
       propertyPath: m_Layer
@@ -1735,3 +1805,4 @@ SceneRoots:
   - {fileID: 1463677082}
   - {fileID: 939887190}
   - {fileID: 355236491}
+  - {fileID: 1638882301}

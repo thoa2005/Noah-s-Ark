@@ -67,6 +67,14 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         StartCoroutine(LoadGameplaySceneAdditive(sceneName));
     }
 
+    /// <summary>
+    /// Alias for StartGameMatch (for compatibility with UIManager)
+    /// </summary>
+    public void StartGameMatchAsync(GameMode mode, string roomName, string sceneName)
+    {
+        _ = StartGameMatch(mode, roomName, sceneName);
+    }
+
     private IEnumerator LoadGameplaySceneAdditive(string sceneName)
     {
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
@@ -123,8 +131,8 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         CharacterSkinManager skinManager = playerObject.GetComponentInChildren<CharacterSkinManager>();
         CharacterSelectionManager selectionManager = FindFirstObjectByType<CharacterSelectionManager>();
 
-        if (selectionManager != null && skinManager != null)
-            selectionManager.ApplySelectedCharacterTo(skinManager);
+        if (selectionManager != null)
+            selectionManager.ApplySelectedCharacterTo(playerObject.gameObject);
         else
             StartCoroutine(ApplySelectedCharacterWhenReady(playerObject));
 
@@ -168,12 +176,11 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         {
             if (playerObject == null) yield break;
 
-            CharacterSkinManager skinManager = playerObject.GetComponentInChildren<CharacterSkinManager>();
             CharacterSelectionManager selectionManager = FindFirstObjectByType<CharacterSelectionManager>();
 
-            if (selectionManager != null && skinManager != null)
+            if (selectionManager != null)
             {
-                selectionManager.ApplySelectedCharacterTo(skinManager);
+                selectionManager.ApplySelectedCharacterTo(playerObject.gameObject);
                 yield break;
             }
             yield return null;

@@ -13,10 +13,10 @@ public class CharacterSelectUI : MonoBehaviour
     [SerializeField] private CharacterData[] characters;
 
     [Header("Preview")]
-    [SerializeField] private GameObject previewPlayerRoot;   // Player GameObject (inactive lúc đầu)
-    [SerializeField] private Transform previewRotateTarget; // Transform để xoay (Player root)
-    [SerializeField] private Camera previewCamera;
-    [SerializeField] private RenderTexture previewRT;
+    [SerializeField] private GameObject       previewPlayerRoot;   // Player GameObject (inactive lúc đầu)
+    [SerializeField] private Transform        previewRotateTarget; // Transform để xoay (Player root)
+    [SerializeField] private Camera           previewCamera;
+    [SerializeField] private RenderTexture    previewRT;
     [SerializeField] private CharacterSkinManager previewSkin;
 
     [Header("Rotation")]
@@ -24,17 +24,17 @@ public class CharacterSelectUI : MonoBehaviour
     [SerializeField] private float autoRotateSpeed = 20f;
 
     // ── UI refs ───────────────────────────────────────────────────────────
-    private VisualElement previewContainer;
-    private Label lblName;
-    private VisualElement dragOverlay;
-    private Button[] cardButtons = new Button[8];
-    private VisualElement[] cardChecks = new VisualElement[8];
+    private VisualElement    previewContainer;
+    private Label            lblName;
+    private VisualElement    dragOverlay;
+    private Button[]         cardButtons = new Button[8];
+    private VisualElement[]  cardChecks  = new VisualElement[8];
 
     // ── State ─────────────────────────────────────────────────────────────
-    private int selectedIndex = -1;
-    private float yaw = 0f;
-    private bool isDragging = false;
-    private float lastX = 0f;
+    private int   selectedIndex = -1;
+    private float yaw           = 0f;
+    private bool  isDragging    = false;
+    private float lastX         = 0f;
     private IVisualElementScheduledItem autoRotateTick;
 
     // ═════════════════════════════════════════════════════════════════════
@@ -45,14 +45,14 @@ public class CharacterSelectUI : MonoBehaviour
     public void Initialize(VisualElement uiRoot)
     {
         previewContainer = uiRoot.Q<VisualElement>("cs-preview-container");
-        lblName = uiRoot.Q<Label>("lbl-character-name");
-        dragOverlay = uiRoot.Q<VisualElement>("cs-drag-overlay");
+        lblName          = uiRoot.Q<Label>("lbl-character-name");
+        dragOverlay      = uiRoot.Q<VisualElement>("cs-drag-overlay");
 
         for (int i = 0; i < 8; i++)
         {
             int idx = i;
             cardButtons[i] = uiRoot.Q<Button>($"char-btn-{i}");
-            cardChecks[i] = uiRoot.Q<VisualElement>($"char-check-{i}");
+            cardChecks[i]  = uiRoot.Q<VisualElement>($"char-check-{i}");
             cardButtons[i]?.RegisterCallback<ClickEvent>(_ => SelectCharacter(idx));
         }
 
@@ -92,13 +92,13 @@ public class CharacterSelectUI : MonoBehaviour
         if (previewRT == null || previewContainer == null) return;
 
         float panelScale = previewContainer.panel?.scaledPixelsPerPoint ?? 1f;
-        int w = Mathf.Max(64, Mathf.RoundToInt(e.newRect.width * panelScale));
+        int w = Mathf.Max(64, Mathf.RoundToInt(e.newRect.width  * panelScale));
         int h = Mathf.Max(64, Mathf.RoundToInt(e.newRect.height * panelScale));
 
         if (previewRT.width == w && previewRT.height == h) return;
 
         previewRT.Release();
-        previewRT.width = w;
+        previewRT.width  = w;
         previewRT.height = h;
         previewRT.Create();
 
@@ -133,13 +133,8 @@ public class CharacterSelectUI : MonoBehaviour
     private void OnLockIn()
     {
         if (selectedIndex < 0) return;
-
-        PlayerPrefs.SetInt("SelectedCharacterIndex", selectedIndex);
-        PlayerPrefs.Save();
-
-        CleanupRuntimeUI();
-
-        UIManager.Instance.StartGameplay();
+        // Delegate hết logic navigation cho UIManager — nó biết context (QuickPlay hay FromLobby)
+        UIManager.Instance.OnCharacterLockIn(selectedIndex);
     }
 
     // ═════════════════════════════════════════════════════════════════════
@@ -155,16 +150,16 @@ public class CharacterSelectUI : MonoBehaviour
         // Freeze physics
         foreach (var rb in previewPlayerRoot.GetComponentsInChildren<Rigidbody>())
         {
-            rb.linearVelocity = Vector3.zero;
+            rb.isKinematic     = true;
+            rb.linearVelocity  = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
         }
 
         // Disable gameplay scripts
         foreach (var mb in previewPlayerRoot.GetComponentsInChildren<MonoBehaviour>())
         {
             if (mb is PlayerMovement or ActiveRagdollController or ActiveRagdollBalancer
-                   or PlayerCombat or CharacterInput or GroundDetect
+                   or PlayerCombat   or CharacterInput          or GroundDetect
                    or CombatDetect)
                 mb.enabled = false;
         }
@@ -186,7 +181,7 @@ public class CharacterSelectUI : MonoBehaviour
     private void OnPointerDown(PointerDownEvent e)
     {
         isDragging = true;
-        lastX = e.localPosition.x;
+        lastX      = e.localPosition.x;
         dragOverlay.CapturePointer(e.pointerId);
         autoRotateTick?.Pause();
     }
@@ -194,7 +189,7 @@ public class CharacterSelectUI : MonoBehaviour
     private void OnPointerMove(PointerMoveEvent e)
     {
         if (!isDragging) return;
-        yaw -= (e.localPosition.x - lastX) * dragSensitivity;
+        yaw  -= (e.localPosition.x - lastX) * dragSensitivity;
         lastX = e.localPosition.x;
         ApplyYaw();
     }
@@ -247,66 +242,10 @@ public class CharacterSelectUI : MonoBehaviour
         {
             bool selected = i == idx;
             if (selected) cardButtons[i]?.AddToClassList("cs-cap-selected");
-            else cardButtons[i]?.RemoveFromClassList("cs-cap-selected");
+            else          cardButtons[i]?.RemoveFromClassList("cs-cap-selected");
 
             if (selected) cardChecks[i]?.RemoveFromClassList("cs-hidden");
-            else cardChecks[i]?.AddToClassList("cs-hidden");
+            else          cardChecks[i]?.AddToClassList("cs-hidden");
         }
-    }
-
-    private void CleanupRuntimeUI()
-    {
-        autoRotateTick?.Pause();
-        isDragging = false;
-
-        if (previewCamera != null)
-            previewCamera.enabled = false;
-
-        if (dragOverlay != null)
-        {
-            dragOverlay.UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            dragOverlay.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-            dragOverlay.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            dragOverlay.UnregisterCallback<PointerLeaveEvent>(OnPointerLeave);
-        }
-
-        if (previewContainer != null)
-        {
-            previewContainer.UnregisterCallback<GeometryChangedEvent>(OnPreviewContainerResized);
-        }
-
-        DestroyPreviewPlayer();
-    }
-
-    private void DestroyPreviewPlayer()
-    {
-        if (previewPlayerRoot == null) return;
-
-        foreach (var playerInput in previewPlayerRoot.GetComponentsInChildren<UnityEngine.InputSystem.PlayerInput>(true))
-        {
-            playerInput.DeactivateInput();
-            playerInput.enabled = false;
-        }
-
-        foreach (var characterInput in previewPlayerRoot.GetComponentsInChildren<CharacterInput>(true))
-        {
-            characterInput.ClearAllInputs();
-            characterInput.enabled = false;
-        }
-
-        Destroy(previewPlayerRoot);
-        previewPlayerRoot = null;
-        previewRotateTarget = null;
-        previewSkin = null;
-    }
-
-    private void OnDisable()
-    {
-        CleanupRuntimeUI();
-    }
-
-    private void OnDestroy()
-    {
-        CleanupRuntimeUI();
     }
 }

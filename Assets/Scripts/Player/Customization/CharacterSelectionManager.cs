@@ -53,29 +53,6 @@ public class CharacterSelectionManager : MonoBehaviour
         }
     }
 
-    public void ApplySelectedCharacterTo(CharacterSkinManager playerSkin)
-    {
-        if (playerSkin == null)
-        {
-            Debug.LogWarning("[CharacterSelectionManager] PlayerSkin null, không apply character.");
-            return;
-        }
-
-        if (characterDataArray == null || characterDataArray.Length == 0)
-        {
-            Debug.LogError("[CharacterSelectionManager] CharacterDataArray trống!");
-            return;
-        }
-
-        int savedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", defaultCharacterIndex);
-        savedIndex = Mathf.Clamp(savedIndex, 0, characterDataArray.Length - 1);
-
-        CharacterData selectedCharacter = characterDataArray[savedIndex];
-        playerSkin.ApplyCharacter(selectedCharacter);
-
-        Debug.Log($"[CharacterSelectionManager] Applied selected {selectedCharacter.CharacterName} to {playerSkin.gameObject.name}");
-    }
-
     /// <summary>
     /// Apply character theo index.
     /// </summary>
@@ -113,5 +90,39 @@ public class CharacterSelectionManager : MonoBehaviour
         }
 
         Debug.LogError($"[CharacterSelectionManager] Character '{characterName}' not found!");
+    }
+
+    /// <summary>
+    /// Apply selected character to a specific player.
+    /// Used by networking code to apply character to spawned player.
+    /// </summary>
+    public void ApplySelectedCharacterTo(GameObject playerObject)
+    {
+        if (playerObject == null)
+        {
+            Debug.LogError("[CharacterSelectionManager] playerObject is null!");
+            return;
+        }
+
+        var skinManager = playerObject.GetComponentInChildren<CharacterSkinManager>();
+        if (skinManager == null)
+        {
+            Debug.LogWarning($"[CharacterSelectionManager] No CharacterSkinManager found on {playerObject.name}");
+            return;
+        }
+
+        if (characterDataArray == null || characterDataArray.Length == 0)
+        {
+            Debug.LogError("[CharacterSelectionManager] CharacterDataArray is empty!");
+            return;
+        }
+
+        int selectedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", defaultCharacterIndex);
+        selectedIndex = Mathf.Clamp(selectedIndex, 0, characterDataArray.Length - 1);
+
+        CharacterData selectedCharacter = characterDataArray[selectedIndex];
+        skinManager.ApplyCharacter(selectedCharacter);
+        
+        Debug.Log($"[CharacterSelectionManager] Applied {selectedCharacter.CharacterName} to {playerObject.name}");
     }
 }

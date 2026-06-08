@@ -1,0 +1,206 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="project://database/Assets/UI/Styles/Global.uss" />
+    <ui:Style src="project://database/Assets/UI/Styles/Lobby.uss" />
+
+    <ui:VisualElement name="lobby-root" class="lobby-root">
+
+        <!-- TOP BAR -->
+        <ui:VisualElement name="lobby-topbar" class="lobby-topbar">
+            <ui:Button name="btn-back" class="lobby-btn-back" text="&#8592; Back" />
+            <ui:Label name="lbl-room-title" text="&#128674; Room: STORMY-4821" class="lobby-room-title" />
+            <ui:Button name="btn-copy-code" class="lobby-btn-copy" text="&#128203; Copy Code" />
+        </ui:VisualElement>
+
+        <!-- PLAYER GRID -->
+        <ui:VisualElement name="lobby-player-grid" class="lobby-player-grid">
+
+            <!-- Slot 0: CaptainCute (HOST, green) -->
+            <ui:VisualElement name="player-slot-0" class="lobby-slot lobby-slot-filled lobby-slot-green">
+                <ui:VisualElement class="lobby-slot-top">
+                    <ui:VisualElement class="lobby-avatar-wrap lobby-avatar-green">
+                        <ui:Label name="player-emoji-0" text="&#129489;" class="lobby-avatar-emoji" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="lobby-slot-namegroup">
+                        <ui:Label name="player-host-tag-0" text="&#128081; HOST" class="lobby-host-tag" />
+                        <ui:Label name="player-name-0" text="CaptainCute" class="lobby-slot-name" />
+                        <ui:Label name="player-level-0" text="&#11088; Lv.24" class="lobby-slot-level" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-slot-bottom">
+                    <ui:Label name="player-ship-0" text="&#128677; Speedboat" class="lobby-slot-ship" />
+                    <ui:Label name="player-ready-0" text="&#10003; READY" class="lobby-slot-ready lobby-ready-yes" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Slot 1: OceanPanda (orange) -->
+            <ui:VisualElement name="player-slot-1" class="lobby-slot lobby-slot-filled lobby-slot-orange">
+                <ui:VisualElement class="lobby-slot-top">
+                    <ui:VisualElement class="lobby-avatar-wrap lobby-avatar-orange">
+                        <ui:Label name="player-emoji-1" text="&#128060;" class="lobby-avatar-emoji" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="lobby-slot-namegroup">
+                        <ui:Label name="player-host-tag-1" text="&#128081; HOST" class="lobby-host-tag" style="display: none;" />
+                        <ui:Label name="player-name-1" text="OceanPanda" class="lobby-slot-name" />
+                        <ui:Label name="player-level-1" text="&#11088; Lv.18" class="lobby-slot-level" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-slot-bottom">
+                    <ui:Label name="player-ship-1" text="&#9973; Sailboat" class="lobby-slot-ship" />
+                    <ui:Label name="player-ready-1" text="&#10003; READY" class="lobby-slot-ready lobby-ready-yes" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Slot 2: WaveRider (purple) -->
+            <ui:VisualElement name="player-slot-2" class="lobby-slot lobby-slot-filled lobby-slot-purple">
+                <ui:VisualElement class="lobby-slot-top">
+                    <ui:VisualElement class="lobby-avatar-wrap lobby-avatar-purple">
+                        <ui:Label name="player-emoji-2" text="&#129418;" class="lobby-avatar-emoji" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="lobby-slot-namegroup">
+                        <ui:Label name="player-host-tag-2" text="&#128081; HOST" class="lobby-host-tag" style="display: none;" />
+                        <ui:Label name="player-name-2" text="WaveRider" class="lobby-slot-name" />
+                        <ui:Label name="player-level-2" text="&#11088; Lv.31" class="lobby-slot-level" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-slot-bottom">
+                    <ui:Label name="player-ship-2" text="&#128739; Warship" class="lobby-slot-ship" />
+                    <ui:Label name="player-ready-2" text="&#10007; NOT READY" class="lobby-slot-ready lobby-ready-no" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Slot 3: Bubbles (cyan) -->
+            <ui:VisualElement name="player-slot-3" class="lobby-slot lobby-slot-filled lobby-slot-cyan">
+                <ui:VisualElement class="lobby-slot-top">
+                    <ui:VisualElement class="lobby-avatar-wrap lobby-avatar-cyan">
+                        <ui:Label name="player-emoji-3" text="&#128056;" class="lobby-avatar-emoji" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="lobby-slot-namegroup">
+                        <ui:Label name="player-host-tag-3" text="&#128081; HOST" class="lobby-host-tag" style="display: none;" />
+                        <ui:Label name="player-name-3" text="Bubbles" class="lobby-slot-name" />
+                        <ui:Label name="player-level-3" text="&#11088; Lv.9" class="lobby-slot-level" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-slot-bottom">
+                    <ui:Label name="player-ship-3" text="&#128163; Submarine" class="lobby-slot-ship" />
+                    <ui:Label name="player-ready-3" text="&#10003; READY" class="lobby-slot-ready lobby-ready-yes" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Slot 4: StormKing (red) -->
+            <ui:VisualElement name="player-slot-4" class="lobby-slot lobby-slot-filled lobby-slot-red">
+                <ui:VisualElement class="lobby-slot-top">
+                    <ui:VisualElement class="lobby-avatar-wrap lobby-avatar-red">
+                        <ui:Label name="player-emoji-4" text="&#129409;" class="lobby-avatar-emoji" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="lobby-slot-namegroup">
+                        <ui:Label name="player-host-tag-4" text="&#128081; HOST" class="lobby-host-tag" style="display: none;" />
+                        <ui:Label name="player-name-4" text="StormKing" class="lobby-slot-name" />
+                        <ui:Label name="player-level-4" text="&#11088; Lv.42" class="lobby-slot-level" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-slot-bottom">
+                    <ui:Label name="player-ship-4" text="&#128677; Speedboat" class="lobby-slot-ship" />
+                    <ui:Label name="player-ready-4" text="&#10003; READY" class="lobby-slot-ready lobby-ready-yes" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Slot 5: SaltyDog (blue) -->
+            <ui:VisualElement name="player-slot-5" class="lobby-slot lobby-slot-filled lobby-slot-blue">
+                <ui:VisualElement class="lobby-slot-top">
+                    <ui:VisualElement class="lobby-avatar-wrap lobby-avatar-blue">
+                        <ui:Label name="player-emoji-5" text="&#128054;" class="lobby-avatar-emoji" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="lobby-slot-namegroup">
+                        <ui:Label name="player-host-tag-5" text="&#128081; HOST" class="lobby-host-tag" style="display: none;" />
+                        <ui:Label name="player-name-5" text="SaltyDog" class="lobby-slot-name" />
+                        <ui:Label name="player-level-5" text="&#11088; Lv.15" class="lobby-slot-level" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-slot-bottom">
+                    <ui:Label name="player-ship-5" text="&#9973; Sailboat" class="lobby-slot-ship" />
+                    <ui:Label name="player-ready-5" text="&#10007; NOT READY" class="lobby-slot-ready lobby-ready-no" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Slot 6: Empty -->
+            <ui:VisualElement name="player-slot-6" class="lobby-slot lobby-slot-empty">
+                <ui:Label text="&#10010;" class="lobby-slot-plus" />
+            </ui:VisualElement>
+
+            <!-- Slot 7: Empty -->
+            <ui:VisualElement name="player-slot-7" class="lobby-slot lobby-slot-empty">
+                <ui:Label text="&#10010;" class="lobby-slot-plus" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- BOTTOM PANEL -->
+        <ui:VisualElement name="lobby-bottom" class="lobby-bottom">
+
+            <!-- Team Size -->
+            <ui:VisualElement name="lobby-team-size" class="lobby-bottom-card lobby-card-team-size">
+                <ui:Label text="&#128101; TEAM SIZE" class="lobby-card-label" />
+                <ui:VisualElement class="lobby-option-row">
+                    <ui:Button name="btn-team-1" class="lobby-option-btn lobby-option-btn-sm lobby-option-selected">
+                        <ui:Label text="&#128100;" class="lobby-option-icon" />
+                        <ui:Label text="1 nguoi" class="lobby-option-text" />
+                    </ui:Button>
+                    <ui:Button name="btn-team-2" class="lobby-option-btn lobby-option-btn-sm">
+                        <ui:Label text="&#128101;" class="lobby-option-icon" />
+                        <ui:Label text="2 nguoi" class="lobby-option-text" />
+                    </ui:Button>
+                    <ui:Button name="btn-team-4" class="lobby-option-btn lobby-option-btn-sm">
+                        <ui:Label text="&#128101;&#128101;" class="lobby-option-icon" />
+                        <ui:Label text="4 nguoi" class="lobby-option-text" />
+                    </ui:Button>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Team Assignment -->
+            <ui:VisualElement name="lobby-team-assign" class="lobby-bottom-card lobby-card-team-assign">
+                <ui:Label text="&#9881; TEAM ASSIGNMENT" class="lobby-card-label" />
+                <ui:VisualElement class="lobby-option-row">
+                    <ui:Button name="btn-assign-random" class="lobby-option-btn lobby-option-btn-md lobby-option-selected">
+                        <ui:Label text="&#127922;" class="lobby-option-icon" />
+                        <ui:Label text="Random" class="lobby-option-text" />
+                    </ui:Button>
+                    <ui:Button name="btn-assign-pick" class="lobby-option-btn lobby-option-btn-md">
+                        <ui:Label text="&#128101;" class="lobby-option-icon" />
+                        <ui:Label text="Pick Team" class="lobby-option-text" />
+                    </ui:Button>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Lobby Chat -->
+            <ui:VisualElement name="lobby-chat" class="lobby-chat">
+                <ui:Label text="&#128172; LOBBY CHAT" class="lobby-card-label" />
+                <ui:ScrollView name="lobby-chat-scroll" class="lobby-chat-scroll"
+                               vertical-scroller-visibility="Auto"
+                               horizontal-scroller-visibility="Hidden">
+                    <ui:VisualElement name="lobby-chat-messages" class="lobby-chat-messages">
+                        <ui:VisualElement class="lobby-chat-msg">
+                            <ui:Label text="OceanPanda:" class="lobby-chat-sender lobby-sender-yellow" />
+                            <ui:Label text="Let's gooo! &#128060;" class="lobby-chat-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="lobby-chat-msg">
+                            <ui:Label text="WaveRider:" class="lobby-chat-sender lobby-sender-purple" />
+                            <ui:Label text="gg ez &#129418;" class="lobby-chat-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="lobby-chat-msg">
+                            <ui:Label text="StormKing:" class="lobby-chat-sender lobby-sender-red" />
+                            <ui:Label text="I will sink all of you &#128520;" class="lobby-chat-text" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:ScrollView>
+            </ui:VisualElement>
+
+            <!-- Start Button -->
+            <ui:VisualElement name="lobby-start-wrap" class="lobby-start-wrap">
+                <ui:Button name="btn-start" class="lobby-btn-start" text="&#9875; START GAME!" />
+                <ui:Label name="lbl-ready-count" text="4/6 players ready" class="lobby-ready-count" />
+                <ui:Label name="lbl-waiting-host" text="Waiting for host..." class="lobby-ready-count" style="display: none;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
