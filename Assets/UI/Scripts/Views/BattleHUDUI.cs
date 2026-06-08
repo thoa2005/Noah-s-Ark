@@ -556,6 +556,14 @@ public class BattleHUDUI : MonoBehaviour
 
                     // Convert screen coordinates to runtime panel coordinates (highly robust for all resolutions & aspect ratios)
                     Vector2 screenPoint = new Vector2(screenPos.x, Screen.height - screenPos.y);
+                    
+                    // NULL CHECK: Ensure panel exists before converting
+                    if (element.panel == null)
+                    {
+                        Debug.LogWarning($"[BattleHUDUI] element.panel is null for {tag.displayName}, skipping position update");
+                        continue;
+                    }
+                    
                     Vector2 localPoint = RuntimePanelUtils.ScreenToPanel(element.panel, screenPoint);
 
                     // Update UI Toolkit element layout positions

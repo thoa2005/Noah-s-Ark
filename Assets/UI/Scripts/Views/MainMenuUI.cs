@@ -179,20 +179,16 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    private void OnPlayClicked()
+private void OnPlayClicked()
     {
-        // Stop animations before switching screen
-        if (animScheduler != null)
-            animScheduler.Pause();
-
-        // Chuyển sang màn hình chọn nhân vật thay vì load scene ngay
-        UIManager.Instance.ShowCharacterSelect();
+        if (animScheduler != null) animScheduler.Pause();
+        UIManager.Instance.ShowLobby(isHost: true);
     }
 
     private void OnCreateClicked()
     {
-
-        // In the future, this can call UIManager.Instance.ShowScreen(ScreenType.LobbyRoom);
+        if (animScheduler != null) animScheduler.Pause();
+        UIManager.Instance.ShowLobby(isHost: true);
     }
 
     private void OnJoinClicked()

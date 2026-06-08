@@ -133,9 +133,8 @@ public class CharacterSelectUI : MonoBehaviour
     private void OnLockIn()
     {
         if (selectedIndex < 0) return;
-        PlayerPrefs.SetInt("SelectedCharacterIndex", selectedIndex);
-        PlayerPrefs.Save();
-        UIManager.Instance.StartGameplay();
+        // Delegate hết logic navigation cho UIManager — nó biết context (QuickPlay hay FromLobby)
+        UIManager.Instance.OnCharacterLockIn(selectedIndex);
     }
 
     // ═════════════════════════════════════════════════════════════════════

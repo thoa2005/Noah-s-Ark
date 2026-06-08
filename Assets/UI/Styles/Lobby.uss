@@ -1,0 +1,318 @@
+/* Lobby.uss — pixel-perfect theo Figma screenshot thực tế */
+
+.lobby-root {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgb(13, 27, 75);
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* ===== TOP BAR ===== */
+.lobby-topbar {
+    height: 70px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.lobby-btn-back {
+    width: 90px;
+    height: 38px;
+    background-color: rgba(255,255,255,0.12);
+    border-width: 1px;
+    border-color: rgba(255,255,255,0.20);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.90);
+    -unity-font-style: bold;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    cursor: link;
+}
+.lobby-btn-back:hover { background-color: rgba(255,255,255,0.20); }
+
+.lobby-room-title {
+    flex-grow: 1;
+    color: rgb(255,255,255);
+    font-size: 30px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.lobby-btn-copy {
+    width: 130px;
+    height: 38px;
+    background-color: rgb(250,191,26);
+    border-width: 0;
+    border-radius: 10px;
+    color: rgb(255,255,255);
+    -unity-font-style: bold;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    cursor: link;
+}
+.lobby-btn-copy:hover { opacity: 0.88; }
+
+/* ===== PLAYER GRID ===== */
+.lobby-player-grid {
+    flex-grow: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    padding-top: 16px;
+    padding-left: 48px;
+    padding-right: 48px;
+    padding-bottom: 0;
+}
+
+/* Figma slot: ~280x160px, margin ~10px */
+.lobby-slot {
+    width: 268px;
+    height: 148px;
+    border-radius: 16px;
+    flex-direction: column;
+    padding: 14px 16px;
+    margin: 6px;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.lobby-slot-filled { border-width: 2px; }
+.lobby-slot-green  { background-color: rgba(20,80,50,0.85);   border-color: rgb(46,180,100); }
+.lobby-slot-orange { background-color: rgba(80,55,15,0.85);   border-color: rgb(200,140,30); }
+.lobby-slot-purple { background-color: rgba(45,20,90,0.85);   border-color: rgb(120,60,200); }
+.lobby-slot-cyan   { background-color: rgba(15,55,90,0.85);   border-color: rgb(30,140,200); }
+.lobby-slot-red    { background-color: rgba(90,20,50,0.85);   border-color: rgb(200,50,100); }
+.lobby-slot-blue   { background-color: rgba(20,50,100,0.85);  border-color: rgb(50,130,220); }
+
+.lobby-slot-empty {
+    background-color: rgba(255,255,255,0.04);
+    border-width: 2px;
+    border-color: rgba(255,255,255,0.15);
+    justify-content: center;
+    align-items: center;
+    cursor: link;
+}
+.lobby-slot-empty:hover { background-color: rgba(255,255,255,0.08); }
+.lobby-slot-plus {
+    font-size: 32px;
+    color: rgba(180,140,60,0.60);
+    -unity-text-align: middle-center;
+}
+
+/* Top row trong slot: avatar + (tên + level) */
+.lobby-slot-top {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.lobby-avatar-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.lobby-avatar-green  { background-color: rgb(34,160,85); }
+.lobby-avatar-orange { background-color: rgb(200,140,30); }
+.lobby-avatar-purple { background-color: rgb(100,50,180); }
+.lobby-avatar-cyan   { background-color: rgb(25,140,200); }
+.lobby-avatar-red    { background-color: rgb(200,50,100); }
+.lobby-avatar-blue   { background-color: rgb(40,110,200); }
+.lobby-avatar-emoji {
+    font-size: 32px;
+    -unity-text-align: middle-center;
+}
+
+/* Name + level column (cạnh avatar) */
+.lobby-slot-namegroup {
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+}
+.lobby-host-tag {
+    color: rgb(255,215,0);
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+.lobby-slot-name {
+    color: rgb(255,255,255);
+    font-size: 20px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+.lobby-slot-level {
+    color: rgb(255,215,0);
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+/* Bottom row: ship (trái) + ready badge (kéo sang trái) */
+.lobby-slot-bottom {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+.lobby-slot-ship {
+    color: rgba(180,230,255,0.80);
+    font-size: 13px;
+}
+.lobby-slot-ready {
+    height: 28px;
+    border-radius: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+    -unity-text-align: middle-center;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: rgb(255,255,255);
+    border-width: 0;
+}
+.lobby-ready-yes { background-color: rgb(46,180,100); }
+.lobby-ready-no  { background-color: rgb(220,80,30); }
+
+/* ===== BOTTOM PANEL ===== */
+.lobby-bottom {
+    height: 140px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(5,15,45,0.80);
+    padding-top: 14px;
+    padding-bottom: 14px;
+    padding-left: 48px;
+    padding-right: 48px;
+}
+
+.lobby-bottom-card {
+    background-color: rgba(255,255,255,0.07);
+    border-width: 1px;
+    border-color: rgba(255,255,255,0.15);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-right: 12px;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+    height: 112px;
+}
+.lobby-card-team-size   { width: 200px; }
+.lobby-card-team-assign { width: 200px; }
+
+.lobby-card-label {
+    color: rgba(178,229,255,0.70);
+    font-size: 12px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.lobby-option-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.lobby-option-btn {
+    height: 60px;
+    border-radius: 10px;
+    background-color: rgba(255,255,255,0.07);
+    border-width: 1px;
+    border-color: rgba(255,255,255,0.15);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-right: 6px;
+    padding: 0;
+    cursor: link;
+}
+.lobby-option-btn-sm { width: 58px; }
+.lobby-option-btn-md { width: 82px; }
+.lobby-option-btn:hover { background-color: rgba(255,255,255,0.14); }
+
+.lobby-option-selected {
+    background-color: rgba(46,180,100,0.20);
+    border-color: rgb(46,180,100);
+}
+
+.lobby-option-icon {
+    font-size: 18px;
+    -unity-text-align: middle-center;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 2px;
+}
+.lobby-option-text {
+    font-size: 10px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgba(255,255,255,0.45);
+}
+.lobby-option-selected .lobby-option-icon { color: rgb(46,180,100); }
+.lobby-option-selected .lobby-option-text { color: rgb(46,180,100); }
+
+/* Chat */
+.lobby-chat {
+    flex-grow: 1;
+    height: 112px;
+    background-color: rgba(255,255,255,0.06);
+    border-width: 1px;
+    border-color: rgba(255,255,255,0.14);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-right: 12px;
+    flex-direction: column;
+    min-width: 0;
+}
+.lobby-chat-scroll { flex-grow: 1; min-height: 0; }
+.lobby-chat-messages { flex-direction: column; }
+.lobby-chat-msg {
+    flex-direction: row;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+.lobby-chat-sender {
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-right: 4px;
+}
+.lobby-chat-text {
+    font-size: 13px;
+    color: rgba(255,255,255,0.80);
+}
+.lobby-sender-yellow { color: rgb(255,210,60); }
+.lobby-sender-purple { color: rgb(180,110,255); }
+.lobby-sender-red    { color: rgb(255,110,110); }
+
+/* Start */
+.lobby-start-wrap {
+    width: 300px;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.lobby-btn-start {
+    width: 280px;
+    height: 64px;
+    border-radius: 18px;
+    border-width: 0;
+    background-color: rgb(46,200,110);
+    color: rgb(255,255,255);
+    font-size: 26px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    cursor: link;
+}
+.lobby-btn-start:hover { background-color: rgb(36,180,95); }
+.lobby-btn-start:active { scale: 0.97 0.97; }
+.lobby-ready-count {
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-top: 8px;
+}
