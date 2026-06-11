@@ -507,11 +507,10 @@ public class BattleHUDUI : MonoBehaviour
         tag.offset      = new Vector3(0, 2.0f, 0);
     }
 
-    private void UpdateNameTags()
+private void UpdateNameTags()
     {
         if (nameTagsContainer == null) return;
 
-        // Find main camera or fallback to any camera in the scene (highly robust)
         Camera mainCam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
         if (mainCam == null) return;
 
@@ -524,44 +523,59 @@ public class BattleHUDUI : MonoBehaviour
                 continue;
             }
 
-            if (nameTagElements.TryGetValue(tag, out VisualElement element))
+            if (!nameTagElements.TryGetValue(tag, out VisualElement element)) continue;
+
+            if (!tag.gameObject.activeInHierarchy || !tag.enabled)
             {
-                // Check if target gameobject is disabled/inactive
-                if (!tag.gameObject.activeInHierarchy || !tag.enabled)
+                element.style.display = DisplayStyle.None;
+                continue;
+            }
+
+            Vector3 worldPos = tag.transform.position + tag.offset;
+
+            // Bo qua neu player chua spawn xong (dang o vi tri zero)
+            if (worldPos == tag.offset)
+            {
+                element.style.display = DisplayStyle.None;
+                continue;
+            }
+
+            // Kiem tra worldPos co nam trong frustum khong truoc khi goi WorldToScreenPoint
+            Vector3 viewportPos = mainCam.WorldToViewportPoint(worldPos);
+            bool inFrustum = viewportPos.z > 0f
+                          && viewportPos.x >= -0.1f && viewportPos.x <= 1.1f
+                          && viewportPos.y >= -0.1f && viewportPos.y <= 1.1f;
+
+            if (!inFrustum)
+            {
+                element.style.display = DisplayStyle.None;
+                continue;
+            }
+
+            Vector3 screenPos = mainCam.WorldToScreenPoint(worldPos);
+
+            if (screenPos.z < 0)
+            {
+                element.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                element.style.display = DisplayStyle.Flex;
+
+                Label label = element.Q<Label>(className: "name-tag-text");
+                if (label != null)
                 {
-                    element.style.display = DisplayStyle.None;
-                    continue;
+                    label.text = tag.displayName;
+                    label.style.color = tag.nameColor;
                 }
 
-                // Project 3D coordinates above the character's head
-                Vector3 worldPos = tag.transform.position + tag.offset;
-                Vector3 screenPos = mainCam.WorldToScreenPoint(worldPos);
+                if (element.panel == null) continue;
 
-                // Hide tag if it is behind the camera plane
-                if (screenPos.z < 0)
-                {
-                    element.style.display = DisplayStyle.None;
-                }
-                else
-                {
-                    element.style.display = DisplayStyle.Flex;
+                Vector2 screenPoint = new Vector2(screenPos.x, Screen.height - screenPos.y);
+                Vector2 localPoint = RuntimePanelUtils.ScreenToPanel(element.panel, screenPoint);
 
-                    // Dynamically synchronize display name and color (in case they were set at runtime)
-                    Label label = element.Q<Label>(className: "name-tag-text");
-                    if (label != null)
-                    {
-                        label.text = tag.displayName;
-                        label.style.color = tag.nameColor;
-                    }
-
-                    // Convert screen coordinates to runtime panel coordinates (highly robust for all resolutions & aspect ratios)
-                    Vector2 screenPoint = new Vector2(screenPos.x, Screen.height - screenPos.y);
-                    Vector2 localPoint = RuntimePanelUtils.ScreenToPanel(element.panel, screenPoint);
-
-                    // Update UI Toolkit element layout positions
-                    element.style.left = localPoint.x;
-                    element.style.top = localPoint.y;
-                }
+                element.style.left = localPoint.x;
+                element.style.top  = localPoint.y;
             }
         }
     }

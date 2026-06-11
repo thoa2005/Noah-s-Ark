@@ -156,7 +156,7 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Loads the loading scene which will then async-load SampleScene
+    /// Bắt đầu game thông qua Photon Fusion
     /// </summary>
     public void StartGameplay()
     {

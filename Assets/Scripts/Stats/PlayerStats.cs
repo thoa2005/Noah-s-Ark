@@ -1,22 +1,23 @@
 using UnityEngine;
 using System;
+using Fusion;
 
-public class PlayerStats : MonoBehaviour
+public class PlayerStats : NetworkBehaviour
 {
     [Header("Health/Stability")]
-    public float currentStability = 100f;
+    [Networked] public float currentStability { get; set; }
     public float maxStability = 100f;
     public float recoveryTime = 3f;
-    public bool isKnockedOut = false;
-    public int lives = 3;
+    [Networked] public NetworkBool isKnockedOut { get; set; }
+    [Networked] public int lives { get; set; }
 
 
     [Header("Stamina")]
-    public float currentStamina = 200f;
+    [Networked] public float currentStamina { get; set; }
     public float maxStamina = 200f;
     public float staminaRegenRate = 15f;
     public float staminaRecoveryDelay = 1.0f;
-    private float staminaDelayTimer;
+    [Networked] private float staminaDelayTimer { get; set; }
 
     [Header("Movement Stats")]
     public float moveSpeed = 8f;
@@ -44,14 +45,20 @@ public class PlayerStats : MonoBehaviour
     public event Action OnKnockout;
     public event Action OnWakeUp;
 
-    void Start()
+    public override void Spawned()
     {
-        currentStability = maxStability;
-        currentStamina = maxStamina;
+        if (HasStateAuthority)
+        {
+            currentStability = maxStability;
+            currentStamina = maxStamina;
+            lives = 3;
+            isKnockedOut = false;
+        }
     }
 
-    void Update()
+    public override void FixedUpdateNetwork()
     {
+        if (!HasStateAuthority) return;
         RegenStamina();
     }
 
@@ -61,16 +68,17 @@ public class PlayerStats : MonoBehaviour
 
         if (staminaDelayTimer > 0)
         {
-            staminaDelayTimer -= Time.deltaTime;
+            staminaDelayTimer -= Runner.DeltaTime;
         }
         else if (currentStamina < maxStamina)
         {
-            currentStamina += staminaRegenRate * Time.deltaTime;
+            currentStamina += staminaRegenRate * Runner.DeltaTime;
             currentStamina = Mathf.Min(currentStamina, maxStamina);
         }
     }
 
-    public void TakeDamage(float amount)
+    [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+    public void Rpc_TakeDamage(float amount)
     {
         if (isKnockedOut) return;
 
@@ -97,6 +105,7 @@ public class PlayerStats : MonoBehaviour
 
     public void ResetAfterWakeUp()
     {
+        if (!HasStateAuthority) return;
         currentStability = maxStability;
         isKnockedOut = false;
         OnWakeUp?.Invoke();

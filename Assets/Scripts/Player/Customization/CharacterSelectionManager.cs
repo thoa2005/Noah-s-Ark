@@ -6,20 +6,31 @@ using UnityEngine;
 /// </summary>
 public class CharacterSelectionManager : MonoBehaviour
 {
+    public static CharacterSelectionManager Instance;
+
     [Header("Character Data")]
-    [SerializeField] private CharacterData[] characterDataArray;
+    public CharacterData[] characterDataArray;
 
     [Header("Default Character")]
-    [SerializeField] private int defaultCharacterIndex = 0;
+    public int defaultCharacterIndex = 0;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
-        // Đọc character đã chọn từ PlayerPrefs
-        int savedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", defaultCharacterIndex);
-        savedIndex = Mathf.Clamp(savedIndex, 0, characterDataArray != null ? characterDataArray.Length - 1 : 0);
-        defaultCharacterIndex = savedIndex;
+        // Khi chơi online, mạng sẽ tự quyết định mesh cho từng người.
+        // Chỉ apply lúc Start nếu đang test offline (không có mạng).
+        if (FindObjectsByType<Fusion.NetworkRunner>(FindObjectsSortMode.None).Length == 0)
+        {
+            int savedIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", defaultCharacterIndex);
+            savedIndex = Mathf.Clamp(savedIndex, 0, characterDataArray != null ? characterDataArray.Length - 1 : 0);
+            defaultCharacterIndex = savedIndex;
 
-        ApplyCharacterToAllPlayers();
+            ApplyCharacterToAllPlayers();
+        }
     }
 
     /// <summary>

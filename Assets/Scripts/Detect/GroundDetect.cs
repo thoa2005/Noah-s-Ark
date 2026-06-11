@@ -1,6 +1,7 @@
 using UnityEngine;
+using Fusion;
 
-public class GroundDetect : MonoBehaviour
+public class GroundDetect : NetworkBehaviour
 {
     [Header("Ground Sensor")]
     public float groundCheckDistance = 1.3f;
@@ -12,7 +13,7 @@ public class GroundDetect : MonoBehaviour
 
     public bool isGrounded { get; private set; }
 
-    void FixedUpdate()
+    public override void FixedUpdateNetwork()
     {
         RaycastHit hit;
         bool leftG = leftFoot != null && Physics.SphereCast(leftFoot.position, groundCheckRadius, Vector3.down, out hit, groundCheckRadius * 1.5f, groundLayer);

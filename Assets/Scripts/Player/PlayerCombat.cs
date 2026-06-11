@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Fusion;
 
-public class PlayerCombat : MonoBehaviour
+public class PlayerCombat : NetworkBehaviour
 {
     [Header("Detectors")]
     public CombatDetect combatDetect;
@@ -27,12 +28,31 @@ public class PlayerCombat : MonoBehaviour
 
     Dictionary<GameObject, float> lastHitTime = new Dictionary<GameObject, float>();
 
-    float punchTimer;
-    float grabTimer;
-    Rigidbody grabbedRb;
-    float chargeTimer;
-    bool isGrabbing;
-    private ActiveRagdollController grabbedTargetController;
+    [Networked] public float punchTimer { get; set; }
+    [Networked] public float grabTimer { get; set; }
+    [Networked] public float chargeTimer { get; set; }
+    [Networked] public NetworkBool isGrabbing { get; set; }
+    [Networked] public NetworkId grabbedObjectId { get; set; }
+
+    Rigidbody grabbedRb
+    {
+        get
+        {
+            if (Runner != null && grabbedObjectId.IsValid && Runner.TryFindObject(grabbedObjectId, out NetworkObject netObj))
+                return netObj.GetComponentInChildren<Rigidbody>();
+            return null;
+        }
+    }
+
+    ActiveRagdollController grabbedTargetController
+    {
+        get
+        {
+            if (Runner != null && grabbedObjectId.IsValid && Runner.TryFindObject(grabbedObjectId, out NetworkObject netObj))
+                return netObj.GetComponentInChildren<ActiveRagdollController>();
+            return null;
+        }
+    }
 
     void Start()
     {
@@ -75,48 +95,49 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    void Update()
+    public override void FixedUpdateNetwork()
     {
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
         if (stats != null && stats.isKnockedOut)
         {
             if (isGrabbing) ReleaseGrab();
-            if (_input != null) _input.isGrabPressed = false; // Reset kẹt phím khi xỉu
             return; // Ngất rồi thì không cho làm gì nữa
         }
 
-        punchTimer -= Time.deltaTime;
-        grabTimer -= Time.deltaTime;
+        punchTimer -= Runner.DeltaTime;
+        grabTimer -= Runner.DeltaTime;
 
-        // Xử lý Đấm
-        if (_input.isPunching && punchTimer <= 0)
+        if (GetInput(out NetworkInputData input))
         {
-            PerformPunch();
-            _input.UsePunchRequest();
-        }
+            // Xử lý Đấm
+            if (input.isPunching && punchTimer <= 0)
+            {
+                PerformPunch();
+            }
 
-        // Xử lý Cầm/Ném
-        if (!isGrabbing)
-        {
-            // Thêm Grab Cooldown: Chỉ cho phép tìm đồ vật 5 lần/giây để tránh spam lag
-            if (_input.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
+            // Xử lý Cầm/Ném
+            if (!isGrabbing)
             {
-                PerformGrab();
-                grabTimer = 0.2f; // Nghỉ 0.2s mới cho tìm tiếp
+                // Thêm Grab Cooldown: Chỉ cho phép tìm đồ vật 5 lần/giây để tránh spam lag
+                if (input.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
+                {
+                    PerformGrab();
+                    grabTimer = 0.2f; // Nghỉ 0.2s mới cho tìm tiếp
+                }
             }
-        }
-        else
-        {
-            if (grabbedRb == null) ReleaseGrab();
-            // Nếu vẫn đang giữ nút Grab thì sạc lực ném
-            else if (_input.isGrabPressed)
-            {
-                chargeTimer = Mathf.Clamp(chargeTimer + Time.deltaTime, 0f, stats.maxChargeTime);
-            }
-            // Nếu nhả nút Grab ra thì thực hiện ném
             else
             {
-                PerformThrow();
+                if (grabbedRb == null) ReleaseGrab();
+                // Nếu vẫn đang giữ nút Grab thì sạc lực ném
+                else if (input.isGrabPressed)
+                {
+                    chargeTimer = Mathf.Clamp(chargeTimer + Runner.DeltaTime, 0f, stats.maxChargeTime);
+                }
+                // Nếu nhả nút Grab ra thì thực hiện ném
+                else
+                {
+                    PerformThrow();
+                }
             }
         }
 
@@ -131,17 +152,11 @@ public class PlayerCombat : MonoBehaviour
             {
                 ReleaseGrab();
             }
-            else if (!stats.UseStamina(stats.grabStaminaDrainRate * Time.deltaTime))
+            else if (!stats.UseStamina(stats.grabStaminaDrainRate * Runner.DeltaTime))
             {
                 ReleaseGrab(); // Hết thể lực tự buông
             }
         }
-    }
-
-    void FixedUpdate()
-    {
-        // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm đánh đấm
-        if (stats != null && stats.isKnockedOut) return;
 
         if (anim != null && anim.GetCurrentAnimatorStateInfo(0).IsName("Punch"))
         {
@@ -179,11 +194,15 @@ public class PlayerCombat : MonoBehaviour
     //  ACTIONS
     // ------------------------------------------------------------------ //
 
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_BroadcastPunch()
+    {
+        if (anim != null) anim.SetTrigger("Punch");
+    }
+
     public void PerformPunch()
     {
         if (stats != null && !stats.UseStamina(stats.punchStaminaCost)) return;
-
-        if (anim != null) anim.SetTrigger("Punch");
 
         punchTimer = stats.punchCooldown;
 
@@ -191,6 +210,12 @@ public class PlayerCombat : MonoBehaviour
         if (_input != null) _input.isGrabPressed = false;
 
         ReleaseGrab();
+
+        // Chạy cục bộ cho người bấm để thấy ngay lập tức
+        if (Object.HasInputAuthority && anim != null) anim.SetTrigger("Punch");
+
+        // Host phát RPC báo cho tất cả Proxy
+        if (Object.HasStateAuthority) Rpc_BroadcastPunch();
     }
 
     public void PerformGrab()
@@ -218,8 +243,13 @@ public class PlayerCombat : MonoBehaviour
         // Nếu tìm được vật chung thì cầm
         if (commonTarget != null)
         {
+            var netObj = commonTarget.GetComponentInParent<NetworkObject>();
+            if (netObj != null)
+            {
+                grabbedObjectId = netObj.Id;
+            }
+
             // Tìm Controller của nạn nhân để báo hiệu
-            grabbedTargetController = commonTarget.GetComponentInParent<ActiveRagdollController>();
             if (grabbedTargetController != null)
             {
                 // KHÔNG CHO TÓM NẾU MÌNH ĐANG BỊ TÓM (Chống đệ quy vật lý)
@@ -234,7 +264,6 @@ public class PlayerCombat : MonoBehaviour
             if (spineAnchorRb != null)
                 AttachBody(spineAnchorRb, commonTarget);
             isGrabbing = true;
-            grabbedRb = commonTarget;
             chargeTimer = 0f;
             if (anim != null) anim.SetBool("IsGrabbing", true);
         }
@@ -246,7 +275,6 @@ public class PlayerCombat : MonoBehaviour
         if (grabbedTargetController != null && grabbedTargetController.gameObject != null)
         {
             grabbedTargetController.SetGrabbedState(false, this.gameObject);
-            grabbedTargetController = null;
         }
 
         // Chặt đứt tất cả lò xo nam châm ở 2 tay khi buông chuột
@@ -256,10 +284,14 @@ public class PlayerCombat : MonoBehaviour
         }
         activeGrabJoints.Clear();
 
-        isGrabbing = false;
+        if (Object != null && Object.IsValid)
+        {
+            isGrabbing = false;
+            chargeTimer = 0f;
+            grabbedObjectId = default;
+        }
+
         if (_input != null) _input.isGrabPressed = false; // QUAN TRỌNG: Xóa lệnh kẹt phím khi chủ động nhả
-        chargeTimer = 0f;
-        grabbedRb = null;
 
         // Tắt Anim, thả tay xuống
         if (anim != null) anim.SetBool("IsGrabbing", false);
@@ -334,7 +366,7 @@ public class PlayerCombat : MonoBehaviour
         activeGrabJoints.Add(joint);
     }
 
-    public bool IsCharging() { return isGrabbing && grabbedRb != null; }
+    public bool IsCharging() { return Object != null && Object.IsValid && isGrabbing && grabbedRb != null; }
     public float GetChargePct() { return stats != null ? chargeTimer / stats.maxChargeTime : 0; }
 
     /// <summary>
@@ -345,9 +377,12 @@ public class PlayerCombat : MonoBehaviour
     {
         lastHitTime.Clear();
         ReleaseGrab();
-        punchTimer = 0f;
-        grabTimer  = 0f;
-        chargeTimer = 0f;
+        if (Object != null && Object.IsValid)
+        {
+            punchTimer = 0f;
+            grabTimer = 0f;
+            chargeTimer = 0f;
+        }
     }
 
     public void PerformThrow()

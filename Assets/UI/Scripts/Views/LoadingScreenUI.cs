@@ -3,6 +3,7 @@ using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Loading Screen — hiện trong lúc load SampleScene ở background.
@@ -112,44 +113,48 @@ public class LoadingScreenUI : MonoBehaviour
     {
         float elapsed = 0f;
 
-        // Bắt đầu load scene ở background
-        AsyncOperation op = SceneManager.LoadSceneAsync(targetScene);
-        op.allowSceneActivation = false; // Chưa chuyển scene ngay
-
-        while (true)
+        while (elapsed < minLoadTime)
         {
             elapsed += Time.deltaTime;
-
-            // Progress thực từ Unity (0 → 0.9)
-            float loadProgress = Mathf.Clamp01(op.progress / 0.9f);
-
-            // Progress hiển thị = max(loadProgress, elapsed/minLoadTime)
-            // Đảm bảo thanh không chạy nhanh hơn thời gian tối thiểu
-            float displayProgress = Mathf.Max(loadProgress, elapsed / minLoadTime);
-            displayProgress = Mathf.Clamp01(displayProgress);
-
+            float displayProgress = Mathf.Clamp01(elapsed / minLoadTime);
             UpdateProgressBar(displayProgress);
-
-            // Điều kiện chuyển scene: load xong VÀ đã đủ thời gian tối thiểu
-            bool loadDone = op.progress >= 0.9f;
-            bool timeDone = elapsed >= minLoadTime;
-
-            if (loadDone && timeDone)
-            {
-                // Hiện 100% rồi chờ 0.5s cho người chơi thấy
-                UpdateProgressBar(1f);
-                yield return new WaitForSeconds(0.5f);
-
-                // Dừng animation
-                animScheduler?.Pause();
-
-                // Chuyển sang SampleScene
-                op.allowSceneActivation = true;
-                yield break;
-            }
-
             yield return null;
         }
+
+        UpdateProgressBar(1f);
+        yield return new WaitForSeconds(0.5f);
+        animScheduler?.Pause();
+
+        if (NetworkRunnerHandler.Instance != null)
+        {
+            int sampleIndex = SceneUtility.GetBuildIndexByScenePath("Assets/Scenes/SampleScene.unity");
+            if (sampleIndex == -1) sampleIndex = 3;
+
+            StartFusionGame(sampleIndex);
+        }
+        else
+        {
+            SceneManager.LoadScene(targetScene);
+        }
+    }
+
+    private async void StartFusionGame(int sampleIndex)
+    {
+        await NetworkRunnerHandler.Instance.StartGame(
+            Fusion.GameMode.AutoHostOrClient,
+            "TestRoom",
+            Fusion.Sockets.NetAddress.Any(),
+            Fusion.SceneRef.FromIndex(sampleIndex),
+            null
+        );
+
+        // Khi StartGame hoàn thành, Fusion đã load xong SampleScene.
+        // Tắt giao diện UI của LoadingScene đi để không bị đè lên SampleScene
+        var doc = GetComponent<UIDocument>();
+        if (doc != null) doc.rootVisualElement.style.display = DisplayStyle.None;
+
+        // Xóa hoàn toàn LoadingScene khỏi bộ nhớ
+        SceneManager.UnloadSceneAsync(gameObject.scene);
     }
 
     void UpdateProgressBar(float t)

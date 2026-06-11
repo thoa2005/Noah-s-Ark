@@ -29,7 +29,7 @@ public class ActiveRagdollBone : MonoBehaviour
         externalOffset = Quaternion.identity;
     }
 
-    public void SyncRotation()
+    public void SyncRotation(float deltaTime)
     {
         if (targetBone == null || joint == null) return;
 
@@ -37,7 +37,7 @@ public class ActiveRagdollBone : MonoBehaviour
         Quaternion finalTarget = targetBone.localRotation * externalOffset;
 
         // Làm mượt đích đến: cho phép xương ảo "trôi" theo Animation thay vì đứng khựng
-        currentTargetRotation = Quaternion.Slerp(currentTargetRotation, finalTarget, Time.deltaTime * lerpSpeed);
+        currentTargetRotation = Quaternion.Slerp(currentTargetRotation, finalTarget, deltaTime * lerpSpeed);
 
         // Tính toán targetRotation cho ConfigurableJoint dựa trên giá trị đã làm mượt
         joint.targetRotation = Quaternion.Inverse(currentTargetRotation) * initialLocalRotation;

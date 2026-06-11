@@ -11664,6 +11664,10 @@ GameObject:
   - component: {fileID: 193116604987329666}
   - component: {fileID: 4051467310743205094}
   - component: {fileID: 4200195292331592929}
+  - component: {fileID: -6110181601721677980}
+  - component: {fileID: 8181994321888741736}
+  - component: {fileID: 4184702488389018231}
+  - component: {fileID: -6729306355129119373}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -11868,6 +11872,9 @@ MonoBehaviour:
   standUpForce: 500
   targetHeight: 0.9
   boneLerpSpeed: 45
+  _IsPunching:
+    _value: 0
+  _MoveInput: {x: 0, y: 0}
   leanAmount: 7.5
   leanSpeed: 5
   stats: {fileID: 4051467310743205094}
@@ -11900,6 +11907,13 @@ MonoBehaviour:
   leftPhysicsHand: {fileID: 6499800433952915925}
   rightPhysicsHand: {fileID: 6693889530656650351}
   anim: {fileID: 948129903056447725}
+  _punchTimer: 0
+  _grabTimer: 0
+  _chargeTimer: 0
+  _isGrabbing:
+    _value: 0
+  _grabbedObjectId:
+    Raw: 0
 --- !u!114 &2399636266419173693
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11947,16 +11961,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed1f71c5b22a70c409a644f6a365ab8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
-  currentStability: 200
+  _currentStability: 0
   maxStability: 200
   recoveryTime: 2
-  isKnockedOut: 0
-  lives: 3
-  currentStamina: 100
+  _isKnockedOut:
+    _value: 0
+  _lives: 0
+  _currentStamina: 0
   maxStamina: 100
   staminaRegenRate: 15
   staminaRecoveryDelay: 1
-  moveSpeed: 6
+  moveSpeed: 5.56
   jumpForce: 5
   punchForce: 1.5
   pushForce: 50
@@ -11982,6 +11997,86 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05f9fb6112bae424883fa9b14a41985e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSkinManager
+--- !u!114 &-6110181601721677980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkObject
+  SortKey: 2269150296
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 1898332633073650566}
+  - {fileID: 3995493702570494473}
+  - {fileID: 9048197892152111401}
+  - {fileID: 193116604987329666}
+  - {fileID: 4051467310743205094}
+  - {fileID: 8181994321888741736}
+  - {fileID: 4184702488389018231}
+  - {fileID: -6729306355129119373}
+  ForceRemoteRenderTimeframe: 0
+--- !u!114 &8181994321888741736
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a591d221a634417e9827eb58e17de84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Addons.Physics::Fusion.Addons.Physics.NetworkRigidbody3D
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  SyncScale: 0
+  SyncParent: 1
+  _interpolationTarget: {fileID: 0}
+  UsePreciseRotation: 1
+  UseRenderSleepThresholds: 1
+  RenderThresholds:
+    UseEnergy: 1
+    Position: 0.01
+    Rotation: 0.01
+    Scale: 0.01
+--- !u!114 &4184702488389018231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d27cd203df7bcc4ea16c7441d85f687, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayer
+  _NetworkedCharacterIndex: -1
+--- !u!114 &-6729306355129119373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 506319458, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkMecanimAnimator
+  Animator: {fileID: 948129903056447725}
+  ApplyTiming: 2
+  SyncSettings: 79
+  StateHashes: 000000002b1a167c7940695520e23b685928a8ce5c5f20edde106c68c01206a98a8e2d9534390afb480d4ff7
+  TriggerHashes: 000000005c5f20ed
+  TotalWords: 4
 --- !u!1 &8920073147725819176
 GameObject:
   m_ObjectHideFlags: 0

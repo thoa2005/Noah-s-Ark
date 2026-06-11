@@ -5,6 +5,8 @@ using UnityEngine.UIElements;
 [RequireComponent(typeof(PlayerInput))]
 public class CharacterInput : MonoBehaviour
 {
+    public static CharacterInput Local;
+
     // --- Input state ---
     public Vector2 moveInput          { get; set; }
     public bool    isPunching         { get; set; }
@@ -25,6 +27,12 @@ public class CharacterInput : MonoBehaviour
     // --- Unity lifecycle ---
     private void Start()
     {
+        // Gán Local reference nếu đây là nhân vật của người chơi thực tế
+        if (GetComponent<PlayerInput>().playerIndex >= 0) 
+        {
+            Local = this;
+        }
+
         ReleaseUIFocus();
     }
 

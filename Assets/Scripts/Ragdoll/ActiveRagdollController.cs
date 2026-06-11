@@ -1,10 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Fusion;
+using Fusion.Addons.Physics;
 
 /// <summary>
 /// Bo dieu khien trung tam: Nap day du cac dot xuong va gong cung cot song de dung day.
 /// </summary>
-public class ActiveRagdollController : MonoBehaviour
+public class ActiveRagdollController : NetworkBehaviour
 {
     [Header("Connected Rigs")]
     public Transform animationRig;
@@ -23,6 +25,11 @@ public class ActiveRagdollController : MonoBehaviour
     public float targetHeight = 0.9f;
     public float boneLerpSpeed = 15f; // Tốc độ mượt của xương ảo
 
+    // --- BIẾN ĐỒNG BỘ MẠNG (NETWORKED) ---
+    [Networked] public NetworkBool IsPunching { get; set; }
+    [Networked] public Vector2 MoveInput { get; set; }
+    // -------------------------------------
+
     [Header("Leaning (Nghiêng người)")]
     public float leanAmount = 25f;    // Độ nghiêng tối đa
     public float leanSpeed = 5f;     // Tốc độ nghiêng/hồi phục
@@ -36,7 +43,7 @@ public class ActiveRagdollController : MonoBehaviour
     private ActiveRagdollBalancer balancer;
     private Rigidbody playerRb;
     private Rigidbody hipRb;
-    private Transform realHip;
+    public Transform realHip;
     private CharacterInput playerInput;
 
     private Dictionary<Rigidbody, float> originalMasses = new Dictionary<Rigidbody, float>();
@@ -120,6 +127,81 @@ public class ActiveRagdollController : MonoBehaviour
         isWakingUp = false;
     }
 
+    public override void Spawned()
+    {
+        // Khi nhân vật vừa được sinh ra trên mạng (bao gồm cả late joiner)
+        if (bones == null || bones.Length == 0) InitializeRig();
+
+        // BẮT BUỘC FUSION CHẠY FixedUpdateNetwork TRÊN TẤT CẢ PROXIES
+        Runner.SetIsSimulated(Object, true);
+
+        // ĐÁNH THỨC ANIMATOR ĐỂ CẬP NHẬT TỌA ĐỘ NGAY LẬP TỨC CHO XƯƠNG MỤC TIÊU
+        if (animationRig != null)
+        {
+            var anim = animationRig.GetComponent<Animator>();
+            if (anim != null) anim.Update(0f);
+        }
+
+        // Dừng toàn bộ gia tốc cũ và dịch chuyển xương để chống giật "Physics Snap"
+        ResetRagdollPhysics();
+    }
+
+    private void ResetRagdollPhysics()
+    {
+        if (bones == null) return;
+
+        // 1. Xóa bộ nhớ lực kéo của Unity PhysX bằng isKinematic
+        foreach (var bone in bones)
+        {
+            if (bone != null)
+            {
+                Rigidbody rb = bone.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = true;
+            }
+        }
+        if (hipRb != null) hipRb.isKinematic = true;
+
+        // 2. Dịch chuyển tức thời khớp xương về đúng vị trí chuẩn
+        foreach (var bone in bones)
+        {
+            if (bone != null)
+            {
+                Rigidbody rb = bone.GetComponent<Rigidbody>();
+                if (rb != null && bone.targetBone != null)
+                {
+                    rb.position = bone.targetBone.position;
+                    rb.rotation = bone.targetBone.rotation;
+                }
+            }
+        }
+        if (hipRb != null)
+        {
+            // Hiprb neo theo root
+            hipRb.position = transform.position + Vector3.up * targetHeight;
+        }
+
+        // 3. Khôi phục lại Vật lý và xóa động năng
+        foreach (var bone in bones)
+        {
+            if (bone != null)
+            {
+                Rigidbody rb = bone.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = false;
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+            }
+        }
+        if (hipRb != null)
+        {
+            hipRb.isKinematic = false;
+            hipRb.linearVelocity = Vector3.zero;
+            hipRb.angularVelocity = Vector3.zero;
+        }
+    }
+
     [ContextMenu("Re-Initialize Rig")]
     public void InitializeRig()
     {
@@ -127,6 +209,8 @@ public class ActiveRagdollController : MonoBehaviour
         if (playerRb == null) return;
 
         playerRb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        IgnoreSelfCollisions(); // Bỏ qua va chạm giữa các xương của CHÍNH MÌNH
 
         List<ActiveRagdollBone> boneList = new List<ActiveRagdollBone>();
 
@@ -191,7 +275,21 @@ public class ActiveRagdollController : MonoBehaviour
         Debug.Log($"[ActiveRagdoll] Da nap thanh cong {bones.Length} xuong va {originalMasses.Count} Rigidbody vao danh sach can nang.");
     }
 
-    void FixedUpdate()
+    private void IgnoreSelfCollisions()
+    {
+        // Lấy toàn bộ Collider trên nhân vật (bao gồm Capsule gốc và các khúc xương)
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            for (int j = i + 1; j < colliders.Length; j++)
+            {
+                // Ép Unity bỏ qua va chạm giữa chúng
+                Physics.IgnoreCollision(colliders[i], colliders[j], true);
+            }
+        }
+    }
+
+    public override void FixedUpdateNetwork()
     {
         if (bones == null || bones.Length == 0 || balancer == null || playerRb == null || hipRb == null)
         {
@@ -209,11 +307,18 @@ public class ActiveRagdollController : MonoBehaviour
         float currentBalanceSpring = IsBeingGrabbed ? 0 : balanceSpring;
         float currentMuscleSpring = GetTargetMuscleSpring();
 
-        // --- GỒNG CƠ BẮP KHI ĐẤM ---
-        if (playerInput != null && playerInput.isPunching && !IsBeingGrabbed)
+        // CHỈ Input Authority VÀ Server MỚI LẤY ĐƯỢC INPUT
+        if (GetInput(out NetworkInputData input))
+        {
+            IsPunching = input.isPunching;
+            MoveInput = input.moveInput;
+        }
+
+        // DÙNG BIẾN ĐÃ ĐỒNG BỘ ĐỂ ÁP DỤNG LỰC CHO TẤT CẢ MỌI MÁY (KỂ CẢ PROXY)
+        if (IsPunching && !IsBeingGrabbed)
         {
             currentMuscleSpring *= 10f;
-            currentBalanceSpring *=0f;
+            currentBalanceSpring *= 0f;
         }
 
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up);
@@ -235,8 +340,8 @@ public class ActiveRagdollController : MonoBehaviour
         // 4. Cap nhat Co bap (Dùng nhãn isSpine tối ưu)
         UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
 
-        // 5. Tính toán nghiêng người dựa trên Input di chuyển
-        HandleProceduralLeaning();
+        // 5. Tính toán nghiêng người dựa trên Input đã đồng bộ
+        HandleProceduralLeaning(MoveInput);
 
         // 6. Luc day nhac mông (Stand Up)
         float actualTargetY = playerRb.position.y + targetHeight;
@@ -261,19 +366,17 @@ public class ActiveRagdollController : MonoBehaviour
                 if (bone.isSpine) bone.externalOffset = currentLeanOffset;
                 else bone.externalOffset = Quaternion.identity;
 
-                bone.SyncRotation();
+                bone.SyncRotation(Runner.DeltaTime);
             }
         }
 
         CheckParameterChanges();
     }
 
-    private void HandleProceduralLeaning()
+    private void HandleProceduralLeaning(Vector2 moveIn)
     {
-        if (playerInput == null) return;
-
-        // Lấy hướng di chuyển từ Input
-        Vector3 moveInput = new Vector3(playerInput.moveInput.x, 0, playerInput.moveInput.y);
+        // Lấy hướng di chuyển từ Input đã đồng bộ
+        Vector3 moveInput = new Vector3(moveIn.x, 0, moveIn.y);
 
         Quaternion targetLean = Quaternion.identity;
 
@@ -286,7 +389,7 @@ public class ActiveRagdollController : MonoBehaviour
         }
 
         // Làm mượt quá trình nghiêng và hồi phục
-        currentLeanOffset = Quaternion.Slerp(currentLeanOffset, targetLean, Time.deltaTime * leanSpeed);
+        currentLeanOffset = Quaternion.Slerp(currentLeanOffset, targetLean, Runner.DeltaTime * leanSpeed);
     }
 
     private void UpdateAllMuscleDrives(float spring, float damper)
@@ -429,7 +532,7 @@ public class ActiveRagdollController : MonoBehaviour
     public void ApplyDamage(float force)
     {
         if (stats == null || stats.isKnockedOut) return;
-        stats.TakeDamage(force);
+        stats.Rpc_TakeDamage(force);
     }
 
     /// <summary>
