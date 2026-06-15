@@ -73,71 +73,91 @@ public class PlayerMovement : NetworkBehaviour
 
     // ------------------------------------------------------------------ //
 
-public override void FixedUpdateNetwork()
+    void Update()
     {
-        if (GetInput(out NetworkInputData input))
+        if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return;
+        if (stats != null && stats.isKnockedOut) return;
+
+        Vector3 camF = mainCam != null ? mainCam.transform.forward : Vector3.forward;
+        camF.y = 0f; camF.Normalize();
+        Vector3 camR = mainCam != null ? mainCam.transform.right : Vector3.right;
+        camR.y = 0f; camR.Normalize();
+        Vector3 dir = (camF * _input.moveInput.y + camR * _input.moveInput.x).normalized;
+
+        bool isMovingBackwards = false;
+        if (dir.magnitude > 0.1f)
         {
-            if (stats != null && stats.isKnockedOut) return;
+            float dot = Vector3.Dot(transform.forward, dir);
+            isMovingBackwards = dot < -0.7f;
+        }
 
-            if (input.isJumpPressed)
-                Jump();
-
-            Vector3 camF = mainCam != null ? mainCam.transform.forward : Vector3.forward;
-            camF.y = 0f; camF.Normalize();
-            Vector3 camR = mainCam != null ? mainCam.transform.right : Vector3.right;
-            camR.y = 0f; camR.Normalize();
-            Vector3 dir = (camF * input.moveInput.y + camR * input.moveInput.x).normalized;
-
-            bool isMovingBackwards = false;
+        if (anim != null)
+        {
+            anim.SetFloat("Speed", dir.magnitude, 0.25f, Time.deltaTime);
             if (dir.magnitude > 0.1f)
             {
-                float dot = Vector3.Dot(transform.forward, dir);
-                isMovingBackwards = dot < -0.7f;
+                float motionDir = isMovingBackwards ? -1f : 1f;
+                anim.SetFloat("MotionDirection", motionDir, 0.1f, Time.deltaTime);
             }
+        }
+    }
 
-            if (anim != null)
+    void FixedUpdate()
+    {
+        if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return;
+        if (stats != null && stats.isKnockedOut) return;
+
+        if (_input.isJumpPressed)
+        {
+            Jump();
+            _input.isJumpPressed = false; // Xóa lệnh nhảy
+        }
+
+        Vector3 camF = mainCam != null ? mainCam.transform.forward : Vector3.forward;
+        camF.y = 0f; camF.Normalize();
+        Vector3 camR = mainCam != null ? mainCam.transform.right : Vector3.right;
+        camR.y = 0f; camR.Normalize();
+        Vector3 dir = (camF * _input.moveInput.y + camR * _input.moveInput.x).normalized;
+
+        bool isMovingBackwards = false;
+        if (dir.magnitude > 0.1f)
+        {
+            float dot = Vector3.Dot(transform.forward, dir);
+            isMovingBackwards = dot < -0.7f;
+        }
+
+        if (dir.magnitude > 0.1f)
+        {
+            float finalMoveSpeed = stats.moveSpeed;
+            if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f;
+
+            lastMoveDir = Vector3.Slerp(lastMoveDir, dir, rotationSpeed * Time.fixedDeltaTime);
+            if (lastMoveDir.magnitude < 0.01f) lastMoveDir = dir;
+
+            Vector3 targetVelXZ = lastMoveDir.normalized * finalMoveSpeed * dir.magnitude;
+            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, targetVelXZ,
+                (1f / accelerationTime) * Time.fixedDeltaTime);
+
+            Vector3 vel = currentVelocityXZ;
+            vel.y = rb.linearVelocity.y;
+            rb.linearVelocity = vel;
+
+            if (!isMovingBackwards)
             {
-                anim.SetFloat("Speed", dir.magnitude, 0.25f, Runner.DeltaTime);
-                if (dir.magnitude > 0.1f)
-                {
-                    float motionDir = isMovingBackwards ? -1f : 1f;
-                    anim.SetFloat("MotionDirection", motionDir, 0.1f, Runner.DeltaTime);
-                }
+                targetRotation = Quaternion.LookRotation(lastMoveDir);
+                rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation,
+                    rotationSpeed * Time.fixedDeltaTime));
             }
+        }
+        else
+        {
+            lastMoveDir = Vector3.zero;
+            currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, Vector3.zero,
+                (1f / decelerationTime) * Time.fixedDeltaTime);
 
-            if (dir.magnitude > 0.1f)
-            {
-                float finalMoveSpeed = stats.moveSpeed;
-                if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f;
-
-                lastMoveDir = Vector3.Slerp(lastMoveDir, dir, rotationSpeed * Runner.DeltaTime);
-                if (lastMoveDir.magnitude < 0.01f) lastMoveDir = dir;
-
-                Vector3 targetVelXZ = lastMoveDir.normalized * finalMoveSpeed * dir.magnitude;
-                currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, targetVelXZ,
-                    (1f / accelerationTime) * Runner.DeltaTime);
-
-                Vector3 vel = currentVelocityXZ;
-                vel.y = rb.linearVelocity.y;
-                rb.linearVelocity = vel;
-
-                if (!isMovingBackwards)
-                {
-                    targetRotation = Quaternion.LookRotation(lastMoveDir);
-                    rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation,
-                        rotationSpeed * Runner.DeltaTime));
-                }
-            }
-            else
-            {
-                lastMoveDir = Vector3.zero;
-                currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, Vector3.zero,
-                    (1f / decelerationTime) * Runner.DeltaTime);
-
-                Vector3 vel = currentVelocityXZ;
-                vel.y = rb.linearVelocity.y;
-                rb.linearVelocity = vel;
-            }
+            Vector3 vel = currentVelocityXZ;
+            vel.y = rb.linearVelocity.y;
+            rb.linearVelocity = vel;
         }
     }
 

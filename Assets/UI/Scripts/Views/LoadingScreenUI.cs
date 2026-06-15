@@ -141,7 +141,7 @@ public class LoadingScreenUI : MonoBehaviour
     private async void StartFusionGame(int sampleIndex)
     {
         await NetworkRunnerHandler.Instance.StartGame(
-            Fusion.GameMode.AutoHostOrClient,
+            Fusion.GameMode.Shared,
             "TestRoom",
             Fusion.Sockets.NetAddress.Any(),
             Fusion.SceneRef.FromIndex(sampleIndex),

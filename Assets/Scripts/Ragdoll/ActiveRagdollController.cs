@@ -289,7 +289,7 @@ public class ActiveRagdollController : NetworkBehaviour
         }
     }
 
-    public override void FixedUpdateNetwork()
+    void FixedUpdate()
     {
         if (bones == null || bones.Length == 0 || balancer == null || playerRb == null || hipRb == null)
         {
@@ -307,11 +307,11 @@ public class ActiveRagdollController : NetworkBehaviour
         float currentBalanceSpring = IsBeingGrabbed ? 0 : balanceSpring;
         float currentMuscleSpring = GetTargetMuscleSpring();
 
-        // CHỈ Input Authority VÀ Server MỚI LẤY ĐƯỢC INPUT
-        if (GetInput(out NetworkInputData input))
+        // CHỈ STATE AUTHORITY MỚI LẤY INPUT TRỰC TIẾP TỪ PLAYER
+        if (Object != null && Object.IsValid && Object.HasStateAuthority && playerInput != null)
         {
-            IsPunching = input.isPunching;
-            MoveInput = input.moveInput;
+            IsPunching = playerInput.isPunching;
+            MoveInput = playerInput.moveInput;
         }
 
         // DÙNG BIẾN ĐÃ ĐỒNG BỘ ĐỂ ÁP DỤNG LỰC CHO TẤT CẢ MỌI MÁY (KỂ CẢ PROXY)
@@ -320,6 +320,31 @@ public class ActiveRagdollController : NetworkBehaviour
             currentMuscleSpring *= 10f;
             currentBalanceSpring *= 0f;
         }
+
+        // CẢ HOST VÀ PROXY ĐỀU CẦN UPDATE CƠ BẮP ĐỂ TẠO DÁNG THEO ANIMATOR
+        UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
+
+        // Tính toán nghiêng người dựa trên Input đã đồng bộ
+        HandleProceduralLeaning(MoveInput);
+
+        foreach (var bone in bones)
+        {
+            if (bone != null)
+            {
+                bone.lerpSpeed = boneLerpSpeed; // Đồng bộ tốc độ mượt
+
+                // Chỉ nghiêng các xương thuộc cột sống (Spine) để nhìn tự nhiên nhất
+                if (bone.isSpine) bone.externalOffset = currentLeanOffset;
+                else bone.externalOffset = Quaternion.identity;
+
+                bone.SyncRotation(Time.fixedDeltaTime);
+            }
+        }
+
+        CheckParameterChanges();
+
+        // TỪ ĐÂY TRỞ XUỐNG CHỈ CÓ STATE AUTHORITY MỚI ĐƯỢC CHẠY (Thăng bằng và Force)
+        if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return;
 
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up);
 
@@ -337,12 +362,6 @@ public class ActiveRagdollController : NetworkBehaviour
         // 3. Cap nhat Thang bang
         balancer.UpdateBalance(currentBalanceSpring, balanceDamper, Quaternion.identity);
 
-        // 4. Cap nhat Co bap (Dùng nhãn isSpine tối ưu)
-        UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
-
-        // 5. Tính toán nghiêng người dựa trên Input đã đồng bộ
-        HandleProceduralLeaning(MoveInput);
-
         // 6. Luc day nhac mông (Stand Up)
         float actualTargetY = playerRb.position.y + targetHeight;
         float diff = actualTargetY - hipRb.position.y;
@@ -355,22 +374,6 @@ public class ActiveRagdollController : NetworkBehaviour
             currentVel.y *= 0.95f;
             hipRb.linearVelocity = currentVel;
         }
-
-        foreach (var bone in bones)
-        {
-            if (bone != null)
-            {
-                bone.lerpSpeed = boneLerpSpeed; // Đồng bộ tốc độ mượt
-
-                // Chỉ nghiêng các xương thuộc cột sống (Spine) để nhìn tự nhiên nhất
-                if (bone.isSpine) bone.externalOffset = currentLeanOffset;
-                else bone.externalOffset = Quaternion.identity;
-
-                bone.SyncRotation(Runner.DeltaTime);
-            }
-        }
-
-        CheckParameterChanges();
     }
 
     private void HandleProceduralLeaning(Vector2 moveIn)
@@ -389,7 +392,7 @@ public class ActiveRagdollController : NetworkBehaviour
         }
 
         // Làm mượt quá trình nghiêng và hồi phục
-        currentLeanOffset = Quaternion.Slerp(currentLeanOffset, targetLean, Runner.DeltaTime * leanSpeed);
+        currentLeanOffset = Quaternion.Slerp(currentLeanOffset, targetLean, Time.fixedDeltaTime * leanSpeed);
     }
 
     private void UpdateAllMuscleDrives(float spring, float damper)

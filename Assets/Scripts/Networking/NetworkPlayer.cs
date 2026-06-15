@@ -12,7 +12,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     public override void Spawned()
     {
-        if (Object.HasInputAuthority)
+        if (Object.HasStateAuthority)
         {
             Local = this;
             Debug.Log("Local NetworkPlayer đã được Spawn!");
@@ -38,7 +38,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
             // 3. Báo cáo nhân vật đã chọn cho Server
             int myIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", 0);
-            Rpc_SetCharacterIndex(myIndex);
+            NetworkedCharacterIndex = myIndex;
         }
         else
         {
@@ -49,13 +49,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             }
         }
     }
-
-    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    public void Rpc_SetCharacterIndex(int index)
-    {
-        NetworkedCharacterIndex = index;
-    }
-
+    
     public void OnCharacterIndexChanged()
     {
         ApplyCharacterSkin();
@@ -80,7 +74,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     public void PlayerLeft(PlayerRef player)
     {
         // Nếu người chơi thoát khỏi phòng có ID khớp với chủ của nhân vật này
-        if (player == Object.InputAuthority)
+        if (player == Object.StateAuthority)
         {
             // Xóa nhân vật này khỏi server
             Runner.Despawn(Object);

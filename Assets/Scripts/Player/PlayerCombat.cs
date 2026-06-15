@@ -95,8 +95,10 @@ public class PlayerCombat : NetworkBehaviour
         }
     }
 
-    public override void FixedUpdateNetwork()
+    void FixedUpdate()
     {
+        if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return;
+
         // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
         if (stats != null && stats.isKnockedOut)
         {
@@ -104,13 +106,13 @@ public class PlayerCombat : NetworkBehaviour
             return; // Ngất rồi thì không cho làm gì nữa
         }
 
-        punchTimer -= Runner.DeltaTime;
-        grabTimer -= Runner.DeltaTime;
+        punchTimer -= Time.fixedDeltaTime;
+        grabTimer -= Time.fixedDeltaTime;
 
-        if (GetInput(out NetworkInputData input))
+        if (_input != null)
         {
             // Xử lý Đấm
-            if (input.isPunching && punchTimer <= 0)
+            if (_input.isPunching && punchTimer <= 0)
             {
                 PerformPunch();
             }
@@ -119,7 +121,7 @@ public class PlayerCombat : NetworkBehaviour
             if (!isGrabbing)
             {
                 // Thêm Grab Cooldown: Chỉ cho phép tìm đồ vật 5 lần/giây để tránh spam lag
-                if (input.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
+                if (_input.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
                 {
                     PerformGrab();
                     grabTimer = 0.2f; // Nghỉ 0.2s mới cho tìm tiếp
@@ -129,9 +131,9 @@ public class PlayerCombat : NetworkBehaviour
             {
                 if (grabbedRb == null) ReleaseGrab();
                 // Nếu vẫn đang giữ nút Grab thì sạc lực ném
-                else if (input.isGrabPressed)
+                else if (_input.isGrabPressed)
                 {
-                    chargeTimer = Mathf.Clamp(chargeTimer + Runner.DeltaTime, 0f, stats.maxChargeTime);
+                    chargeTimer = Mathf.Clamp(chargeTimer + Time.fixedDeltaTime, 0f, stats.maxChargeTime);
                 }
                 // Nếu nhả nút Grab ra thì thực hiện ném
                 else
@@ -152,7 +154,7 @@ public class PlayerCombat : NetworkBehaviour
             {
                 ReleaseGrab();
             }
-            else if (!stats.UseStamina(stats.grabStaminaDrainRate * Runner.DeltaTime))
+            else if (!stats.UseStamina(stats.grabStaminaDrainRate * Time.fixedDeltaTime))
             {
                 ReleaseGrab(); // Hết thể lực tự buông
             }
@@ -296,8 +298,6 @@ public class PlayerCombat : NetworkBehaviour
         // Tắt Anim, thả tay xuống
         if (anim != null) anim.SetBool("IsGrabbing", false);
     }
-
-
 
     // HÀM HỖ TRỢ 2: Tạo kết nối lò xo nam châm giữa tay và vật
     void AttachHand(Rigidbody handRb, Rigidbody targetRb)

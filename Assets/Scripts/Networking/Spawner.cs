@@ -38,7 +38,7 @@ public class Spawner : SimulationBehaviour, INetworkRunnerCallbacks
 
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
-        if (runner.IsServer)
+        if (player == runner.LocalPlayer)
         {
             runner.Spawn(playerPrefab, Vector3.up * 2f, Quaternion.identity, player);
         }
