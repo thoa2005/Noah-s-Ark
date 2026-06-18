@@ -5,7 +5,11 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
     // Biến static để dễ dàng truy cập nhân vật của chính người chơi trên máy này
     public static NetworkPlayer Local { get; set; }
+    // 1. Khai báo biến bones để lưu toàn bộ các đốt xương Ragdoll
+    private Rigidbody[] bones;
 
+    // Biến lưu gốc cha của mô hình vật lý (Ví dụ chiếc PhysicRig hoặc chiếc Hips)
+    [SerializeField] private Transform ragdollRoot;
     [Networked]
     [OnChangedRender(nameof(OnCharacterIndexChanged))]
     public int NetworkedCharacterIndex { get; set; } = -1;
@@ -47,9 +51,28 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             {
                 ApplyCharacterSkin();
             }
+            // 2. TỰ ĐỘNG QUÉT: Code tự tìm sạch toàn bộ Rigidbody nằm bên trong gốc cha Ragdoll
+            if (ragdollRoot != null)
+            {
+                bones = ragdollRoot.GetComponentsInChildren<Rigidbody>();
+            }
+            else
+            {
+                // Nếu bạn không kéo thả ragdollRoot, code sẽ quét toàn bộ nhân vật
+                bones = GetComponentsInChildren<Rigidbody>();
+            }
+            foreach (var bone in bones)
+            {
+                var rb = bone.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = false; // Ép buộc bật lại vật lý tự do!
+                    rb.useGravity = true;
+                }
+            }
         }
     }
-    
+
     public void OnCharacterIndexChanged()
     {
         ApplyCharacterSkin();

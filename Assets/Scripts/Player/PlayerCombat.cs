@@ -200,6 +200,20 @@ public class PlayerCombat : NetworkBehaviour
     public void Rpc_BroadcastPunch()
     {
         if (anim != null) anim.SetTrigger("Punch");
+        if (ragdoll != null) ragdoll.TriggerPunchMuscle();
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_SetGrabbedState(NetworkBool state, NetworkId victimId)
+    {
+        if (Runner != null && Runner.TryFindObject(victimId, out NetworkObject victimNetObj))
+        {
+            var victimController = victimNetObj.GetComponent<ActiveRagdollController>();
+            if (victimController != null)
+            {
+                victimController.SetGrabbedState(state, this.gameObject);
+            }
+        }
     }
 
     public void PerformPunch()
@@ -218,6 +232,9 @@ public class PlayerCombat : NetworkBehaviour
 
         // Host phát RPC báo cho tất cả Proxy
         if (Object.HasStateAuthority) Rpc_BroadcastPunch();
+
+        // CHỐNG SPAM: Xóa lệnh bấm đấm ngay sau khi ra đòn
+        if (CharacterInput.Local != null) CharacterInput.Local.UsePunchRequest();
     }
 
     public void PerformGrab()
@@ -257,7 +274,7 @@ public class PlayerCombat : NetworkBehaviour
                 // KHÔNG CHO TÓM NẾU MÌNH ĐANG BỊ TÓM (Chống đệ quy vật lý)
                 if (grabbedTargetController == ragdoll || ragdoll.IsBeingGrabbed) return;
 
-                grabbedTargetController.SetGrabbedState(true, this.gameObject);
+                Rpc_SetGrabbedState(true, grabbedObjectId);
             }
 
             AttachHand(leftPhysicsHand, commonTarget);
@@ -274,9 +291,9 @@ public class PlayerCombat : NetworkBehaviour
     public void ReleaseGrab()
     {
         // Báo cho nạn nhân biết mình đã thả
-        if (grabbedTargetController != null && grabbedTargetController.gameObject != null)
+        if (grabbedObjectId.IsValid)
         {
-            grabbedTargetController.SetGrabbedState(false, this.gameObject);
+            Rpc_SetGrabbedState(false, grabbedObjectId);
         }
 
         // Chặt đứt tất cả lò xo nam châm ở 2 tay khi buông chuột

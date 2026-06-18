@@ -11878,6 +11878,7 @@ MonoBehaviour:
   leanAmount: 7.5
   leanSpeed: 5
   stats: {fileID: 4051467310743205094}
+  realHip: {fileID: 0}
 --- !u!114 &1919387608882267368
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12058,6 +12059,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d27cd203df7bcc4ea16c7441d85f687, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayer
+  ragdollRoot: {fileID: 5794618918911004978}
   _NetworkedCharacterIndex: -1
 --- !u!114 &-6729306355129119373
 MonoBehaviour:

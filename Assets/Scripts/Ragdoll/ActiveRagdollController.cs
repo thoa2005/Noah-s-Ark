@@ -61,6 +61,8 @@ public class ActiveRagdollController : NetworkBehaviour
     private float lastMuscleSpring, lastMuscleDamper;
     private float lastBalanceSpring, lastBalanceDamper;
 
+    private float punchMuscleTimer = 0f;
+
     // Lưu reference coroutine để có thể cancel khi màn kết thúc giữa chừng
     private Coroutine knockoutCoroutine;
 
@@ -289,6 +291,21 @@ public class ActiveRagdollController : NetworkBehaviour
         }
     }
 
+    public override void FixedUpdateNetwork()
+    {
+        // CHỈ STATE AUTHORITY MỚI ĐƯỢC PHÉP CẬP NHẬT BIẾN MẠNG (FUSION YÊU CẦU LÀM Ở ĐÂY)
+        if (Object != null && Object.IsValid && Object.HasStateAuthority && playerInput != null)
+        {
+            IsPunching = playerInput.isPunching;
+            MoveInput = playerInput.moveInput;
+        }
+    }
+
+    public void TriggerPunchMuscle()
+    {
+        punchMuscleTimer = 0.5f; // Gồng cơ bắp trong 0.5s kể từ khi vung đấm
+    }
+
     void FixedUpdate()
     {
         if (bones == null || bones.Length == 0 || balancer == null || playerRb == null || hipRb == null)
@@ -307,15 +324,11 @@ public class ActiveRagdollController : NetworkBehaviour
         float currentBalanceSpring = IsBeingGrabbed ? 0 : balanceSpring;
         float currentMuscleSpring = GetTargetMuscleSpring();
 
-        // CHỈ STATE AUTHORITY MỚI LẤY INPUT TRỰC TIẾP TỪ PLAYER
-        if (Object != null && Object.IsValid && Object.HasStateAuthority && playerInput != null)
-        {
-            IsPunching = playerInput.isPunching;
-            MoveInput = playerInput.moveInput;
-        }
+        if (punchMuscleTimer > 0f) punchMuscleTimer -= Time.fixedDeltaTime;
 
-        // DÙNG BIẾN ĐÃ ĐỒNG BỘ ĐỂ ÁP DỤNG LỰC CHO TẤT CẢ MỌI MÁY (KỂ CẢ PROXY)
-        if (IsPunching && !IsBeingGrabbed)
+        // DÙNG BIẾN ĐÃ ĐỒNG BỘ HOẶC TIMER ĐỂ ÁP DỤNG LỰC CHO TẤT CẢ MỌI MÁY (KỂ CẢ PROXY)
+        bool isCurrentlyPunching = punchMuscleTimer > 0f || IsPunching;
+        if (isCurrentlyPunching && !IsBeingGrabbed)
         {
             currentMuscleSpring *= 10f;
             currentBalanceSpring *= 0f;
@@ -326,6 +339,9 @@ public class ActiveRagdollController : NetworkBehaviour
 
         // Tính toán nghiêng người dựa trên Input đã đồng bộ
         HandleProceduralLeaning(MoveInput);
+
+        // 3. Cap nhat Thang bang
+        balancer.UpdateBalance(currentBalanceSpring, balanceDamper, Quaternion.identity);
 
         foreach (var bone in bones)
         {
@@ -347,20 +363,13 @@ public class ActiveRagdollController : NetworkBehaviour
         if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return;
 
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up);
-
-        if (tiltAngle > 30f)
-        {
-            // Giữ nguyên hoặc điều chỉnh tùy ý
-        }
-
         // Kiểm tra điều kiện xỉu (Nghiêng quá 65 độ)
         if (stats != null && !stats.isKnockedOut && stats.currentStability > 50f && tiltAngle > 65f && !isWakingUp)
         {
             ApplyDamage(100f);
         }
 
-        // 3. Cap nhat Thang bang
-        balancer.UpdateBalance(currentBalanceSpring, balanceDamper, Quaternion.identity);
+
 
         // 6. Luc day nhac mông (Stand Up)
         float actualTargetY = playerRb.position.y + targetHeight;
