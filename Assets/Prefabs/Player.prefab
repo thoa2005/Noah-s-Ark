@@ -11664,6 +11664,7 @@ GameObject:
   - component: {fileID: 193116604987329666}
   - component: {fileID: 4051467310743205094}
   - component: {fileID: 4200195292331592929}
+  - component: {fileID: 7301859271340482001}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -12202,3 +12203,22 @@ Transform:
   - {fileID: 6856121484176589205}
   m_Father: {fileID: 8481087140679702467}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7301859271340482001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919391196086702788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5001594ae1094a488c7860283d879bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FootTrailSystem
+  catalog: {fileID: 11400000, guid: e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7, type: 2}
+  leftFootAnchor: {fileID: 4446341409350123046}
+  rightFootAnchor: {fileID: 1989379579464173576}
+  minSpeedThreshold: 0.5
+  runSpeedThreshold: 4
+  walkEmissionRate: 1
+  runEmissionRate: 2
