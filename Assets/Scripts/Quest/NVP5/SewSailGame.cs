@@ -16,11 +16,11 @@ public class SewSailGame : MonoBehaviour
     public UILineRenderer threadLine;
 
     [Header("UI")]
-    public Text       progressText;
-    public Text       timerText;
-    public float      timeLimit = 60f;
-    public GameObject winPanel;
-    public GameObject losePanel;
+    public Text              progressText;
+    public Text              timerText;
+    public float             timeLimit = 60f;
+    public MiniGameWinPanel  winPanel;
+    public GameObject        losePanel;
 
     private int   _nextIndex;
     private float _timeLeft;
@@ -66,10 +66,10 @@ public class SewSailGame : MonoBehaviour
             AddThreadPoint(Holes[i]);
         }
 
-        _nextIndex = 0;
-        // Không highlight theo thứ tự — người chơi click tự do
+        // _nextIndex đếm số lỗ đã khâu (kể cả prefilled)
+        _nextIndex = pre;
 
-        if (winPanel  != null) winPanel.SetActive(false);
+        if (winPanel  != null) winPanel.gameObject.SetActive(false);
         if (losePanel != null) losePanel.SetActive(false);
     }
 
@@ -92,8 +92,11 @@ public class SewSailGame : MonoBehaviour
         if (_nextIndex >= Holes.Count)
         {
             _running = false;
-            if (winPanel != null) winPanel.SetActive(true);
-            Debug.Log("[SewSail] 🎉 Hoàn thành!");
+            Debug.Log($"[SewSail] 🎉 Hoàn thành! winPanel = {(winPanel == null ? "NULL" : winPanel.gameObject.name)}");
+            if (winPanel != null)
+                winPanel.Show("Hoàn thành! 🎉");
+            else
+                Debug.LogError("[SewSail] winPanel chưa được gán trong Inspector!");
         }
     }
 

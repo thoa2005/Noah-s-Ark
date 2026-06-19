@@ -54,6 +54,18 @@ public abstract class QuestMinigameUI : MonoBehaviour
         if (panel != null) panel.SetActive(false);
         if (pauseGameWhileActive) Time.timeScale = 1f;
 
+        // Bật lại điều khiển nhân vật sau khi đóng bảng
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            CharacterInput input = player.GetComponent<CharacterInput>();
+            if (input != null) input.DisableUIMode();
+        }
+
+        // Khóa lại chuột về trạng thái gameplay
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         OnClose();
         Debug.Log($"[{GetType().Name}] Đóng mini-game: {currentQuestID}");
     }

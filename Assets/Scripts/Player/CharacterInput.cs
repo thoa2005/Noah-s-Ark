@@ -88,6 +88,19 @@ public class CharacterInput : MonoBehaviour
         zoomInput            = Vector2.zero;
     }
 
+    // --- Chuyển sang chế độ UI: tắt PlayerInput để không tranh input với UI ---
+    public void EnableUIMode()
+    {
+        ClearAllInputs();
+        GetComponent<PlayerInput>().enabled = false;
+    }
+
+    // --- Trở lại chế độ gameplay: bật lại PlayerInput ---
+    public void DisableUIMode()
+    {
+        GetComponent<PlayerInput>().enabled = true;
+    }
+
     // --- Releases any UI focus that may have stolen keyboard input (e.g. after scene transition) ---
     private void ReleaseUIFocus()
     {

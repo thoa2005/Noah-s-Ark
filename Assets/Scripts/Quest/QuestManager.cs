@@ -35,6 +35,9 @@ public class QuestManager : MonoBehaviour
     //  TRẠNG THÁI
     // ------------------------------------------------------------------ //
 
+    /// <summary>True khi có nhân vật đang giữ một nhiệm vụ — các NPC/nhân vật khác dùng để kiểm tra.</summary>
+    public static bool isQuestTaken = false;
+
     private Dictionary<QuestID, QuestData> _questMap = new Dictionary<QuestID, QuestData>();
 
     // ------------------------------------------------------------------ //
