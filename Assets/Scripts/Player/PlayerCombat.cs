@@ -284,25 +284,83 @@ public class PlayerCombat : NetworkBehaviour
             if (grabbedTargetController == ragdoll || ragdoll.IsBeingGrabbed)
                 return;
 
-            Rpc_SetGrabbedState(true, grabbedObjectId);
+            Debug.Log($"[PerformGrab] Yêu cầu cầm {grabbedTargetController.gameObject.name}");
+            
+            // ✅ BƯỚC 1 (Gửi yêu cầu): Chỉ gửi RPC lên Server, KHÔNG tạo Joint ngay
+            Rpc_RequestGrab(grabbedTargetController.Object);
+            
+            // ✅ Set flag để FixedUpdateNetwork biết rằng đang đợi phê duyệt
+            isGrabbing = true;
+            chargeTimer = 0f;
+            if (anim != null)
+                anim.SetBool("IsGrabbing", true);
+            
+            Debug.Log($"[PerformGrab] Đợi Server phê duyệt grab...");
         }
+    }
 
-        AttachHand(leftPhysicsHand, commonTarget);
-        AttachHand(rightPhysicsHand, commonTarget);
-
-        if (spineAnchorRb != null)
-            AttachBody(spineAnchorRb, commonTarget);
-
-        isGrabbing = true;
-        chargeTimer = 0f;
-        if (anim != null)
-            anim.SetBool("IsGrabbing", true);
+    /// <summary>
+    /// BƯỚC 1 (Gửi yêu cầu): Grabber gửi yêu cầu cầm lên Server
+    /// </summary>
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    public void Rpc_RequestGrab(NetworkObject victimNetObj)
+    {
+        Debug.Log($"[Rpc_RequestGrab] Server nhận yêu cầu từ {gameObject.name} → {victimNetObj.gameObject.name}");
+        
+        // BƯỚC 2 (Máy chủ thực thi): Server kiểm tra và phê duyệt
+        var victimController = victimNetObj.GetComponent<ActiveRagdollController>();
+        if (victimController != null && !victimController.IsBeingGrabbed)
+        {
+            // ✅ Server gán GrabberPlayerID cho victim (networked variable)
+            victimController.GrabberPlayerID = Object.InputAuthority.PlayerId;
+            Debug.Log($"[Rpc_RequestGrab] Server phê duyệt: victim's GrabberPlayerID = {victimController.GrabberPlayerID}");
+            
+            // ✅ Server gọi callback để tất cả machines biết
+            Rpc_ApproveGrab(victimNetObj);
+        }
+        else
+        {
+            Debug.Log($"[Rpc_RequestGrab] Server TỪNG CHỐI: victim đang bị cầm hoặc không hợp lệ");
+        }
+    }
+    
+    /// <summary>
+    /// BƯỚC 3 (Đồng bộ toàn mạng): Server broadcast phê duyệt grab tới tất cả machines
+    /// </summary>
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_ApproveGrab(NetworkObject victimNetObj)
+    {
+        Debug.Log($"[Rpc_ApproveGrab] Tất cả machines nhận được phê duyệt: {gameObject.name} sẽ cầm {victimNetObj.gameObject.name}");
+        
+        // ✅ Grabber (chính người gọi) tạo Joint cục bộ
+        if (Object.HasInputAuthority)
+        {
+            var victimRagdoll = victimNetObj.GetComponent<ActiveRagdollController>();
+            if (victimRagdoll != null)
+            {
+                Rigidbody victimRb = victimRagdoll.GetComponentInChildren<Rigidbody>();
+                if (victimRb != null)
+                {
+                    Debug.Log($"[Rpc_ApproveGrab] Grabber tạo Joint");
+                    AttachHand(leftPhysicsHand, victimRb);
+                    AttachHand(rightPhysicsHand, victimRb);
+                    
+                    if (spineAnchorRb != null)
+                        AttachBody(spineAnchorRb, victimRb);
+                }
+            }
+        }
     }
 
     public void ReleaseGrab()
     {
-        if (grabbedObjectId.IsValid)
-            Rpc_SetGrabbedState(false, grabbedObjectId);
+        if (grabbedObjectId.IsValid && grabbedTargetController != null)
+        {
+            Debug.Log($"[ReleaseGrab] Yêu cầu thả {grabbedTargetController.gameObject.name}");
+            
+            // ✅ Gửi RPC lên Server để release grab
+            Rpc_RequestRelease(grabbedTargetController.Object);
+        }
 
         foreach (var joint in activeGrabJoints)
         {
@@ -324,9 +382,32 @@ public class PlayerCombat : NetworkBehaviour
         if (anim != null)
             anim.SetBool("IsGrabbing", false);
     }
+    
+    /// <summary>
+    /// Yêu cầu thả victim lên Server
+    /// </summary>
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    public void Rpc_RequestRelease(NetworkObject victimNetObj)
+    {
+        Debug.Log($"[Rpc_RequestRelease] Server nhận yêu cầu thả từ {gameObject.name}");
+        
+        var victimController = victimNetObj.GetComponent<ActiveRagdollController>();
+        if (victimController != null)
+        {
+            // ✅ Server reset GrabberPlayerID
+            victimController.GrabberPlayerID = -1;
+            Debug.Log($"[Rpc_RequestRelease] Server đã reset GrabberPlayerID = -1");
+        }
+    }
 
     private void AttachHand(Rigidbody handRb, Rigidbody targetRb)
     {
+        if (stats == null)
+        {
+            Debug.LogError($"[AttachHand] stats is NULL! Cannot attach {handRb.name}");
+            return;
+        }
+        
         ConfigurableJoint joint = handRb.gameObject.AddComponent<ConfigurableJoint>();
         joint.connectedBody = targetRb;
 
@@ -355,11 +436,18 @@ public class PlayerCombat : NetworkBehaviour
 
         joint.breakForce = stats.grabBreakForce * 100f;
         joint.breakTorque = stats.grabBreakForce * 100f;
+        
         activeGrabJoints.Add(joint);
     }
 
     private void AttachBody(Rigidbody bodyRb, Rigidbody targetRb)
     {
+        if (stats == null)
+        {
+            Debug.LogError($"[AttachBody] stats is NULL! Cannot attach {bodyRb.name}");
+            return;
+        }
+        
         ConfigurableJoint joint = bodyRb.gameObject.AddComponent<ConfigurableJoint>();
         joint.connectedBody = targetRb;
 
@@ -380,6 +468,7 @@ public class PlayerCombat : NetworkBehaviour
 
         joint.breakForce = stats.grabBreakForce * 200f;
         joint.breakTorque = stats.grabBreakForce * 200f;
+        
         activeGrabJoints.Add(joint);
     }
 

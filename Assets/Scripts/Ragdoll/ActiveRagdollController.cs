@@ -28,6 +28,8 @@ public class ActiveRagdollController : NetworkBehaviour
     // --- BIẾN ĐỒNG BỘ MẠNG (NETWORKED) ---
     [Networked] public NetworkBool IsPunching { get; set; }
     [Networked] public Vector2 MoveInput { get; set; }
+    [Networked] public NetworkBool IsGrabbedNet { get; set; }
+    [Networked] public int GrabberPlayerID { get; set; } = -1;  // ✅ ID của người cầm (-1 = không ai cầm)
     // -------------------------------------
 
     [Header("Leaning (Nghiêng người)")]
@@ -63,6 +65,7 @@ public class ActiveRagdollController : NetworkBehaviour
 
     private float punchMuscleTimer = 0f;
     private float hitStaggerTimer = 0f;
+    private int lastGrabberID = -1;  // ✅ Track thay đổi GrabberPlayerID
 
     [Header("Hit Reaction")]
     public float hitStaggerDuration = 0.35f;
@@ -103,6 +106,11 @@ public class ActiveRagdollController : NetworkBehaviour
             stats.OnWakeUp -= OnWakeUpReceived;
         }
     }
+
+    /// <summary>
+    /// Callback khi GrabberPlayerID thay đổi (được gọi tự động bởi Fusion)
+    /// </summary>
+    // NOTE: Xóa OnChangedInputOrData vì check trong FixedUpdate đã đủ
 
     void OnKnockoutReceived()
     {
@@ -282,7 +290,9 @@ public class ActiveRagdollController : NetworkBehaviour
             }
         }
 
-        Debug.Log($"[ActiveRagdoll] Da nap thanh cong {bones.Length} xuong va {originalMasses.Count} Rigidbody vao danh sach can nang.");
+        Debug.Log($"[InitializeRig] {gameObject.name} | Bones:{bones.Length} | SavedMasses:{originalMasses.Count}");
+        foreach (var kvp in originalMasses)
+            Debug.Log($"  → {kvp.Key.name}: {kvp.Value}f");
     }
 
     private void IgnoreSelfCollisions()
@@ -306,6 +316,37 @@ public class ActiveRagdollController : NetworkBehaviour
         {
             IsPunching = inputData.isPunching;
             MoveInput = inputData.moveInput;
+            
+            // ✅ Sync grab state thông qua GrabberPlayerID
+            if (IsBeingGrabbed && grabbers.Count > 0)
+            {
+                var grabber = grabbers[0];
+                var grabberNetObj = grabber.GetComponent<NetworkObject>();
+                if (grabberNetObj != null)
+                {
+                    GrabberPlayerID = grabberNetObj.InputAuthority.PlayerId;
+                }
+            }
+            else if (!IsBeingGrabbed && GrabberPlayerID != -1)
+            {
+                GrabberPlayerID = -1;
+            }
+        }
+        
+        // ✅ Nếu đang bị grab, sync vị trí từ grabber
+        if (IsBeingGrabbed && grabbers.Count > 0 && playerRb != null)
+        {
+            GameObject grabber = grabbers[0];
+            if (grabber != null)
+            {
+                Rigidbody grabberRb = grabber.GetComponent<Rigidbody>();
+                if (grabberRb != null)
+                {
+                    Vector3 targetPos = grabberRb.position + Vector3.up * 0.5f;
+                    Vector3 diff = targetPos - playerRb.position;
+                    playerRb.linearVelocity = diff * 5f;
+                }
+            }
         }
     }
 
@@ -322,6 +363,13 @@ public class ActiveRagdollController : NetworkBehaviour
             return;
         }
 
+        // ✅ Check nếu GrabberPlayerID thay đổi
+        if (GrabberPlayerID != lastGrabberID)
+        {
+            OnGrabberPlayerIDChanged(lastGrabberID, GrabberPlayerID);
+            lastGrabberID = GrabberPlayerID;
+        }
+
         if (StatsReady && stats.isKnockedOut)
         {
             UpdateAllMuscleDrives(0, 0);
@@ -329,7 +377,7 @@ public class ActiveRagdollController : NetworkBehaviour
             return;
         }
 
-        float currentBalanceSpring = IsBeingGrabbed ? 0 : balanceSpring;
+        float currentBalanceSpring = (IsBeingGrabbed || IsGrabbedNet) ? 0 : balanceSpring;
         float currentMuscleSpring = GetTargetMuscleSpring();
 
         if (punchMuscleTimer > 0f) punchMuscleTimer -= Time.fixedDeltaTime;
@@ -344,7 +392,7 @@ public class ActiveRagdollController : NetworkBehaviour
 
         // DÙNG BIẾN ĐÃ ĐỒNG BỘ HOẶC TIMER ĐỂ ÁP DỤNG LỰC CHO TẤT CẢ MỌI MÁY (KỂ CẢ PROXY)
         bool isCurrentlyPunching = punchMuscleTimer > 0f || IsPunching;
-        if (isCurrentlyPunching && !IsBeingGrabbed)
+        if (isCurrentlyPunching && !(IsBeingGrabbed || IsGrabbedNet))
         {
             currentMuscleSpring *= 10f;
             currentBalanceSpring *= 0f;
@@ -352,6 +400,8 @@ public class ActiveRagdollController : NetworkBehaviour
 
         // CẢ HOST VÀ PROXY ĐỀU CẦN UPDATE CƠ BẮP ĐỂ TẠO DÁNG THEO ANIMATOR
         UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
+
+        Debug.Log($"[FixedUpdate] {gameObject.name} | GrabberID:{GrabberPlayerID} | IsGrabbedNet:{IsGrabbedNet} | IsBeingGrabbed:{IsBeingGrabbed} | BalanceSpring:{currentBalanceSpring} | Muscle:{currentMuscleSpring:F0} | Mass:{playerRb.mass:F1}");
 
         // Tính toán nghiêng người dựa trên Input đã đồng bộ (tắt khi vừa bị đấm)
         HandleProceduralLeaning(isHitStaggered ? Vector2.zero : MoveInput);
@@ -469,13 +519,16 @@ public class ActiveRagdollController : NetworkBehaviour
     public float GetTargetMuscleSpring()
     {
         if (StatsReady && stats.isKnockedOut) return 0f;
-        if (IsBeingGrabbed) return 1000f;
+        // ✅ Dùng cả IsBeingGrabbed (local) và IsGrabbedNet (network) để cover cả 2 trường hợp
+        if (IsBeingGrabbed || IsGrabbedNet) return 1000f;
         return muscleSpring;
     }
 
     public void SetGrabbedState(bool state, GameObject grabber)
     {
         bool wasGrabbed = IsBeingGrabbed;
+        
+        Debug.Log($"[SetGrabbedState] {gameObject.name} | state:{state} | grabber:{grabber?.name} | wasGrabbed:{wasGrabbed} | HasStateAuth:{Object?.HasStateAuthority}");
 
         if (state)
         {
@@ -492,23 +545,109 @@ public class ActiveRagdollController : NetworkBehaviour
         grabbers.RemoveAll(g => g == null);
         bool isGrabbedNow = grabbers.Count > 0;
 
+        Debug.Log($"[SetGrabbedState] After update | grabbers.Count:{grabbers.Count} | isGrabbedNow:{isGrabbedNow}");
+
         if (!wasGrabbed && isGrabbedNow) // Người đầu tiên tóm
         {
+            Debug.Log($"[SetGrabbedState] APPLY GRAB PHYSICS - Reducing mass and muscle");
             foreach (var rb in originalMasses.Keys)
             {
-                if (rb != null) rb.mass = 1.5f;
+                if (rb != null)
+                {
+                    Debug.Log($"  → Setting {rb.name} mass: {rb.mass} → 1.5f");
+                    rb.mass = 1.5f;
+                }
             }
         }
         else if (wasGrabbed && !isGrabbedNow) // Người cuối cùng thả
         {
+            Debug.Log($"[SetGrabbedState] RELEASE GRAB PHYSICS - Restoring mass and muscle");
             foreach (var kvp in originalMasses)
             {
-                if (kvp.Key != null) kvp.Key.mass = kvp.Value;
+                if (kvp.Key != null)
+                {
+                    Debug.Log($"  → Restoring {kvp.Key.name} mass: {kvp.Key.mass} → {kvp.Value}");
+                    kvp.Key.mass = kvp.Value;
+                }
             }
         }
 
         UpdateAllMuscleDrives();
-        DebugGrabStatus(); // 1 log bao quát duy nhất
+        DebugGrabStatus();
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void Rpc_SetGrabbedStateNetwork(NetworkBool state, NetworkObject grabberNetObj, Vector3 grabPosition)
+    {
+        GameObject grabber = grabberNetObj != null ? grabberNetObj.gameObject : null;
+        Debug.Log($"[Rpc_SetGrabbedStateNetwork] {gameObject.name} received | state:{state} | grabber:{grabber?.name} | grabPos:{grabPosition}");
+        SetGrabbedState((bool)state, grabber);
+    }
+
+    /// <summary>
+    /// Victim tự tạo joint để cảm nhận được lực kéo từ grabber
+    /// </summary>
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void Rpc_CreateGrabJoint(NetworkObject grabberNetObj, NetworkBool isCreating)
+    {
+        if (grabberNetObj == null) return;
+
+        GameObject grabber = grabberNetObj.gameObject;
+        Debug.Log($"[Rpc_CreateGrabJoint] {gameObject.name} received isCreating:{isCreating} from {grabber.name}");
+
+        if ((bool)isCreating)
+        {
+            // Tìm các xương kéo từ grabber
+            var grabberCombat = grabber.GetComponent<PlayerCombat>();
+            if (grabberCombat != null)
+            {
+                var grabberStats = grabber.GetComponent<PlayerStats>();
+                if (grabberStats == null) return;
+
+                // Victim tự tạo joint để nhận cảm giác kéo
+                Rigidbody victimSpine = FindBoneRigidbody("spine.003");
+                if (victimSpine != null && playerRb != null)
+                {
+                    // Tạo joint giả để victim cảm nhận lực - không cần connect gì cả
+                    // Chỉ cần để victim biết mình đang bị kéo
+                    ConfigurableJoint victimJoint = victimSpine.gameObject.GetComponent<ConfigurableJoint>();
+                    if (victimJoint == null)
+                    {
+                        victimJoint = victimSpine.gameObject.AddComponent<ConfigurableJoint>();
+                        victimJoint.connectedBody = grabber.GetComponent<Rigidbody>();
+                        victimJoint.xMotion = victimJoint.yMotion = victimJoint.zMotion = ConfigurableJointMotion.Limited;
+                        victimJoint.linearLimit = new SoftJointLimit { limit = 0.5f };
+                        victimJoint.linearLimitSpring = new SoftJointLimitSpring 
+                        { 
+                            spring = grabberStats.grabSpring * 0.5f, 
+                            damper = grabberStats.grabDamper 
+                        };
+                        victimJoint.enableCollision = false;
+                        Debug.Log($"[Rpc_CreateGrabJoint] Created joint on {victimSpine.name}");
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Xóa tất cả grab joint khi release
+            Rigidbody[] allBones = physicRig.GetComponentsInChildren<Rigidbody>();
+            foreach (var rb in allBones)
+            {
+                ConfigurableJoint jt = rb.GetComponent<ConfigurableJoint>();
+                if (jt != null && jt.connectedBody != null && jt.connectedBody.GetComponentInParent<PlayerCombat>() != null)
+                {
+                    Debug.Log($"[Rpc_CreateGrabJoint] Removed joint from {rb.name}");
+                    Destroy(jt);
+                }
+            }
+        }
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_BroadcastIsGrabbedNet(NetworkBool isGrabbed)
+    {
+        IsGrabbedNet = (bool)isGrabbed;
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -522,10 +661,8 @@ public class ActiveRagdollController : NetworkBehaviour
         string koStr = (StatsReady && stats.isKnockedOut) ? "YES" : "NO";
 
         Debug.Log(
-            $"[GRAB STATUS] {gameObject.name} | " +
-            $"Grabbed:{IsBeingGrabbed} | Grabbers:{grabbers.Count} | " +
-            $"Muscle:{curMuscle} | Mass:{curMass:F1} | " +
-            $"Speed:{speedStr} | CanJump:{jumpStr} | CanGrab:{grabStr} | KO:{koStr}"
+            $"[GRAB] {gameObject.name} | Grabbed:{IsBeingGrabbed} | Grabbers:{grabbers.Count} | " +
+            $"Muscle:{curMuscle} | Mass:{curMass:F1} | KO:{koStr}"
         );
     }
 
@@ -643,4 +780,60 @@ public class ActiveRagdollController : NetworkBehaviour
         stats.ResetAfterWakeUp();
         knockoutCoroutine = null; // Xóa reference khi hoàn thành tự nhiên
     }
-}
+
+    /// <summary>
+    /// Callback khi GrabberPlayerID thay đổi
+    /// </summary>
+    private void OnGrabberPlayerIDChanged(int oldGrabberID, int newGrabberID)
+    {
+        Debug.Log($"[OnGrabberPlayerIDChanged] {gameObject.name} | Old:{oldGrabberID} → New:{newGrabberID}");
+
+        if (newGrabberID != -1)
+        {
+            // ✅ BỊ CẦM: Tắt input, đóng băng hips
+            OnBeingGrabbed();
+        }
+        else
+        {
+            // ✅ ĐƯỢC THẢ: Khôi phục lại bình thường
+            OnReleaseGrab();
+        }
+    }
+
+    private void OnBeingGrabbed()
+    {
+        Debug.Log($"[OnBeingGrabbed] {gameObject.name}");
+
+        // 1. Tắt input để không đi lại
+        if (playerInput != null)
+            playerInput.enabled = false;
+
+        // 2. Đóng băng hips để không cố đứng yên
+        if (hipRb != null)
+        {
+            hipRb.isKinematic = true;
+            hipRb.linearVelocity = Vector3.zero;
+            hipRb.angularVelocity = Vector3.zero;
+        }
+
+        // 3. Set grab physics (mass 1.5f, muscle 1000)
+        SetGrabbedState(true, null);
+    }
+
+    private void OnReleaseGrab()
+    {
+        Debug.Log($"[OnReleaseGrab] {gameObject.name}");
+
+        // 1. Bật lại input
+        if (playerInput != null)
+            playerInput.enabled = true;
+
+        // 2. Khôi phục hips
+        if (hipRb != null)
+        {
+            hipRb.isKinematic = false;
+        }
+
+        // 3. Restore grab physics
+        SetGrabbedState(false, null);
+    }}
