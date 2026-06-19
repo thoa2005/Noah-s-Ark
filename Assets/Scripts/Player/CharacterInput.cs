@@ -44,17 +44,23 @@ public class CharacterInput : MonoBehaviour
     {
         if (!v.isPressed) return;
         if (Time.time - lastAttackTime < INPUT_COOLDOWN) return;
+        
+        AudioManager.Instance.PlayPunchSound();
+
         lastAttackTime = Time.time;
         isPunching = true;
     }
 
-    public void OnJump(InputValue v)
-    {
-        if (!v.isPressed) return;
-        if (Time.time - lastJumpTime < INPUT_COOLDOWN) return;
-        lastJumpTime = Time.time;
-        isJumpPressed = true;
-    }
+   public void OnJump(InputValue v)
+{
+    if (!v.isPressed) return;
+
+    if (isJumpPressed) return; // chống gọi liên tục
+
+    AudioManager.Instance.PlayJumpSound();
+
+    isJumpPressed = true;
+}
 
     public void OnInteract(InputValue v)
     {

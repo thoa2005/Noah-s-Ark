@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Quản lý vòng lặp game: Team, Round (3 màn), chết không respawn giữa màn,
@@ -19,11 +21,45 @@ public class GameManager : MonoBehaviour
     public float fallLimit = -5f;       // Y thấp hơn mức này = rơi xuống nước = chết
     public float endRoundDelay = 2f;    // Chờ bao lâu trước khi chuyển màn
 
+    [Header("Round Transition")]
+public Camera mainCamera;
+
+public Image fadePanel;
+
+public float cameraMoveDuration = 3f;
+public float cameraRotateDuration = 3f;
+
+   [Header("Loading Screen")]
+
+public GameObject loadingPanel;
+
+public Image posterImage;
+
+public Image loadingFill;
+
+public TMP_Text loadingText;
+
+public Sprite round1Poster;
+public Sprite round2Poster;
+public Sprite round3Poster;
+
     [Header("Spawn Points")]
     public Transform[] spawnPoints;     // Gán trong Inspector, mỗi team 1 điểm spawn
 
     [Header("Spectator")]
     public Transform boatCenter;        // Camera nhìn vào đây khi tất cả đồng đội chết
+
+    [Header("Weather System")]
+public Material skyboxRound1;
+public Material skyboxRound2;
+public Material skyboxRound3;
+
+public GameObject stormEffects;
+public GameObject lightningFlash;
+private Coroutine lightningRoutine;
+
+[Header("Lighting")]
+public Light sunLight;
 
     // ------------------------------------------------------------------ //
     //  DỮ LIỆU TEAM
@@ -69,6 +105,80 @@ public class GameManager : MonoBehaviour
     // ------------------------------------------------------------------ //
     //  UNITY LIFECYCLE
     // ------------------------------------------------------------------ //
+GameObject GetWinningPlayer()
+{
+    foreach (var team in teams)
+    {
+        var alive = team.GetAliveMembers();
+
+        if (alive.Count > 0)
+            return alive[0];
+    }
+
+    return null;
+}
+IEnumerator WinnerCinematic(GameObject winner)
+{
+    Vector3 startPos =
+        winner.transform.position
+        + new Vector3(0, 10, -15);
+
+    Vector3 endPos =
+        winner.transform.position
+        + new Vector3(0, 3, -5);
+
+    float t = 0;
+
+    while (t < 1)
+    {
+        t += Time.deltaTime / cameraMoveDuration;
+
+        mainCamera.transform.position =
+            Vector3.Lerp(startPos, endPos, t);
+
+        mainCamera.transform.LookAt(winner.transform);
+
+        yield return null;
+    }
+
+    float angle = 0;
+
+    float timer = 0;
+
+    while (timer < cameraRotateDuration)
+    {
+        timer += Time.deltaTime;
+
+        angle += 30f * Time.deltaTime;
+
+        Vector3 offset =
+            Quaternion.Euler(0, angle, 0)
+            * new Vector3(0, 3, -5);
+
+        mainCamera.transform.position =
+            winner.transform.position + offset;
+
+        mainCamera.transform.LookAt(winner.transform);
+
+        yield return null;
+    }
+}
+IEnumerator FadeToBlack()
+{
+    float alpha = 0;
+
+    while (alpha < 1)
+    {
+        alpha += Time.deltaTime;
+
+        Color c = fadePanel.color;
+        c.a = alpha;
+
+        fadePanel.color = c;
+
+        yield return null;
+    }
+}
 
     void Awake()
     {
@@ -76,14 +186,25 @@ public class GameManager : MonoBehaviour
         else { Destroy(gameObject); return; }
     }
 
-    void Start()
-    {
-        // Nếu chưa gán team nào (test nhanh), tự tạo từ tag Player/Bot trong scene
-        if (teams.Count == 0)
-            AutoBuildTeamsFromScene();
+void Start()
+{
+    currentRound = 1;
 
-        StartRound();
-    }
+    SetupRoundWeather();
+
+    if (teams.Count == 0)
+        AutoBuildTeamsFromScene();
+
+    StartCoroutine(GameStartRoutine());
+}
+IEnumerator GameStartRoutine()
+{
+    yield return StartCoroutine(
+        ShowLoadingScreen(1)
+    );
+
+    StartRound();
+}
 
     void Update()
     {
@@ -156,7 +277,7 @@ public class GameManager : MonoBehaviour
             cam.EnterSpectatorMode(myTeam, boatCenter);
         }
 
-        Debug.Log($"[GameManager] {player.name} đã bị loại khỏi màn {currentRound + 1}.");
+        Debug.Log($"[GameManager] {player.name} đã bị loại khỏi màn {currentRound }.");
     }
 
     /// <summary>
@@ -175,37 +296,63 @@ public class GameManager : MonoBehaviour
             if (aliveTeams.Count == 1)
             {
                 aliveTeams[0].roundsWon++;
-                Debug.Log($"[GameManager] {aliveTeams[0].teamName} thắng màn {currentRound + 1}! " +
+                Debug.Log($"[GameManager] {aliveTeams[0].teamName} thắng màn {currentRound }! " +
                           $"Tổng điểm: {aliveTeams[0].roundsWon}");
             }
             else
             {
-                Debug.Log($"[GameManager] Màn {currentRound + 1} hòa! Không ai được điểm.");
+                Debug.Log($"[GameManager] Màn {currentRound} hòa! Không ai được điểm.");
             }
 
             StartCoroutine(EndRoundRoutine());
         }
     }
 
-    IEnumerator EndRoundRoutine()
+IEnumerator EndRoundRoutine()
+{
+    yield return new WaitForSeconds(endRoundDelay);
+
+    GameObject winner =
+        GetWinningPlayer();
+
+    if (winner != null)
     {
-        // Chờ để người chơi thấy kết quả trước khi chuyển màn
-        yield return new WaitForSeconds(endRoundDelay);
-
-        currentRound++;
-
-        if (currentRound >= maxRounds)
-            EndGame();
-        else
-            StartRound();
+        yield return StartCoroutine(
+            WinnerCinematic(winner)
+        );
     }
 
+    yield return StartCoroutine(
+        FadeToBlack()
+    );
+
+    currentRound++;
+
+    if (currentRound > maxRounds)
+    {
+        EndGame();
+    }
+    else
+    {
+        yield return StartCoroutine(
+            ShowLoadingScreen(currentRound)
+        );
+
+        Color c = fadePanel.color;
+        c.a = 0;
+        fadePanel.color = c;
+
+        SetupRoundWeather();
+
+        StartRound();
+    }
+}
     /// <summary>
     /// Bắt đầu màn mới: hồi sinh tất cả player, reset state.
     /// </summary>
     void StartRound()
     {
-        Debug.Log($"[GameManager] ===== BẮT ĐẦU MÀN {currentRound + 1} / {maxRounds} =====");
+        Debug.Log($"[GameManager] ===== BẮT ĐẦU MÀN {currentRound} / {maxRounds} =====");
 
         for (int i = 0; i < teams.Count; i++)
         {
@@ -267,6 +414,7 @@ public class GameManager : MonoBehaviour
 
     void EndGame()
     {
+
         state = GameState.GameOver;
 
         TeamData winner = null;
@@ -287,7 +435,152 @@ public class GameManager : MonoBehaviour
 
         // TODO: Hiện màn hình kết quả cuối game
     }
+    IEnumerator LightningLoop()
+{
+    while (true)
+    {
+        yield return new WaitForSeconds(Random.Range(10f, 15f));
 
+        if (lightningFlash != null)
+        {
+            lightningFlash.SetActive(true);
+
+            AudioManager.Instance.PlayLightningSound();
+
+            yield return new WaitForSeconds(0.2f);
+
+            lightningFlash.SetActive(false);
+        }
+    }
+}
+
+void SetupRoundWeather()
+{
+    if (currentRound == 1)
+    {
+        sunLight.color = new Color(1f, 0.75f, 0.45f);
+
+sunLight.intensity = 1.2f;
+
+sunLight.transform.rotation =
+    Quaternion.Euler(20f, 30f, 0f);
+
+        RenderSettings.skybox = skyboxRound1;
+
+        RenderSettings.ambientLight =
+    new Color(0.8f, 0.55f, 0.35f);
+
+        if (WaterController.Instance != null)
+{
+    WaterController.Instance.SetCalmSea();
+}
+
+        if (stormEffects != null)
+            stormEffects.SetActive(false);
+
+        if (lightningFlash != null)
+    lightningFlash.SetActive(false);
+
+        if (lightningRoutine != null)
+            StopCoroutine(lightningRoutine);
+    }
+    else if (currentRound == 2)
+    {
+        sunLight.color =
+    new Color(0.6f, 0.65f, 0.75f);
+
+sunLight.intensity = 0.4f;
+
+sunLight.transform.rotation =
+    Quaternion.Euler(70f, 30f, 0f);
+
+        RenderSettings.skybox = skyboxRound2;
+
+        RenderSettings.ambientLight =
+    new Color(0.25f, 0.25f, 0.35f);
+
+        if (WaterController.Instance != null)
+{
+    WaterController.Instance.SetStormSea();
+}
+
+        if (stormEffects != null)
+            stormEffects.SetActive(true);
+
+            AudioManager.Instance.StartRain();
+
+        if (lightningRoutine != null)
+            StopCoroutine(lightningRoutine);
+
+        lightningRoutine = StartCoroutine(LightningLoop());
+    }
+    else if (currentRound == 3)
+    {
+        sunLight.color =
+    Color.white;
+
+sunLight.intensity = 1.3f;
+
+sunLight.transform.rotation =
+    Quaternion.Euler(40f, 30f, 0f);
+
+        RenderSettings.skybox = skyboxRound3;
+
+        RenderSettings.ambientLight =
+    new Color(0.8f, 0.8f, 0.9f);
+
+        if (WaterController.Instance != null)
+{
+    WaterController.Instance.SetAfterStormSea();
+}
+
+        if (stormEffects != null)
+            stormEffects.SetActive(false);
+
+            AudioManager.Instance.StopAmbient();
+
+        if (lightningRoutine != null)
+            StopCoroutine(lightningRoutine);
+    }
+
+    DynamicGI.UpdateEnvironment();
+}
+IEnumerator ShowLoadingScreen(int roundNumber)
+{
+    loadingPanel.SetActive(true);
+
+    if (roundNumber == 1)
+        posterImage.sprite = round1Poster;
+
+    else if (roundNumber == 2)
+        posterImage.sprite = round2Poster;
+
+    else if (roundNumber == 3)
+        posterImage.sprite = round3Poster;
+
+    loadingFill.fillAmount = 0;
+
+    float progress = 0;
+
+    while (progress < 1f)
+    {
+        progress += Time.deltaTime / 4f;
+progress = Mathf.Clamp01(progress);
+
+        loadingFill.fillAmount = progress;
+
+        loadingText.text =
+            "Loading... "
+            + Mathf.RoundToInt(progress * 100)
+            + "%";
+
+        yield return null;
+    }
+
+    yield return new WaitForSeconds(1f);
+
+    loadingPanel.SetActive(false);
+}
     // ------------------------------------------------------------------ //
     //  HELPER
     // ------------------------------------------------------------------ //
@@ -346,8 +639,9 @@ public class GameManager : MonoBehaviour
     //  PUBLIC API
     // ------------------------------------------------------------------ //
 
-    public int  GetCurrentRound() => currentRound + 1;
+    public int  GetCurrentRound() => currentRound;
     public int  GetMaxRounds()    => maxRounds;
     public bool IsGameOver()      => state == GameState.GameOver;
     public List<TeamData> GetTeams() => teams;
+
 }

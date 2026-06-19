@@ -119,6 +119,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (dir.magnitude > 0.1f)
         {
+            AudioManager.Instance.StartWalking();
             float finalMoveSpeed = stats.moveSpeed;
             if (ragdoll != null && ragdoll.IsBeingGrabbed) finalMoveSpeed *= 0.1f;
 
@@ -145,6 +146,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
+            AudioManager.Instance.StopWalking();
             lastMoveDir = Vector3.zero;
             currentVelocityXZ = Vector3.Lerp(currentVelocityXZ, Vector3.zero,
                 (1f / decelerationTime) * Time.fixedDeltaTime);
