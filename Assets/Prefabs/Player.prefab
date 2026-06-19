@@ -11875,11 +11875,14 @@ MonoBehaviour:
   _IsPunching:
     _value: 0
   _MoveInput: {x: 0, y: 0}
+  _IsGrabbedNet:
+    _value: 0
+  _GrabberPlayerID: -1
   leanAmount: 7.5
   leanSpeed: 5
   stats: {fileID: 4051467310743205094}
   realHip: {fileID: 0}
-  hitStaggerDuration: 9.77
+  hitStaggerDuration: 0.22
   hitStaggerMuscleMult: 0.05
 --- !u!114 &1919387608882267368
 MonoBehaviour:

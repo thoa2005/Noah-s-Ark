@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7803276362683257875
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 929016213632601755}
+  - component: {fileID: 5089825434084009224}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &929016213632601755
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7803276362683257875}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5089825434084009224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7803276362683257875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 159638305a5c58c4f9d531dc9e531b75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  maxRounds: 3
+  fallLimit: -5
+  endRoundDelay: 2
+  mainCamera: {fileID: 0}
+  fadePanel: {fileID: 0}
+  cameraMoveDuration: 3
+  cameraRotateDuration: 3
+  loadingPanel: {fileID: 0}
+  posterImage: {fileID: 0}
+  loadingFill: {fileID: 0}
+  loadingText: {fileID: 0}
+  round1Poster: {fileID: 21300000, guid: 46f6aca99645b4fcbb988b88e081c7d8, type: 3}
+  round2Poster: {fileID: 21300000, guid: f90e5dca50161486ebe95e68f1560bf5, type: 3}
+  round3Poster: {fileID: 21300000, guid: bf5085649a33548cbba501456e2e22d6, type: 3}
+  spawnPoints: []
+  boatCenter: {fileID: 0}
+  skyboxRound1: {fileID: 2100000, guid: e2341a9d03e86ec4290c72b1e22bbc7c, type: 2}
+  skyboxRound2: {fileID: 2100000, guid: 2039a0ad0a9d05549928b70362f54902, type: 2}
+  skyboxRound3: {fileID: 2100000, guid: f15c336556dd74f40aaca655f7767970, type: 2}
+  stormEffects: {fileID: 0}
+  lightningFlash: {fileID: 0}
+  sunLight: {fileID: 0}
+  teams: []
