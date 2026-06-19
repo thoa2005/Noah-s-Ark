@@ -24,6 +24,10 @@ public class PlayerMovement : NetworkBehaviour
     private Quaternion targetRotation;
     private Vector3 lastMoveDir;
 
+    // Giá trị animation do StateAuthority tính rồi đồng bộ cho mọi máy (proxy) để khớp dáng chạy
+    [Networked] public float AnimSpeed { get; set; }
+    [Networked] public float AnimMotionDir { get; set; }
+
     private void Awake()
     {
         ragdoll = GetComponent<ActiveRagdollController>();
@@ -41,22 +45,20 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
-        if (Object == null || !Object.IsValid || !Object.HasStateAuthority)
-            return;
+        float deltaTime = Runner != null ? Runner.DeltaTime : Time.fixedDeltaTime;
 
-        if (!GetInput(out NetworkInputData inputData))
+        // Chỉ chủ sở hữu tính toán di chuyển + giá trị animation (rồi đồng bộ qua [Networked])
+        if (Object != null && Object.IsValid && Object.HasStateAuthority)
         {
-            ApplyMovement(Vector2.zero, false);
-            return;
+            bool knockedOut = stats != null && stats.NetworkReady && stats.isKnockedOut;
+            if (knockedOut || !GetInput(out NetworkInputData inputData))
+                ApplyMovement(Vector2.zero, false);
+            else
+                ApplyMovement(inputData.moveInput, inputData.isJumpPressed);
         }
 
-        if (stats != null && stats.NetworkReady && stats.isKnockedOut)
-        {
-            ApplyMovement(Vector2.zero, false);
-            return;
-        }
-
-        ApplyMovement(inputData.moveInput, inputData.isJumpPressed);
+        // Mọi máy (kể cả proxy) cùng đẩy Animator theo giá trị đã đồng bộ để dáng chạy khớp nhau
+        UpdateAnimator(deltaTime);
     }
 
     private void ApplyMovement(Vector2 moveInput, bool jumpPressed)
@@ -131,20 +133,20 @@ public class PlayerMovement : NetworkBehaviour
             rb.linearVelocity = vel;
         }
 
-        UpdateAnimator(dir, isMovingBackwards, deltaTime);
+        // Lưu giá trị animation vào biến mạng để proxy ở máy khác phát cùng dáng
+        AnimSpeed = dir.magnitude;
+        if (dir.magnitude > 0.1f)
+            AnimMotionDir = isMovingBackwards ? -1f : 1f;
     }
 
-    private void UpdateAnimator(Vector3 dir, bool isMovingBackwards, float deltaTime)
+    private void UpdateAnimator(float deltaTime)
     {
         if (anim == null)
             return;
 
-        anim.SetFloat("Speed", dir.magnitude, 0.25f, deltaTime);
-        if (dir.magnitude > 0.1f)
-        {
-            float motionDir = isMovingBackwards ? -1f : 1f;
-            anim.SetFloat("MotionDirection", motionDir, 0.1f, deltaTime);
-        }
+        anim.SetFloat("Speed", AnimSpeed, 0.25f, deltaTime);
+        if (AnimSpeed > 0.1f)
+            anim.SetFloat("MotionDirection", AnimMotionDir, 0.1f, deltaTime);
     }
 
     private void Jump()

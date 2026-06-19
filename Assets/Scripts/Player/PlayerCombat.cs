@@ -26,8 +26,16 @@ public class PlayerCombat : NetworkBehaviour
     [Networked] public float punchTimer { get; set; }
     [Networked] public float grabTimer { get; set; }
     [Networked] public float chargeTimer { get; set; }
-    [Networked] public NetworkBool isGrabbing { get; set; }
+    [Networked, OnChangedRender(nameof(OnIsGrabbingChanged))]
+    public NetworkBool isGrabbing { get; set; }
     [Networked] public NetworkId grabbedObjectId { get; set; }
+
+    // Đồng bộ dáng cầm tới mọi máy khi biến mạng isGrabbing đổi
+    private void OnIsGrabbingChanged()
+    {
+        if (anim != null)
+            anim.SetBool("IsGrabbing", isGrabbing);
+    }
 
     private Rigidbody grabbedRb
     {
