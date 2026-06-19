@@ -232,7 +232,7 @@ public class BattleHUDUI : MonoBehaviour
 
     private void UpdateStatsBars()
     {
-        if (playerStats == null) return;
+        if (playerStats == null || !playerStats.NetworkReady) return;
 
         // 1. HP (currentStability / maxStability)
         if (hpBarFill != null)

@@ -62,6 +62,14 @@ public class ActiveRagdollController : NetworkBehaviour
     private float lastBalanceSpring, lastBalanceDamper;
 
     private float punchMuscleTimer = 0f;
+    private float hitStaggerTimer = 0f;
+
+    [Header("Hit Reaction")]
+    public float hitStaggerDuration = 0.35f;
+    [Range(0.05f, 1f)]
+    public float hitStaggerMuscleMult = 0.2f;
+
+    private bool StatsReady => stats != null && stats.NetworkReady;
 
     // Lưu reference coroutine để có thể cancel khi màn kết thúc giữa chừng
     private Coroutine knockoutCoroutine;
@@ -294,10 +302,10 @@ public class ActiveRagdollController : NetworkBehaviour
     public override void FixedUpdateNetwork()
     {
         // CHỈ STATE AUTHORITY MỚI ĐƯỢC PHÉP CẬP NHẬT BIẾN MẠNG (FUSION YÊU CẦU LÀM Ở ĐÂY)
-        if (Object != null && Object.IsValid && Object.HasStateAuthority && playerInput != null)
+        if (Object != null && Object.IsValid && Object.HasStateAuthority && GetInput(out NetworkInputData inputData))
         {
-            IsPunching = playerInput.isPunching;
-            MoveInput = playerInput.moveInput;
+            IsPunching = inputData.isPunching;
+            MoveInput = inputData.moveInput;
         }
     }
 
@@ -314,7 +322,7 @@ public class ActiveRagdollController : NetworkBehaviour
             return;
         }
 
-        if (stats != null && stats.isKnockedOut)
+        if (StatsReady && stats.isKnockedOut)
         {
             UpdateAllMuscleDrives(0, 0);
             balancer.UpdateBalance(0, 0, Quaternion.identity);
@@ -325,6 +333,14 @@ public class ActiveRagdollController : NetworkBehaviour
         float currentMuscleSpring = GetTargetMuscleSpring();
 
         if (punchMuscleTimer > 0f) punchMuscleTimer -= Time.fixedDeltaTime;
+
+        bool isHitStaggered = hitStaggerTimer > 0f;
+        if (isHitStaggered)
+        {
+            hitStaggerTimer -= Time.fixedDeltaTime;
+            currentMuscleSpring *= hitStaggerMuscleMult;
+            currentBalanceSpring = 0f;
+        }
 
         // DÙNG BIẾN ĐÃ ĐỒNG BỘ HOẶC TIMER ĐỂ ÁP DỤNG LỰC CHO TẤT CẢ MỌI MÁY (KỂ CẢ PROXY)
         bool isCurrentlyPunching = punchMuscleTimer > 0f || IsPunching;
@@ -337,8 +353,8 @@ public class ActiveRagdollController : NetworkBehaviour
         // CẢ HOST VÀ PROXY ĐỀU CẦN UPDATE CƠ BẮP ĐỂ TẠO DÁNG THEO ANIMATOR
         UpdateAllMuscleDrives(currentMuscleSpring, muscleDamper);
 
-        // Tính toán nghiêng người dựa trên Input đã đồng bộ
-        HandleProceduralLeaning(MoveInput);
+        // Tính toán nghiêng người dựa trên Input đã đồng bộ (tắt khi vừa bị đấm)
+        HandleProceduralLeaning(isHitStaggered ? Vector2.zero : MoveInput);
 
         // 3. Cap nhat Thang bang
         balancer.UpdateBalance(currentBalanceSpring, balanceDamper, Quaternion.identity);
@@ -364,24 +380,27 @@ public class ActiveRagdollController : NetworkBehaviour
 
         float tiltAngle = Vector3.Angle(realHip.up, Vector3.up);
         // Kiểm tra điều kiện xỉu (Nghiêng quá 65 độ)
-        if (stats != null && !stats.isKnockedOut && stats.currentStability > 50f && tiltAngle > 65f && !isWakingUp)
+        if (StatsReady && !stats.isKnockedOut && stats.currentStability > 50f && tiltAngle > 65f && !isWakingUp)
         {
             ApplyDamage(100f);
         }
 
 
 
-        // 6. Luc day nhac mông (Stand Up)
-        float actualTargetY = playerRb.position.y + targetHeight;
-        float diff = actualTargetY - hipRb.position.y;
-        if (diff > 0)
+        // 6. Luc day nhac mông (Stand Up) — tắt trong stagger để không triệt tiêu lực đấm
+        if (!isHitStaggered)
         {
-            float forceMult = (tiltAngle > 45f) ? 2f : 1f;
-            hipRb.AddForce(Vector3.up * standUpForce * diff * forceMult, ForceMode.Force);
+            float actualTargetY = playerRb.position.y + targetHeight;
+            float diff = actualTargetY - hipRb.position.y;
+            if (diff > 0)
+            {
+                float forceMult = (tiltAngle > 45f) ? 2f : 1f;
+                hipRb.AddForce(Vector3.up * standUpForce * diff * forceMult, ForceMode.Force);
 
-            Vector3 currentVel = hipRb.linearVelocity;
-            currentVel.y *= 0.95f;
-            hipRb.linearVelocity = currentVel;
+                Vector3 currentVel = hipRb.linearVelocity;
+                currentVel.y *= 0.95f;
+                hipRb.linearVelocity = currentVel;
+            }
         }
     }
 
@@ -449,7 +468,7 @@ public class ActiveRagdollController : NetworkBehaviour
 
     public float GetTargetMuscleSpring()
     {
-        if (stats != null && stats.isKnockedOut) return 0f;
+        if (StatsReady && stats.isKnockedOut) return 0f;
         if (IsBeingGrabbed) return 1000f;
         return muscleSpring;
     }
@@ -500,7 +519,7 @@ public class ActiveRagdollController : NetworkBehaviour
         string speedStr = IsBeingGrabbed ? "x0.1" : "Normal";
         string jumpStr = IsBeingGrabbed ? "NO" : "YES";
         string grabStr = IsBeingGrabbed ? "NO" : "YES";
-        string koStr = (stats != null && stats.isKnockedOut) ? "YES" : "NO";
+        string koStr = (StatsReady && stats.isKnockedOut) ? "YES" : "NO";
 
         Debug.Log(
             $"[GRAB STATUS] {gameObject.name} | " +
@@ -543,8 +562,32 @@ public class ActiveRagdollController : NetworkBehaviour
 
     public void ApplyDamage(float force)
     {
-        if (stats == null || stats.isKnockedOut) return;
+        if (stats == null || !StatsReady || stats.isKnockedOut) return;
         stats.Rpc_TakeDamage(force);
+    }
+
+    public void PlayHitReaction(string boneName, Vector3 impulse, ForceMode forceMode)
+    {
+        Rigidbody rb = FindBoneRigidbody(boneName);
+        if (rb != null)
+            rb.AddForce(impulse, forceMode);
+
+        hitStaggerTimer = Mathf.Max(hitStaggerTimer, hitStaggerDuration);
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void Rpc_PlayHitReaction(NetworkString<_64> boneName, Vector3 impulse, int forceMode)
+    {
+        PlayHitReaction(boneName.ToString(), impulse, (ForceMode)forceMode);
+    }
+
+    private Rigidbody FindBoneRigidbody(string boneName)
+    {
+        if (physicRig == null || string.IsNullOrEmpty(boneName))
+            return null;
+
+        Transform bone = FindRecursive(physicRig, boneName);
+        return bone != null ? bone.GetComponent<Rigidbody>() : null;
     }
 
     /// <summary>

@@ -45,6 +45,8 @@ public class PlayerStats : NetworkBehaviour
     public event Action OnKnockout;
     public event Action OnWakeUp;
 
+    public bool NetworkReady => Object != null && Object.IsValid;
+
     public override void Spawned()
     {
         if (HasStateAuthority)

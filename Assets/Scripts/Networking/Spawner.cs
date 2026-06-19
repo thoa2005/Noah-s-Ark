@@ -26,9 +26,6 @@ public class Spawner : SimulationBehaviour, INetworkRunnerCallbacks
             data.isGrabPressed = CharacterInput.Local.isGrabPressed;
 
             input.Set(data);
-
-            CharacterInput.Local.UseJumpRequest();
-            CharacterInput.Local.UsePunchRequest();
         }
     }
 

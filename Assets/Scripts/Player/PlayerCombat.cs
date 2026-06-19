@@ -6,27 +6,22 @@ public class PlayerCombat : NetworkBehaviour
 {
     [Header("Detectors")]
     public CombatDetect combatDetect;
-
     public PlayerStats stats;
 
     [Header("Grab+Throw (Chuot trai): Nhan=cam, Giu=charge, Nha=nem")]
-
     public Rigidbody leftPhysicsHand;
     public Rigidbody rightPhysicsHand;
-    private List<Joint> activeGrabJoints = new List<Joint>();
 
-
-    // Xuong tay de punch / grab chinh xac hon
-    Transform leftHandBone;
-    Transform rightHandBone;
-    private Rigidbody spineAnchorRb; // Xuong spine_3 lam diem neo nguc
-
-    // --- Runtime state ---
     public Animator anim;
+
+    private readonly List<Joint> activeGrabJoints = new List<Joint>();
+    private readonly Dictionary<GameObject, float> lastHitTime = new Dictionary<GameObject, float>();
+
+    private Transform leftHandBone;
+    private Transform rightHandBone;
+    private Rigidbody spineAnchorRb;
     private ActiveRagdollController ragdoll;
     private CharacterInput _input;
-
-    Dictionary<GameObject, float> lastHitTime = new Dictionary<GameObject, float>();
 
     [Networked] public float punchTimer { get; set; }
     [Networked] public float grabTimer { get; set; }
@@ -34,7 +29,7 @@ public class PlayerCombat : NetworkBehaviour
     [Networked] public NetworkBool isGrabbing { get; set; }
     [Networked] public NetworkId grabbedObjectId { get; set; }
 
-    Rigidbody grabbedRb
+    private Rigidbody grabbedRb
     {
         get
         {
@@ -44,7 +39,7 @@ public class PlayerCombat : NetworkBehaviour
         }
     }
 
-    ActiveRagdollController grabbedTargetController
+    private ActiveRagdollController grabbedTargetController
     {
         get
         {
@@ -54,153 +49,169 @@ public class PlayerCombat : NetworkBehaviour
         }
     }
 
-    void Start()
+    private void Start()
     {
-        if (anim == null) anim = GetComponentInChildren<Animator>();
+        if (anim == null)
+            anim = GetComponentInChildren<Animator>();
+
         ragdoll = GetComponent<ActiveRagdollController>();
         _input = GetComponent<CharacterInput>();
 
-        // RESET NGAY KHI VÀO GAME
         if (_input != null)
-        {
             _input.isGrabPressed = false;
-        }
 
         FindHandBones();
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
-        // Reset khi object được bật lại (vd: hồi sinh đầu màn mới)
         lastHitTime.Clear();
     }
 
-    void FindHandBones()
+    public override void FixedUpdateNetwork()
     {
-        if (ragdoll == null) ragdoll = GetComponent<ActiveRagdollController>();
-        if (ragdoll != null && ragdoll.physicRig != null)
-        {
-            Transform[] allBones = ragdoll.physicRig.GetComponentsInChildren<Transform>();
-            foreach (var t in allBones)
-            {
-                string n = t.name.ToLower();
-                if (n.Contains("hand.l") || n.Contains("hand_l"))
-                    leftHandBone = t;
-                if (n.Contains("hand.r") || n.Contains("hand_r"))
-                    rightHandBone = t;
-                // Tu dong tim xuong spine_3 lam diem neo nguc
-                if (n.Contains("spine.003"))
-                    spineAnchorRb = t.GetComponent<Rigidbody>();
-            }
-        }
-    }
+        if (Object == null || !Object.IsValid || !Object.HasStateAuthority)
+            return;
 
-    void FixedUpdate()
-    {
-        if (Object == null || !Object.IsValid || !Object.HasStateAuthority) return;
+        bool hasInput = GetInput(out NetworkInputData inputData);
+        float deltaTime = Runner != null ? Runner.DeltaTime : Time.fixedDeltaTime;
 
-        // KHÓA: Nếu đang xỉu hoặc đang gượng dậy -> Cấm hành động
         if (stats != null && stats.isKnockedOut)
         {
-            if (isGrabbing) ReleaseGrab();
-            return; // Ngất rồi thì không cho làm gì nữa
+            if (isGrabbing)
+                ReleaseGrab();
+            return;
         }
 
-        punchTimer -= Time.fixedDeltaTime;
-        grabTimer -= Time.fixedDeltaTime;
+        punchTimer -= deltaTime;
+        grabTimer -= deltaTime;
 
-        if (_input != null)
+        if (hasInput)
+            ProcessInput(inputData, deltaTime);
+
+        UpdateGrabStamina(deltaTime);
+        ProcessPunchHits();
+    }
+
+    private void ProcessInput(NetworkInputData inputData, float deltaTime)
+    {
+        if (inputData.isPunching && punchTimer <= 0)
+            PerformPunch();
+
+        if (!isGrabbing)
         {
-            // Xử lý Đấm
-            if (_input.isPunching && punchTimer <= 0)
+            if (inputData.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
             {
-                PerformPunch();
-            }
-
-            // Xử lý Cầm/Ném
-            if (!isGrabbing)
-            {
-                // Thêm Grab Cooldown: Chỉ cho phép tìm đồ vật 5 lần/giây để tránh spam lag
-                if (_input.isGrabPressed && stats.currentStamina > 10f && grabTimer <= 0)
-                {
-                    PerformGrab();
-                    grabTimer = 0.2f; // Nghỉ 0.2s mới cho tìm tiếp
-                }
-            }
-            else
-            {
-                if (grabbedRb == null) ReleaseGrab();
-                // Nếu vẫn đang giữ nút Grab thì sạc lực ném
-                else if (_input.isGrabPressed)
-                {
-                    chargeTimer = Mathf.Clamp(chargeTimer + Time.fixedDeltaTime, 0f, stats.maxChargeTime);
-                }
-                // Nếu nhả nút Grab ra thì thực hiện ném
-                else
-                {
-                    PerformThrow();
-                }
+                PerformGrab();
+                grabTimer = 0.2f;
             }
         }
-
-        // Logic tiêu tốn thể lực khi đang ôm đồ
-        if (isGrabbing)
+        else
         {
-            // TỰ ĐỘNG THẢ NẾU ĐỨT JOINT VẬT LÝ
-            bool anyJointAlive = false;
-            foreach (var j in activeGrabJoints) { if (j != null) anyJointAlive = true; }
-
-            if (!anyJointAlive || grabbedRb == null)
+            if (grabbedRb == null)
             {
                 ReleaseGrab();
             }
-            else if (!stats.UseStamina(stats.grabStaminaDrainRate * Time.fixedDeltaTime))
+            else if (inputData.isGrabPressed)
             {
-                ReleaseGrab(); // Hết thể lực tự buông
+                chargeTimer = Mathf.Clamp(chargeTimer + deltaTime, 0f, stats.maxChargeTime);
             }
-        }
-
-        if (anim != null && anim.GetCurrentAnimatorStateInfo(0).IsName("Punch"))
-        {
-            if (combatDetect == null) return;
-            Transform[] origins = { leftHandBone, rightHandBone };
-            foreach (var hand in origins)
+            else
             {
-                if (hand == null) continue;
-
-                var targets = combatDetect.GetPunchTargets(hand);
-                foreach (var hrb in targets)
-                {
-                    // KIỂM TRA: Nếu vừa đấm người này cách đây chưa đầy 0.1s thì bỏ qua
-                    if (lastHitTime.ContainsKey(hrb.gameObject))
-                    {
-                        if (Time.time - lastHitTime[hrb.gameObject] < 0.1f) continue;
-                    }
-
-                    // Thực hiện đẩy và gây sát thương
-                    Vector3 punchDir = (hrb.transform.position - hand.position).normalized + Vector3.up * 0.2f;
-                    hrb.AddForce(punchDir * stats.pushForce, ForceMode.Impulse);
-                    var targetController = hrb.GetComponentInParent<ActiveRagdollController>();
-                    if (targetController != null && targetController != this.ragdoll)
-                    {
-                        targetController.ApplyDamage(stats.punchForce);
-                    }
-                    // Ghi nhớ thời gian vừa đấm trúng người này
-                    lastHitTime[hrb.gameObject] = Time.time;
-                }
+                PerformThrow();
             }
         }
     }
 
-    // ------------------------------------------------------------------ //
-    //  ACTIONS
-    // ------------------------------------------------------------------ //
+    private void UpdateGrabStamina(float deltaTime)
+    {
+        if (!isGrabbing)
+            return;
+
+        bool anyJointAlive = false;
+        foreach (var joint in activeGrabJoints)
+        {
+            if (joint != null)
+                anyJointAlive = true;
+        }
+
+        if (!anyJointAlive || grabbedRb == null)
+        {
+            ReleaseGrab();
+        }
+        else if (!stats.UseStamina(stats.grabStaminaDrainRate * deltaTime))
+        {
+            ReleaseGrab();
+        }
+    }
+
+    private void ProcessPunchHits()
+    {
+        if (anim == null || !anim.GetCurrentAnimatorStateInfo(0).IsName("Punch"))
+            return;
+        if (combatDetect == null)
+            return;
+
+        Transform[] origins = { leftHandBone, rightHandBone };
+        foreach (var hand in origins)
+        {
+            if (hand == null)
+                continue;
+
+            var targets = combatDetect.GetPunchTargets(hand);
+            foreach (var hrb in targets)
+            {
+                if (lastHitTime.TryGetValue(hrb.gameObject, out float lastHit) && Time.time - lastHit < 0.1f)
+                    continue;
+
+                Vector3 punchDir = (hrb.transform.position - hand.position).normalized + Vector3.up * 0.2f;
+                Vector3 impulse = punchDir * stats.pushForce;
+
+                var targetController = hrb.GetComponentInParent<ActiveRagdollController>();
+                var targetNetObj = hrb.GetComponentInParent<NetworkObject>();
+
+                if (targetNetObj != null && targetNetObj != Object && targetController != null)
+                    targetController.Rpc_PlayHitReaction(hrb.name, impulse, (int)ForceMode.Impulse);
+                else if (targetController != null)
+                    targetController.PlayHitReaction(hrb.name, impulse, ForceMode.Impulse);
+                else
+                    hrb.AddForce(impulse, ForceMode.Impulse);
+
+                if (targetController != null && targetController != ragdoll)
+                    targetController.ApplyDamage(stats.punchForce);
+
+                lastHitTime[hrb.gameObject] = Time.time;
+            }
+        }
+    }
+
+    private void FindHandBones()
+    {
+        if (ragdoll == null)
+            ragdoll = GetComponent<ActiveRagdollController>();
+        if (ragdoll == null || ragdoll.physicRig == null)
+            return;
+
+        Transform[] allBones = ragdoll.physicRig.GetComponentsInChildren<Transform>();
+        foreach (var t in allBones)
+        {
+            string n = t.name.ToLower();
+            if (n.Contains("hand.l") || n.Contains("hand_l"))
+                leftHandBone = t;
+            if (n.Contains("hand.r") || n.Contains("hand_r"))
+                rightHandBone = t;
+            if (n.Contains("spine.003"))
+                spineAnchorRb = t.GetComponent<Rigidbody>();
+        }
+    }
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
     public void Rpc_BroadcastPunch()
     {
-        if (anim != null) anim.SetTrigger("Punch");
-        if (ragdoll != null) ragdoll.TriggerPunchMuscle();
+        if (anim != null)
+            anim.SetTrigger("Punch");
+        if (ragdoll != null)
+            ragdoll.TriggerPunchMuscle();
     }
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
@@ -210,96 +221,93 @@ public class PlayerCombat : NetworkBehaviour
         {
             var victimController = victimNetObj.GetComponent<ActiveRagdollController>();
             if (victimController != null)
-            {
-                victimController.SetGrabbedState(state, this.gameObject);
-            }
+                victimController.SetGrabbedState(state, gameObject);
         }
     }
 
     public void PerformPunch()
     {
-        if (stats != null && !stats.UseStamina(stats.punchStaminaCost)) return;
+        if (stats != null && !stats.UseStamina(stats.punchStaminaCost))
+            return;
 
         punchTimer = stats.punchCooldown;
 
-        // FIX AUTO-GRAB: Ép nút Grab về false mỗi khi đấm để xóa lệnh kẹt phím
-        if (_input != null) _input.isGrabPressed = false;
+        if (_input != null)
+            _input.isGrabPressed = false;
 
         ReleaseGrab();
 
-        // Chạy cục bộ cho người bấm để thấy ngay lập tức
-        if (Object.HasInputAuthority && anim != null) anim.SetTrigger("Punch");
+        if (Object.HasInputAuthority && anim != null)
+            anim.SetTrigger("Punch");
 
-        // Host phát RPC báo cho tất cả Proxy
-        if (Object.HasStateAuthority) Rpc_BroadcastPunch();
+        if (Object.HasStateAuthority)
+            Rpc_BroadcastPunch();
 
-        // CHỐNG SPAM: Xóa lệnh bấm đấm ngay sau khi ra đòn
-        if (CharacterInput.Local != null) CharacterInput.Local.UsePunchRequest();
+        if (CharacterInput.Local != null)
+            CharacterInput.Local.UsePunchRequest();
     }
 
     public void PerformGrab()
     {
+        if (stats != null && stats.currentStamina < stats.grabStaminaCost)
+            return;
+        if (leftPhysicsHand == null || rightPhysicsHand == null || combatDetect == null)
+            return;
 
-        if (stats != null && stats.currentStamina < stats.grabStaminaCost) return;
-
-        if (leftPhysicsHand == null || rightPhysicsHand == null || combatDetect == null) return;
-
-        // Lấy TẤT CẢ Rb trong từng vùng quét
         var leftSet = combatDetect.GetGrabbableTargets(leftPhysicsHand);
         var rightSet = combatDetect.GetGrabbableTargets(rightPhysicsHand);
 
-        // Tìm phần giao: Rb nào nằm trong CẢ 2 vòng?
         Rigidbody commonTarget = null;
         float bestDist = Mathf.Infinity;
-        foreach (var rb in leftSet)
+        foreach (var targetRb in leftSet)
         {
-            if (rightSet.Contains(rb))
+            if (!rightSet.Contains(targetRb))
+                continue;
+
+            float d = Vector3.Distance(transform.position, targetRb.position);
+            if (d < bestDist)
             {
-                float d = Vector3.Distance(transform.position, rb.position);
-                if (d < bestDist) { bestDist = d; commonTarget = rb; }
+                bestDist = d;
+                commonTarget = targetRb;
             }
         }
-        // Nếu tìm được vật chung thì cầm
-        if (commonTarget != null)
+
+        if (commonTarget == null)
+            return;
+
+        var netObj = commonTarget.GetComponentInParent<NetworkObject>();
+        if (netObj != null)
+            grabbedObjectId = netObj.Id;
+
+        if (grabbedTargetController != null)
         {
-            var netObj = commonTarget.GetComponentInParent<NetworkObject>();
-            if (netObj != null)
-            {
-                grabbedObjectId = netObj.Id;
-            }
+            if (grabbedTargetController == ragdoll || ragdoll.IsBeingGrabbed)
+                return;
 
-            // Tìm Controller của nạn nhân để báo hiệu
-            if (grabbedTargetController != null)
-            {
-                // KHÔNG CHO TÓM NẾU MÌNH ĐANG BỊ TÓM (Chống đệ quy vật lý)
-                if (grabbedTargetController == ragdoll || ragdoll.IsBeingGrabbed) return;
-
-                Rpc_SetGrabbedState(true, grabbedObjectId);
-            }
-
-            AttachHand(leftPhysicsHand, commonTarget);
-            AttachHand(rightPhysicsHand, commonTarget);
-            // Joint thu 3: spine_3 keo doi phuong ap sat vao nguc
-            if (spineAnchorRb != null)
-                AttachBody(spineAnchorRb, commonTarget);
-            isGrabbing = true;
-            chargeTimer = 0f;
-            if (anim != null) anim.SetBool("IsGrabbing", true);
+            Rpc_SetGrabbedState(true, grabbedObjectId);
         }
+
+        AttachHand(leftPhysicsHand, commonTarget);
+        AttachHand(rightPhysicsHand, commonTarget);
+
+        if (spineAnchorRb != null)
+            AttachBody(spineAnchorRb, commonTarget);
+
+        isGrabbing = true;
+        chargeTimer = 0f;
+        if (anim != null)
+            anim.SetBool("IsGrabbing", true);
     }
 
     public void ReleaseGrab()
     {
-        // Báo cho nạn nhân biết mình đã thả
         if (grabbedObjectId.IsValid)
-        {
             Rpc_SetGrabbedState(false, grabbedObjectId);
-        }
 
-        // Chặt đứt tất cả lò xo nam châm ở 2 tay khi buông chuột
-        foreach (var j in activeGrabJoints)
+        foreach (var joint in activeGrabJoints)
         {
-            if (j != null) Destroy(j);
+            if (joint != null)
+                Destroy(joint);
         }
         activeGrabJoints.Clear();
 
@@ -310,14 +318,14 @@ public class PlayerCombat : NetworkBehaviour
             grabbedObjectId = default;
         }
 
-        if (_input != null) _input.isGrabPressed = false; // QUAN TRỌNG: Xóa lệnh kẹt phím khi chủ động nhả
+        if (_input != null)
+            _input.isGrabPressed = false;
 
-        // Tắt Anim, thả tay xuống
-        if (anim != null) anim.SetBool("IsGrabbing", false);
+        if (anim != null)
+            anim.SetBool("IsGrabbing", false);
     }
 
-    // HÀM HỖ TRỢ 2: Tạo kết nối lò xo nam châm giữa tay và vật
-    void AttachHand(Rigidbody handRb, Rigidbody targetRb)
+    private void AttachHand(Rigidbody handRb, Rigidbody targetRb)
     {
         ConfigurableJoint joint = handRb.gameObject.AddComponent<ConfigurableJoint>();
         joint.connectedBody = targetRb;
@@ -330,9 +338,7 @@ public class PlayerCombat : NetworkBehaviour
 
         joint.projectionMode = JointProjectionMode.PositionAndRotation;
         joint.projectionDistance = 0.01f;
-
         joint.enableCollision = false;
-
         joint.autoConfigureConnectedAnchor = false;
         joint.anchor = Vector3.zero;
 
@@ -352,19 +358,15 @@ public class PlayerCombat : NetworkBehaviour
         activeGrabJoints.Add(joint);
     }
 
-    // Ham ho tro 3: Joint nguc - keo doi phuong ap sat vao nguoi (nhe hon tay)
-    void AttachBody(Rigidbody bodyRb, Rigidbody targetRb)
+    private void AttachBody(Rigidbody bodyRb, Rigidbody targetRb)
     {
         ConfigurableJoint joint = bodyRb.gameObject.AddComponent<ConfigurableJoint>();
         joint.connectedBody = targetRb;
 
-        // Chi gioi han vi tri, de goc xoay tu do (doi phuong van xoay tu nhien)
         joint.xMotion = joint.yMotion = joint.zMotion = ConfigurableJointMotion.Limited;
         joint.angularXMotion = joint.angularYMotion = joint.angularZMotion = ConfigurableJointMotion.Free;
 
-        // Limit lon hon tay: cho phep doi phuong lay la mot chut, khong ap chat
         joint.linearLimit = new SoftJointLimit { limit = 0.02f };
-        // Spring yeu hon (40%), damper manh hon (200%) de dan vao nguoi khong giat
         joint.linearLimitSpring = new SoftJointLimitSpring
         {
             spring = stats.grabSpring * 0.8f,
@@ -373,8 +375,6 @@ public class PlayerCombat : NetworkBehaviour
 
         joint.enableCollision = false;
         joint.autoConfigureConnectedAnchor = false;
-
-        // Neo vao chinh tam xuong (khong offset - tranh bi day ra do truc xuong sai huong)
         joint.anchor = Vector3.zero;
         joint.connectedAnchor = Vector3.zero;
 
@@ -383,13 +383,16 @@ public class PlayerCombat : NetworkBehaviour
         activeGrabJoints.Add(joint);
     }
 
-    public bool IsCharging() { return Object != null && Object.IsValid && isGrabbing && grabbedRb != null; }
-    public float GetChargePct() { return stats != null ? chargeTimer / stats.maxChargeTime : 0; }
+    public bool IsCharging()
+    {
+        return Object != null && Object.IsValid && isGrabbing && grabbedRb != null;
+    }
 
-    /// <summary>
-    /// Reset toàn bộ combat state về sạch.
-    /// Gọi bởi GameManager khi hồi sinh đầu màn mới.
-    /// </summary>
+    public float GetChargePct()
+    {
+        return stats != null ? chargeTimer / stats.maxChargeTime : 0;
+    }
+
     public void ResetCombatState()
     {
         lastHitTime.Clear();
@@ -404,33 +407,35 @@ public class PlayerCombat : NetworkBehaviour
 
     public void PerformThrow()
     {
-        if (stats == null) return;
-        float pw = chargeTimer / stats.maxChargeTime;
-        float frc = Mathf.Lerp(stats.minThrowForce, stats.maxThrowForce, pw);
-        Vector3 td = (transform.forward + Vector3.up * 0.15f).normalized;
-        var tgt = grabbedRb;
+        if (stats == null)
+            return;
+
+        float power = chargeTimer / stats.maxChargeTime;
+        float force = Mathf.Lerp(stats.minThrowForce, stats.maxThrowForce, power);
+        Vector3 throwDir = (transform.forward + Vector3.up * 0.15f).normalized;
+        var targetController = grabbedTargetController;
+        var targetRb = grabbedRb;
+        bool isNetworkedVictim = grabbedObjectId.IsValid && targetController != null;
 
         ReleaseGrab();
 
-        if (tgt != null)
-        {
-            tgt.AddForce(td * frc, ForceMode.Impulse);
-        }
+        if (isNetworkedVictim && targetRb != null)
+            targetController.Rpc_PlayHitReaction(targetRb.name, throwDir * force, (int)ForceMode.Impulse);
+        else if (targetController != null && targetRb != null)
+            targetController.PlayHitReaction(targetRb.name, throwDir * force, ForceMode.Impulse);
+        else if (targetRb != null)
+            targetRb.AddForce(throwDir * force, ForceMode.Impulse);
 
-        if (_input != null) _input.isGrabPressed = false; // QUAN TRỌNG: Xóa lệnh kẹt phím sau khi ném
+        if (_input != null)
+            _input.isGrabPressed = false;
     }
 
-    void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()
     {
-        // Nếu chưa Play, tự đi tìm xương tay để hiển thị vòng đỏ trong Scene
         if (leftHandBone == null || rightHandBone == null)
-        {
             FindHandBones();
-        }
 
         if (combatDetect != null)
-        {
             combatDetect.DrawDetectGizmos(leftHandBone, rightHandBone, leftPhysicsHand, rightPhysicsHand);
-        }
     }
 }
