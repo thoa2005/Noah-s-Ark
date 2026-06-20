@@ -50,7 +50,7 @@ public class QuestManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else { Destroy(gameObject); return; }
 
-        // Build lookup map
+        // Build quest lookup map
         foreach (var q in allQuests)
             _questMap[q.id] = q;
     }
