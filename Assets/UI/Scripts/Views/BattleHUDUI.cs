@@ -468,15 +468,7 @@ public class BattleHUDUI : MonoBehaviour
 
     private void AutoAttachNameTags()
     {
-        // Use Tag to find the real player — never a bot, even if bots share the same script
-        GameObject playerObj = GameObject.FindWithTag("Player");
-        if (playerObj != null && playerObj.GetComponent<NameTag>() == null)
-        {
-            AttachNameTag(
-                playerObj,
-                string.IsNullOrEmpty(playerName) ? "Player" : playerName,
-                new Color(0.2f, 0.8f, 1f));
-        }
+        // NetworkPlayer will now handle its own NameTag. We only attach to bots here.
 
         // Auto-attach to all AI Bots (identified by AIBot component, never by name)
         foreach (var bot in FindObjectsByType<AIBot>(FindObjectsSortMode.None))
@@ -507,7 +499,13 @@ public class BattleHUDUI : MonoBehaviour
         tag.offset      = new Vector3(0, 2.0f, 0);
     }
 
-private void UpdateNameTags()
+    public void UpdateHUDPlayerName(string newName)
+    {
+        playerName = newName;
+        if (playerNameLabel != null) playerNameLabel.text = playerName;
+    }
+
+    private void UpdateNameTags()
     {
         if (nameTagsContainer == null) return;
 

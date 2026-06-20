@@ -57,4 +57,11 @@ public class NameTag : MonoBehaviour
             _isRegistered = false;
         }
     }
+
+    public void SetDisplayName(string newName)
+    {
+        displayName = newName;
+        // The HUD usually updates every frame or we can notify it here if it's event-driven.
+        // For BattleHUDUI reading it every frame, just changing the string is enough!
+    }
 }

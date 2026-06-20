@@ -11,6 +11,9 @@ public class PlayerStats : NetworkBehaviour
     [Networked] public NetworkBool isKnockedOut { get; set; }
     [Networked] public int lives { get; set; }
 
+    [Header("Score")]
+    [Networked] public int score { get; set; }
+
 
     [Header("Stamina")]
     [Networked] public float currentStamina { get; set; }

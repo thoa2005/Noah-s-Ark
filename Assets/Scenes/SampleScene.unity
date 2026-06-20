@@ -136,6 +136,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Ocean (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 6474849631500973648, guid: c281445a9ff32a546af0e201f010f08f, type: 3}
+      propertyPath: m_Convex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6474849631500973648, guid: c281445a9ff32a546af0e201f010f08f, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7063839452001075663, guid: c281445a9ff32a546af0e201f010f08f, type: 3}
       propertyPath: m_LocalPosition.x
       value: -7.46
@@ -12586,6 +12594,9 @@ MonoBehaviour:
   lightningFlash: {fileID: 0}
   sunLight: {fileID: 0}
   teams: []
+  _state: 0
+  _currentRound: 0
+  _currentDeadCount: 0
 --- !u!4 &1041401540
 Transform:
   m_ObjectHideFlags: 0
@@ -17789,7 +17800,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1235489768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18418,7 +18429,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &1516681705
 MeshCollider:
   m_ObjectHideFlags: 0

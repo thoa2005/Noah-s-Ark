@@ -3,12 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using TMPro;
+using Fusion;
 
 /// <summary>
 /// Quản lý vòng lặp game: Team, Round (3 màn), chết không respawn giữa màn,
 /// hồi sinh đầu màn mới, kết thúc game sau maxRounds màn.
 /// </summary>
-public class GameManager : MonoBehaviour
+public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
 
@@ -93,13 +94,14 @@ public Light sunLight;
     //  TRẠNG THÁI GAME
     // ------------------------------------------------------------------ //
 
-    private enum GameState { WaitingToStart, RoundActive, RoundEnding, GameOver }
-    private GameState state = GameState.WaitingToStart;
-    private int currentRound = 0;
+    public enum GameState { WaitingToStart, RoundActive, RoundEnding, GameOver }
+    [Networked] public GameState state { get; set; }
+    [Networked] public int currentRound { get; set; }
+    [Networked] public int currentDeadCount { get; set; }
 
     // Thời gian chờ sau khi hồi sinh trước khi bắt đầu check fall
     // (để ragdoll kịp ổn định vật lý, tránh bị loại ngay khi spawn)
-    private float roundStartGraceTime = 0f;
+    [Networked] private float roundStartGraceTime { get; set; }
     private const float GRACE_DURATION = 2f;
 
     // ------------------------------------------------------------------ //
@@ -186,34 +188,62 @@ IEnumerator FadeToBlack()
         else { Destroy(gameObject); return; }
     }
 
-void Start()
-{
-    currentRound = 1;
-
-    SetupRoundWeather();
-
-    if (teams.Count == 0)
-        AutoBuildTeamsFromScene();
-
-    StartCoroutine(GameStartRoutine());
-}
-IEnumerator GameStartRoutine()
-{
-    yield return StartCoroutine(
-        ShowLoadingScreen(1)
-    );
-
-    StartRound();
-}
-
-    void Update()
+    public override void Spawned()
     {
+        if (HasStateAuthority)
+        {
+            currentRound = 1;
+            state = GameState.WaitingToStart;
+            if (teams.Count == 0)
+                AutoBuildTeamsFromScene();
+
+            Rpc_StartGameRoutine();
+        }
+
+        SetupRoundWeather();
+    }
+
+    public void RegisterPlayer(GameObject player, bool isBot)
+    {
+        // Chế độ Free-For-All (Mỗi người là 1 Team)
+        int newTeamId = teams.Count;
+        string tName = isBot ? "Bot " + newTeamId : "Player " + newTeamId;
+
+        // Nếu NetworkPlayer có tên, lấy tên đó làm tên Team để hiển thị lúc chiến thắng cho đẹp
+        var np = player.GetComponent<NetworkPlayer>();
+        if (np != null && !string.IsNullOrEmpty(np.PlayerName))
+        {
+            tName = np.PlayerName;
+        }
+
+        TeamData newTeam = new TeamData { teamId = newTeamId, teamName = tName };
+        newTeam.members.Add(player);
+        teams.Add(newTeam);
+
+        Debug.Log($"[GameManager] Đã thêm {tName} vào làm 1 Team độc lập (FFA).");
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_StartGameRoutine()
+    {
+        StartCoroutine(GameStartRoutine());
+    }
+
+    IEnumerator GameStartRoutine()
+    {
+        yield return StartCoroutine(ShowLoadingScreen(1));
+        if (HasStateAuthority) StartRound();
+    }
+
+    public override void FixedUpdateNetwork()
+    {
+        if (!HasStateAuthority) return;
         if (state != GameState.RoundActive) return;
 
         // Chờ grace period sau khi hồi sinh để ragdoll kịp ổn định
         if (roundStartGraceTime > 0f)
         {
-            roundStartGraceTime -= Time.deltaTime;
+            roundStartGraceTime -= Runner.DeltaTime;
             return;
         }
 
@@ -223,8 +253,21 @@ IEnumerator GameStartRoutine()
             foreach (var member in team.GetAliveMembers())
             {
                 if (member.transform.position.y < fallLimit)
-                    HandlePlayerFall(member);
+                {
+                    var no = member.GetComponent<NetworkObject>();
+                    if (no != null) Rpc_PlayerFell(no.Id);
+                }
             }
+        }
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_PlayerFell(NetworkId playerId)
+    {
+        var no = Runner.FindObject(playerId);
+        if (no != null)
+        {
+            HandlePlayerFall(no.gameObject);
         }
     }
 
@@ -236,6 +279,15 @@ IEnumerator GameStartRoutine()
     {
         Debug.Log($"[GameManager] {player.name} rơi xuống nước!");
         DeactivatePlayer(player);
+
+        // Cộng điểm sinh tồn cho người rơi
+        ScoreManager.Instance.AddScore(player, currentDeadCount);
+
+        if (HasStateAuthority)
+        {
+            currentDeadCount++;
+        }
+
         CheckRoundEnd();
     }
 
@@ -269,20 +321,21 @@ IEnumerator GameStartRoutine()
         player.transform.position = new Vector3(0f, -200f, 0f);
         player.SetActive(false);
 
-        // 6. Báo camera chuyển sang spectator mode
-        var cam = FindCameraOf(player);
-        if (cam != null)
+        // 6. Báo camera chuyển sang spectator mode CHỈ NẾU ĐÂY LÀ NHÂN VẬT CỦA MÌNH
+        var no = player.GetComponent<NetworkObject>();
+        if (no != null && no.HasStateAuthority)
         {
-            TeamData myTeam = GetTeamOf(player);
-            cam.EnterSpectatorMode(myTeam, boatCenter);
+            var cam = FindCameraOf(player);
+            if (cam != null)
+            {
+                TeamData myTeam = GetTeamOf(player);
+                cam.EnterSpectatorMode(myTeam, boatCenter);
+            }
         }
 
         Debug.Log($"[GameManager] {player.name} đã bị loại khỏi màn {currentRound }.");
     }
 
-    /// <summary>
-    /// Kiểm tra còn bao nhiêu team sống. Nếu <= 1 thì kết thúc màn.
-    /// </summary>
     void CheckRoundEnd()
     {
         if (state != GameState.RoundActive) return;
@@ -293,34 +346,51 @@ IEnumerator GameStartRoutine()
         {
             state = GameState.RoundEnding;
 
+            NetworkId winnerId = default;
+
             if (aliveTeams.Count == 1)
             {
                 aliveTeams[0].roundsWon++;
-                Debug.Log($"[GameManager] {aliveTeams[0].teamName} thắng màn {currentRound }! " +
-                          $"Tổng điểm: {aliveTeams[0].roundsWon}");
+                Debug.Log($"[GameManager] {aliveTeams[0].teamName} thắng màn {currentRound }! Tổng điểm: {aliveTeams[0].roundsWon}");
+                var winnerObj = GetWinningPlayer();
+                if (winnerObj != null)
+                {
+                    var no = winnerObj.GetComponent<NetworkObject>();
+                    if (no != null) winnerId = no.Id;
+
+                    // Thưởng điểm cho người sống sót cuối cùng
+                    ScoreManager.Instance.AddScore(winnerObj, currentDeadCount);
+                }
             }
             else
             {
                 Debug.Log($"[GameManager] Màn {currentRound} hòa! Không ai được điểm.");
             }
 
-            StartCoroutine(EndRoundRoutine());
+            Rpc_EndRoundRoutine(winnerId);
         }
     }
 
-IEnumerator EndRoundRoutine()
-{
-    yield return new WaitForSeconds(endRoundDelay);
-
-    GameObject winner =
-        GetWinningPlayer();
-
-    if (winner != null)
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_EndRoundRoutine(NetworkId winnerId)
     {
-        yield return StartCoroutine(
-            WinnerCinematic(winner)
-        );
+        GameObject winnerObj = null;
+        if (winnerId.IsValid)
+        {
+            var no = Runner.FindObject(winnerId);
+            if (no != null) winnerObj = no.gameObject;
+        }
+        StartCoroutine(EndRoundRoutine(winnerObj));
     }
+
+    IEnumerator EndRoundRoutine(GameObject winner)
+    {
+        yield return new WaitForSeconds(endRoundDelay);
+
+        if (winner != null)
+        {
+            yield return StartCoroutine(WinnerCinematic(winner));
+        }
 
     yield return StartCoroutine(
         FadeToBlack()
@@ -342,17 +412,27 @@ IEnumerator EndRoundRoutine()
         c.a = 0;
         fadePanel.color = c;
 
-        SetupRoundWeather();
-
-        StartRound();
+        if (HasStateAuthority && currentRound <= maxRounds)
+        {
+            StartRound();
+        }
     }
 }
     /// <summary>
     /// Bắt đầu màn mới: hồi sinh tất cả player, reset state.
     /// </summary>
-    void StartRound()
+    public void StartRound()
     {
+        state = GameState.RoundActive;
+        roundStartGraceTime = GRACE_DURATION;
+
+        if (HasStateAuthority)
+        {
+            currentDeadCount = 0;
+        }
+
         Debug.Log($"[GameManager] ===== BẮT ĐẦU MÀN {currentRound} / {maxRounds} =====");
+        Rpc_StartRoundEffects();
 
         for (int i = 0; i < teams.Count; i++)
         {
@@ -361,13 +441,27 @@ IEnumerator EndRoundRoutine()
             {
                 var member = team.members[j];
                 if (member == null) continue;
-                RespawnPlayer(member, GetSpawnPosition(i, j));
+                Rpc_RespawnPlayer(member.GetComponent<NetworkObject>().Id, GetSpawnPosition(i, j));
             }
         }
 
-        state = GameState.RoundActive;
-        roundStartGraceTime = GRACE_DURATION; // Chờ 2 giây trước khi check fall
         Debug.Log($"[GameManager] Grace period {GRACE_DURATION}s bắt đầu...");
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_StartRoundEffects()
+    {
+        // Gọi trên mọi Client để chắc chắn thời tiết & spawner được reset đúng lúc
+        SetupRoundWeather();
+        var appleSpawner = FindFirstObjectByType<AppleSpawner>();
+        if (appleSpawner != null) appleSpawner.ResetRound();
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void Rpc_RespawnPlayer(NetworkId playerId, Vector3 pos)
+    {
+        var no = Runner.FindObject(playerId);
+        if (no != null) RespawnPlayer(no.gameObject, pos);
     }
 
     /// <summary>
@@ -405,9 +499,13 @@ IEnumerator EndRoundRoutine()
         var input = player.GetComponent<CharacterInput>();
         if (input != null) input.ClearAllInputs();
 
-        // Thoát spectator mode, trả camera về follow owner
-        var cam = FindCameraOf(player);
-        if (cam != null) cam.ExitSpectatorMode(player.transform);
+        // Thoát spectator mode CHỈ NẾU ĐÂY LÀ NHÂN VẬT CỦA MÌNH
+        var no = player.GetComponent<NetworkObject>();
+        if (no != null && no.HasStateAuthority)
+        {
+            var cam = FindCameraOf(player);
+            if (cam != null) cam.ExitSpectatorMode(player.transform);
+        }
 
         Debug.Log($"[GameManager] {player.name} hồi sinh tại {pos}");
     }

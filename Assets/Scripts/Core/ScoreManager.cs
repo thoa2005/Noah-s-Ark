@@ -5,9 +5,6 @@ public class ScoreManager : MonoBehaviour
 {
     public static ScoreManager Instance;
 
-    private Dictionary<GameObject, int> playerScores =
-        new Dictionary<GameObject, int>();
-
     void Awake()
     {
         Instance = this;
@@ -15,35 +12,33 @@ public class ScoreManager : MonoBehaviour
 
     public void AddScore(GameObject player, int amount)
     {
-        if (!playerScores.ContainsKey(player))
-            playerScores[player] = 0;
-
-        playerScores[player] += amount;
-
-        Debug.Log(
-            player.name +
-            " +" +
-            amount +
-            " điểm. Tổng: " +
-            playerScores[player]
-        );
+        var stats = player.GetComponent<PlayerStats>();
+        if (stats != null)
+        {
+            // Chỉ cập nhật điểm nếu có quyền kiểm soát (để tránh 2 client cùng cộng điểm)
+            if (stats.Object != null && stats.HasStateAuthority)
+            {
+                stats.score += amount;
+                Debug.Log(player.name + " +" + amount + " điểm. Tổng: " + stats.score);
+            }
+        }
     }
 
     public int GetScore(GameObject player)
     {
-        if (!playerScores.ContainsKey(player))
-            return 0;
-
-        return playerScores[player];
+        if (player == null) return 0;
+        var stats = player.GetComponent<PlayerStats>();
+        return stats != null ? stats.score : 0;
     }
+
     public int GetScoreByName(string playerName)
-{
-    foreach (var entry in playerScores)
     {
-        if (entry.Key.name == playerName)
-            return entry.Value;
+        GameObject player = GameObject.Find(playerName);
+        if (player != null)
+        {
+            var stats = player.GetComponent<PlayerStats>();
+            return stats != null ? stats.score : 0;
+        }
+        return 0;
     }
-
-    return 0;
-}
 }

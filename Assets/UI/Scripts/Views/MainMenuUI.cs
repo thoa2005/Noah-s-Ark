@@ -21,6 +21,8 @@ public class MainMenuUI : MonoBehaviour
     // Scheduler handle
     private IVisualElementScheduledItem animScheduler;
 
+    private TextField nameInput;
+
     void Start()
     {
         UIDocument localDoc = GetComponent<UIDocument>();
@@ -80,6 +82,9 @@ public class MainMenuUI : MonoBehaviour
         if (btnJoin != null) btnJoin.clicked += OnJoinClicked;
         if (btnSettings != null) btnSettings.clicked += OnSettingsClicked;
         if (btnProfile != null) btnProfile.clicked += OnProfileClicked;
+
+        // Query input field for player name
+        nameInput = menuRoot.Q<TextField>("input-player-name");
 
         // Register pointer move callback for technique 2 (Mouse Parallax)
         menuRoot.RegisterCallback<PointerMoveEvent>(OnPointerMove);
@@ -181,6 +186,15 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnPlayClicked()
     {
+        // Save player name if input field exists and is not empty
+        string pName = "Player_" + Random.Range(1000, 9999);
+        if (nameInput != null && !string.IsNullOrWhiteSpace(nameInput.value))
+        {
+            pName = nameInput.value;
+        }
+        PlayerPrefs.SetString("PlayerName", pName);
+        PlayerPrefs.Save();
+
         // Stop animations before switching screen
         if (animScheduler != null)
             animScheduler.Pause();

@@ -1,78 +1,63 @@
 using UnityEngine;
 using System.Collections;
+using Fusion;
 
-public class AppleSpawner : MonoBehaviour
+public class AppleSpawner : NetworkBehaviour
 {
     [Header("Apple Prefab")]
-    public GameObject applePrefab;
+    public NetworkPrefabRef applePrefab;
 
     [Header("Spawn Points")]
     public Transform[] spawnPoints;
 
     [Header("Apple Settings")]
     public int applesPerRound = 3;
-
     public float minSpawnDelay = 240f;
     public float maxSpawnDelay = 360f;
     public float firstAppleDelay = 180f; 
 
     private int spawnedCount = 0;
+    private Coroutine spawnCoroutine;
 
-    void Start()
+    public override void Spawned()
     {
-        StartCoroutine(SpawnRoutine());
+        if (HasStateAuthority)
+        {
+            spawnCoroutine = StartCoroutine(SpawnRoutine());
+        }
     }
 
-IEnumerator SpawnRoutine()
-{
-    // chờ vài phút đầu trận
-    yield return new WaitForSeconds(firstAppleDelay);
-
-    while (spawnedCount < applesPerRound)
+    IEnumerator SpawnRoutine()
     {
-        SpawnApple();
+        yield return new WaitForSeconds(firstAppleDelay);
 
-        spawnedCount++;
+        while (spawnedCount < applesPerRound)
+        {
+            SpawnApple();
+            spawnedCount++;
 
-        if (spawnedCount >= applesPerRound)
-            yield break;
+            if (spawnedCount >= applesPerRound)
+                yield break;
 
-        float waitTime =
-            Random.Range(
-                minSpawnDelay,
-                maxSpawnDelay
-            );
-
-        yield return new WaitForSeconds(waitTime);
+            float waitTime = Random.Range(minSpawnDelay, maxSpawnDelay);
+            yield return new WaitForSeconds(waitTime);
+        }
     }
-}
 
     void SpawnApple()
     {
-        if (spawnPoints.Length == 0)
-            return;
-
-        int randomIndex =
-            Random.Range(
-                0,
-                spawnPoints.Length
-            );
-
-        Instantiate(
-            applePrefab,
-            spawnPoints[randomIndex].position,
-            Quaternion.identity
-        );
+        if (spawnPoints.Length == 0) return;
+        int randomIndex = Random.Range(0, spawnPoints.Length);
+        
+        Runner.Spawn(applePrefab, spawnPoints[randomIndex].position, Quaternion.identity);
     }
 
     public void ResetRound()
     {
+        if (!HasStateAuthority) return;
+
         spawnedCount = 0;
-
-        StopAllCoroutines();
-
-        StartCoroutine(
-            SpawnRoutine()
-        );
+        if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
+        spawnCoroutine = StartCoroutine(SpawnRoutine());
     }
-}
+}

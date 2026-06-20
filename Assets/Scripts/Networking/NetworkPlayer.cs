@@ -14,8 +14,17 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     [OnChangedRender(nameof(OnCharacterIndexChanged))]
     public int NetworkedCharacterIndex { get; set; } = -1;
 
+    [Networked, Capacity(24)]
+    [OnChangedRender(nameof(OnNameChanged))]
+    public string PlayerName { get; set; }
+
     public override void Spawned()
     {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RegisterPlayer(gameObject, gameObject.CompareTag("Bot"));
+        }
+
         if (Object.HasStateAuthority)
         {
             Local = this;
@@ -43,6 +52,13 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             // 3. Báo cáo nhân vật đã chọn cho Server
             int myIndex = PlayerPrefs.GetInt("SelectedCharacterIndex", 0);
             NetworkedCharacterIndex = myIndex;
+
+            // Apply ngay skin cho chính mình (không đợi OnChanged vì có thể bị bỏ qua)
+            ApplyCharacterSkin();
+
+            // 4. Báo cáo tên nhân vật
+            PlayerName = PlayerPrefs.GetString("PlayerName", "Player_" + Random.Range(1000, 9999));
+            OnNameChanged();
         }
         else
         {
@@ -50,6 +66,10 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             if (NetworkedCharacterIndex != -1)
             {
                 ApplyCharacterSkin();
+            }
+            if (!string.IsNullOrEmpty(PlayerName))
+            {
+                OnNameChanged();
             }
             // 2. TỰ ĐỘNG QUÉT: Code tự tìm sạch toàn bộ Rigidbody nằm bên trong gốc cha Ragdoll
             if (ragdollRoot != null)
@@ -76,6 +96,28 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     public void OnCharacterIndexChanged()
     {
         ApplyCharacterSkin();
+    }
+
+    public void OnNameChanged()
+    {
+        var nameTag = GetComponent<NameTag>();
+        if (nameTag == null)
+        {
+            nameTag = gameObject.AddComponent<NameTag>();
+            nameTag.nameColor = new Color(0.2f, 0.8f, 1f);
+            nameTag.offset = new Vector3(0, 2.0f, 0);
+        }
+
+        if (!string.IsNullOrEmpty(PlayerName))
+        {
+            nameTag.SetDisplayName(PlayerName);
+        }
+
+        // Cập nhật lên HUD chính (góc trái màn hình) nếu đây là nhân vật của mình
+        if (Object.HasStateAuthority && BattleHUDUI.Instance != null && !string.IsNullOrEmpty(PlayerName))
+        {
+            BattleHUDUI.Instance.UpdateHUDPlayerName(PlayerName);
+        }
     }
 
     private void ApplyCharacterSkin()
